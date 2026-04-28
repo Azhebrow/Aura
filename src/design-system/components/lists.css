@@ -1,0 +1,1132 @@
+/* ============================================
+   СПИСКИ
+   ============================================ */
+
+/* ============================================
+   ОБЩИЕ СТИЛИ ДЛЯ ИКОНОК КАРТОЧЕК
+   ============================================ */
+
+/* Общие стили для иконок карточек (act, cfg, goals) */
+.act-card-icon,
+.cfg-card-icon,
+.goals-column-card .cfg-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--height-control);
+  height: var(--height-control);
+  min-width: var(--height-control);
+  flex-shrink: 0;
+  background-color: var(--color-element);
+  border-radius: var(--radius);
+  color: var(--color-on-surface);
+  padding: 8px;
+  box-sizing: border-box;
+  position: relative;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+/* Современный минималистичный стиль для всех иконок с цветом */
+.act-card-icon.has-color,
+.cfg-card-icon.has-color,
+.goals-column-card .cfg-card-icon.has-color {
+  /* Фон устанавливается через inline style в JS - переопределяем базовый фон */
+  background-color: transparent;
+  border: 1px solid var(--color-border-raised-muted, rgba(0, 0, 0, 0.05));
+  box-shadow: none;
+}
+
+/* Улучшенная контрастность границ иконок для светлой темы */
+[data-theme="light"] .act-card-icon.has-color,
+[data-theme="light"] .cfg-card-icon.has-color,
+[data-theme="light"] .goals-column-card .cfg-card-icon.has-color {
+  border: 1px solid var(--color-border-raised-emphasis, rgba(0, 0, 0, 0.15));
+}
+
+
+/* Контур иконки цвета текста, фон цветной */
+.act-card-icon.has-color svg,
+.cfg-card-icon.has-color svg,
+.goals-column-card .cfg-card-icon.has-color svg {
+  color: var(--color-on-surface);
+  filter: none;
+}
+
+.act-card-icon svg,
+.cfg-card-icon svg,
+.goals-column-card .cfg-card-icon svg {
+  stroke-width: 2 !important;
+  width: 100%;
+  height: 100%;
+  display: block;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+/* ============================================
+   ТЕМЫ ИКОНОК
+   ============================================ */
+
+/* Минималистичная тема (по умолчанию) */
+[data-icon-theme="minimal"] .act-card-icon.has-color,
+[data-icon-theme="minimal"] .cfg-card-icon.has-color,
+[data-icon-theme="minimal"] .goals-column-card .cfg-card-icon.has-color {
+  border: 1px solid var(--color-border-raised-muted, rgba(0, 0, 0, 0.05)) !important;
+  box-shadow: none;
+}
+
+[data-theme="light"][data-icon-theme="minimal"] .act-card-icon.has-color,
+[data-theme="light"][data-icon-theme="minimal"] .cfg-card-icon.has-color,
+[data-theme="light"][data-icon-theme="minimal"] .goals-column-card .cfg-card-icon.has-color {
+  border: 1px solid var(--color-border-raised-emphasis, rgba(0, 0, 0, 0.15)) !important;
+}
+
+/* Градиентная тема */
+[data-icon-theme="gradient"] .act-card-icon.has-color,
+[data-icon-theme="gradient"] .cfg-card-icon.has-color,
+[data-icon-theme="gradient"] .goals-column-card .cfg-card-icon.has-color {
+  border: none !important;
+  box-shadow: none;
+  /* Градиент применяется через inline style в JS */
+}
+
+/* ============================================
+   ACT LIST - Списки транзакций, записей дневника, сессий
+   ============================================ */
+
+.act-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  overflow: visible; /* Тени могут выходить за пределы */
+  box-sizing: border-box;
+}
+
+.act-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.act-list-header .btn,
+.cfg-list-header .btn {
+  width: auto;
+  flex-shrink: 0;
+  min-width: var(--height-control);
+  display: flex !important;
+  visibility: visible !important;
+}
+
+.act-list-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-medium);
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+.act-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: visible; /* Тени карточек могут выходить за пределы */
+  box-sizing: border-box;
+}
+
+/* Список планов: небольшой отступ справа */
+.act-list-items:has(.plans-card-controls) {
+  padding-right: 2px;
+}
+
+/* Секция таймера: меньше отступов у списка задач */
+.timer-tasks-list-content .act-list-items {
+  gap: var(--space-xs);
+  padding: 0;
+}
+.timer-tasks-list-content .act-card {
+  padding: var(--space-sm);
+}
+
+/* Когда внутри только empty-state, центрируем контент */
+.act-list-items:has(> .empty-state:only-child) {
+  justify-content: center;
+  align-items: stretch;
+  overflow: hidden; /* Убираем прокрутку для пустого состояния */
+}
+
+/* Контейнер для контента списка сессий таймера */
+.timer-sessions-list-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Скрываем полосу прокрутки в WebKit браузерах - УДАЛЕНО, чтобы скролл был виден с отступом */
+/*.act-list-items::-webkit-scrollbar {
+  display: none;
+}*/
+
+.act-list-empty {
+  padding: var(--space-lg);
+  text-align: center;
+  color: var(--color-on-surface-secondary);
+  font-size: var(--font-sm);
+}
+
+.act-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background-color: var(--color-card-fill, var(--color-card-background));
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card-level);
+  box-sizing: border-box;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease;
+  min-height: 64px;
+  min-height: auto;
+}
+
+.act-card:hover {
+  background-color: var(--color-element-hover);
+  box-shadow: var(--shadow-card-level, var(--shadow-card-moderate));
+}
+
+.act-card.selected {
+  background-color: var(--color-element-hover);
+  border-color: var(--color-accent-ui, var(--color-accent));
+}
+
+/* Однострочный layout для контента */
+.act-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+  min-height: auto;
+  gap: var(--space-md);
+}
+
+.act-card-title {
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.act-card-description {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface-secondary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.act-card-data {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  font-size: var(--font-sm);
+  color: var(--color-on-surface-secondary);
+}
+
+.act-card-data-item {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-weight: var(--font-weight-light, 300);
+}
+
+/* Карточки с действиями справа (Финансы, сессии, ActList): сетка без скачка ширины при hover */
+.act-card:has(> .act-card-actions):not(.nutrition-entry-card) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-md);
+}
+
+.act-card:has(> .act-card-actions):not(.nutrition-entry-card) > .act-card-content {
+  flex: unset;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Длинные суммы не вытесняют название полностью */
+.act-card:has(> .act-card-actions):not(.nutrition-entry-card) > .act-card-content > .act-card-title {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.act-card:has(> .act-card-actions):not(.nutrition-entry-card) > .act-card-content > .act-card-data-item {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: min(48%, 12rem);
+  justify-content: flex-end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-card:has(> .act-card-actions):not(.nutrition-entry-card) > .act-card-content > .act-card-data {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: min(52%, 14rem);
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.act-card:has(> .act-card-actions):not(.nutrition-entry-card) > .act-card-content > .act-card-data .act-card-data-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================
+   DIARY ENTRY CARDS - Карточки записей дневника
+   ============================================ */
+
+/* Двухстрочный layout для карточек дневника */
+.act-card:has(.diary-entry-content) {
+  min-height: 80px; /* Увеличиваем высоту для двух строк */
+}
+
+.diary-entry-content {
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: var(--space-md);
+  padding-top: 2px; /* Небольшой отступ сверху для выравнивания */
+}
+
+.diary-entry-text-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Двухстрочный текст для записей дневника */
+.diary-entry-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* Правая часть: настроение и дата */
+.diary-entry-right-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* Настроение в виде точек */
+.diary-entry-mood {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  height: 8px;
+}
+
+.diary-entry-mood-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--color-on-surface-secondary);
+  transition: opacity 0.2s ease;
+}
+
+/* Дата в карточках дневника */
+.diary-entry-date {
+  font-size: var(--font-sm);
+  color: var(--color-on-surface-secondary);
+  font-weight: var(--font-weight-light, 300);
+}
+
+.act-card-controls {
+  display: flex;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.act-card-controls .btn {
+  padding: 0 var(--space-sm);
+  min-width: auto;
+  height: var(--height-control);
+  font-size: var(--font-sm);
+}
+
+.act-card-controls .input-suffix-wrapper {
+  flex-shrink: 0;
+}
+
+.act-card-controls .select {
+  min-width: 120px;
+  height: var(--height-control);
+}
+
+.act-card-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  width: auto;
+  max-width: none;
+  overflow: visible;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+/* Указатель мыши: кнопки действий до появления не перехватывают клики */
+@media (hover: hover) and (pointer: fine) {
+  .act-card:has(> .act-card-actions):not(.nutrition-entry-card) > .act-card-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .act-card:has(> .act-card-actions):not(.nutrition-entry-card):hover > .act-card-actions,
+  .act-card:has(> .act-card-actions):not(.nutrition-entry-card):focus-within > .act-card-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.act-card-actions .btn,
+.cfg-card-actions .btn {
+  padding: 0;
+  min-width: var(--height-control);
+  width: var(--height-control);
+  height: var(--height-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Стили для выполненных задач - зачеркивание названия убрано */
+
+/* Карточки планов (секция «Планы»): панель кнопок справа с небольшим отступом */
+.act-card:has(.plans-card-controls) {
+  padding-right: var(--space-sm);
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+
+.act-card:has(.plans-card-controls) .act-card-content {
+  flex: 1 1 0%;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+.plans-card-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-left: auto;
+  margin-right: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  min-width: calc(var(--height-control) * 5 + var(--space-sm) * 2);
+}
+
+.plans-card-actions-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-element);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  min-height: var(--height-control);
+  flex-shrink: 0;
+}
+
+.act-card:hover .plans-card-actions-group {
+  opacity: 1;
+  visibility: visible;
+}
+
+.plans-control-btn {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: var(--space-xs) !important;
+  min-width: var(--height-control) !important;
+  width: var(--height-control) !important;
+  height: var(--height-control) !important;
+  max-width: var(--height-control) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+  margin: 0 !important;
+}
+
+.plans-control-btn:hover {
+  background-color: var(--color-element-hover) !important;
+}
+
+.plans-control-divider {
+  width: var(--border-width);
+  height: calc(var(--height-control) * 0.6);
+  background-color: var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   CFG LIST - Списки конфигураций
+   ============================================ */
+
+.cfg-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: visible; /* Тени могут выходить за пределы */
+  overflow-y: visible;
+}
+
+.cfg-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.cfg-list-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-medium);
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+/* Группировка категорий расходов */
+.cfg-list-group-header {
+  font-size: var(--font-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-on-surface-secondary);
+  margin-bottom: var(--space-sm);
+  padding: 0 var(--space-sm);
+}
+
+.cfg-list-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.cfg-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm); /* Увеличиваем gap до стандартного md */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: visible; /* Тени могут выходить за пределы */
+  overflow-y: visible;
+}
+
+.cfg-list-empty {
+  padding: var(--space-lg);
+  text-align: center;
+  color: var(--color-on-surface-secondary);
+  font-size: var(--font-sm);
+}
+
+.cfg-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background-color: var(--color-card-fill, var(--color-card-background));
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card-level);
+  transition: background-color 0.2s ease, box-shadow 0.3s ease;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow-x: visible; /* Тени могут выходить за пределы */
+  overflow-y: visible;
+}
+
+.cfg-card:hover {
+  background-color: var(--color-element-hover);
+}
+
+.cfg-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.cfg-card-title {
+  font-size: var(--font-base);
+  font-weight: var(--font-medium);
+  color: var(--color-on-surface);
+}
+
+.cfg-card-data {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface-secondary);
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.cfg-card-data-item {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  font-weight: var(--font-weight-light, 300);
+}
+
+.cfg-card-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Описание ранга */
+.rank-section p {
+  font-weight: var(--font-weight-light, 300);
+}
+
+/* ============================================
+   TASKS CATEGORIES - Категории задач на главной странице
+   ============================================ */
+
+/* Контейнер категорий - адаптивная сетка с равномерным распределением */
+.tasks-categories-container {
+  display: grid;
+  gap: var(--space-md);
+  width: 100%;
+  /* Используем auto-fill для более равномерного распределения */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* Выравниваем карточки по началу для равномерного распределения */
+  align-items: start;
+}
+
+/* Секции внутри контейнера категорий */
+.tasks-categories-container > .section {
+  min-width: 0; /* Позволяет сжиматься */
+  width: 100%;
+  /* Ограничиваем максимальную ширину для более равномерного распределения */
+  max-width: 100%;
+}
+
+
+/* Контейнер категорий - в один ряд (старый стиль, оставляем для совместимости) */
+.tasks-categories-section {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-md);
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Карточка категории - мини-секция */
+.tasks-category-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  background-color: var(--color-section-fill, var(--color-section-background));
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  gap: var(--space-md);
+  overflow: visible; /* Тени могут выходить за пределы */
+  box-shadow: var(--shadow-section-level);
+}
+
+/* Заголовок категории с иконкой и процентом */
+.tasks-category-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  padding-bottom: var(--space-sm);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.tasks-category-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--height-control);
+  height: var(--height-control);
+  min-width: var(--height-control);
+  flex-shrink: 0;
+  background-color: var(--color-element);
+  border-radius: var(--radius);
+  color: var(--color-on-surface);
+  padding: 8px;
+  box-sizing: border-box;
+  position: relative;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.tasks-category-icon.has-color {
+  /* Фон устанавливается через inline style в JS */
+  border: 1px solid var(--color-border-raised-muted, rgba(0, 0, 0, 0.05));
+  box-shadow: none;
+}
+
+/* Улучшенная контрастность границ иконок категорий задач для светлой темы */
+[data-theme="light"] .tasks-category-icon.has-color {
+  border: 1px solid var(--color-border-raised-emphasis, rgba(0, 0, 0, 0.15));
+}
+
+.tasks-category-icon.has-color svg {
+  color: var(--color-on-surface);
+  filter: none;
+}
+
+.tasks-category-icon svg {
+  stroke-width: 2;
+  width: 100%;
+  height: 100%;
+  display: block;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.tasks-category-percent {
+  font-size: var(--font-lg);
+  font-weight: var(--font-bold);
+  color: var(--color-on-surface);
+  margin-left: auto;
+}
+
+/* Список задач категории */
+.tasks-category-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: visible; /* Тени могут выходить за пределы */
+  box-sizing: border-box;
+}
+
+/* Монолитный блок задачи - один цветной элемент с тремя равными секциями */
+.tasks-task-block {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  min-height: var(--height-control);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  overflow: hidden;
+}
+
+/* Задачи в категориях используют act-card с тремя равными частями */
+/* Общий padding и gap для всей карточки задач в категориях */
+.tasks-category-tasks .act-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tasks-category-tasks .act-card .tasks-task-left,
+.tasks-category-tasks .act-card .tasks-task-control,
+.tasks-category-tasks .act-card .tasks-task-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0; /* Убираем внутренние отступы */
+}
+
+/* Минималистичное оформление для выполненных задач */
+.tasks-category-tasks .act-card.completed {
+  background-color: var(--task-completed-bg, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--task-completed-border, rgba(0, 0, 0, 0.08));
+  opacity: 0.9;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.tasks-category-tasks .act-card.completed:hover {
+  background-color: var(--task-completed-bg-hover, rgba(0, 0, 0, 0.04));
+  border-color: var(--task-completed-border-hover, rgba(0, 0, 0, 0.12));
+  opacity: 1;
+}
+
+.tasks-task-block:hover {
+  border-color: var(--task-color, var(--color-accent-ui, var(--color-accent)));
+}
+
+/* Выполненная задача (100%) - простая подсветка */
+.tasks-task-block.tasks-task-completed {
+  opacity: 0.85;
+  border-color: var(--task-color, var(--color-accent-ui, var(--color-accent)));
+}
+
+/* Левая часть: иконка + название (без собственных границ) */
+.tasks-task-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Выравнивание по левому краю */
+  gap: var(--space-sm);
+  padding: 0; /* Убираем padding, он теперь на уровне act-card */
+}
+
+/* Для act-card в категориях задач выравнивание по левому краю */
+.tasks-category-tasks .act-card .tasks-task-left {
+  justify-content: flex-start;
+}
+
+/* Иконка задачи (в левой части) */
+.tasks-task-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--height-control);
+  height: var(--height-control);
+  min-width: var(--height-control);
+}
+
+.tasks-task-icon svg {
+  width: calc(var(--height-control) * 0.6);
+  height: calc(var(--height-control) * 0.6);
+  stroke: currentColor;
+  color: var(--icon-color, var(--color-on-surface));
+}
+
+/* Название задачи (в левой части) */
+.tasks-task-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-base);
+  font-weight: var(--font-medium);
+  color: var(--color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Средняя часть: элемент управления (единственный выделяющийся элемент) */
+.tasks-task-control {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* Убираем padding, он теперь на уровне act-card */
+}
+
+/* Единообразные стили для всех элементов управления */
+.tasks-task-control input,
+.tasks-task-control button,
+.tasks-task-control .tasks-task-timer,
+.tasks-task-control .custom-select-wrapper {
+  width: 100%;
+  height: var(--height-control);
+  min-height: var(--height-control);
+  max-height: var(--height-control);
+  padding: 0 var(--space-md);
+  background-color: rgba(255, 255, 255, 0.03);
+  border: var(--border-width) solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  color: var(--color-on-surface);
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-light, 300);
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+/* Адаптация цвета элементов управления к цвету категории */
+.tasks-task-control input,
+.tasks-task-control button,
+.tasks-task-control .tasks-task-timer {
+  border-color: var(--task-control-border, rgba(255, 255, 255, 0.1));
+  background-color: var(--task-control-bg, rgba(255, 255, 255, 0.03));
+}
+
+.tasks-task-control input:focus,
+.tasks-task-control button:focus {
+  border-color: var(--task-control-border-focus, var(--task-color, var(--color-accent-ui, var(--color-accent))));
+  background-color: var(--task-control-bg-focus, var(--task-control-bg-hover, rgba(255, 255, 255, 0.05)));
+}
+
+.tasks-task-control input:hover,
+.tasks-task-control button:hover {
+  outline: none;
+  border-color: var(--task-control-border-hover, var(--task-color, var(--color-accent-ui, var(--color-accent))));
+  background-color: var(--task-control-bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.tasks-task-control button {
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Кнопка чекбокса */
+.tasks-checkbox-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.tasks-checkbox-button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Кнопка для списка (циклическое переключение) */
+.tasks-list-button {
+  width: 100%;
+  height: var(--height-control);
+  padding: 0 var(--space-md);
+  background-color: var(--color-element);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-on-surface);
+  font-size: var(--font-base);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  overflow: hidden;
+  transition: var(--control-transition, background-color 0.2s ease, border-color 0.2s ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.tasks-list-button:hover {
+  background-color: var(--color-element-hover);
+  border-color: var(--task-color, var(--color-accent-ui, var(--color-accent)));
+}
+
+/* Кнопка для ритуала */
+.tasks-task-control .tasks-ritual-button {
+  cursor: pointer;
+  text-align: center;
+  overflow: hidden;
+}
+
+.tasks-task-control .tasks-ritual-button:hover {
+  background-color: var(--task-control-bg-hover, rgba(255, 255, 255, 0.05));
+  border-color: var(--task-control-border-hover, var(--task-color, var(--color-accent-ui, var(--color-accent))));
+}
+
+.tasks-task-control input[type="number"] {
+  text-align: center;
+}
+
+/* Кастомное поле ввода для number задач с центрированным контентом */
+.tasks-number-input-wrapper {
+  position: relative;
+  width: 100%;
+  height: var(--height-control);
+  min-height: var(--height-control);
+  max-height: var(--height-control);
+  padding: 0 var(--space-md);
+  background-color: var(--task-control-bg, rgba(255, 255, 255, 0.03));
+  border: var(--border-width) solid var(--task-control-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius);
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tasks-number-input-wrapper:hover {
+  border-color: var(--task-control-border-hover, var(--task-color, var(--color-accent-ui, var(--color-accent))));
+  background-color: var(--task-control-bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.tasks-number-input {
+  position: absolute;
+  width: calc(100% - var(--space-md) * 2);
+  height: 100%;
+  text-align: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface);
+  z-index: 2;
+  caret-color: var(--color-accent-ui, var(--color-accent));
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  pointer-events: auto;
+}
+
+.tasks-number-input:focus {
+  outline: none;
+  opacity: 1;
+  z-index: 3;
+}
+
+.tasks-number-input::-webkit-inner-spin-button,
+.tasks-number-input::-webkit-outer-spin-button {
+  opacity: 0;
+}
+
+.tasks-number-input:focus::-webkit-inner-spin-button,
+.tasks-number-input:focus::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+.tasks-number-input-content {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.tasks-number-input-value {
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface);
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.tasks-number-input-suffix {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface-secondary);
+  opacity: 0.6;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* Таймер отображение */
+.tasks-task-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+
+/* Обертка для CustomSelect */
+.tasks-task-control .custom-select-wrapper {
+  width: 100%;
+  height: var(--height-control);
+}
+
+.tasks-task-control .custom-select {
+  height: var(--height-control);
+}
+
+.tasks-task-control .custom-select-trigger {
+  height: var(--height-control);
+  min-height: var(--height-control);
+  max-height: var(--height-control);
+}
+
+/* Правая часть: информация (суффиксы, подсказки) */
+.tasks-task-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* Убираем padding, он теперь на уровне act-card */
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface-secondary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.tasks-task-info svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+

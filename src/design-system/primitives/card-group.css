@@ -1,0 +1,47 @@
+.card-group-container {
+  position: relative;
+  width: 100%;
+}
+
+.card-group-scroll {
+  overflow: visible;
+  position: relative;
+  width: 100%;
+}
+
+.card-group {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  overflow-y: visible; /* Тени могут выходить за пределы */
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.card-group::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.card-group .card-item {
+  flex: 0 0 auto;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+/* Используем унифицированный класс nav-arrow-button */
+.card-group-nav-button {
+  /* Наследуем базовые стили из nav-arrows.css */
+  /* Дополнительные стили специфичные для card-group */
+  z-index: 10;
+}
+
+.card-group-nav-left {
+  left: 8px;
+}
+
+.card-group-nav-right {
+  right: 8px;
+}
+
+

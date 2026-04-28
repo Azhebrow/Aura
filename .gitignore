@@ -1,0 +1,14 @@
+# Артефакты сборки
+dist/
+renderer-build/
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Логи и временные файлы
+*.log
+.npm

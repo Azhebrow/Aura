@@ -1,0 +1,84 @@
+/* Стили для секции обетов (Vows) */
+
+.vows-section-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vows-empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--color-on-surface-secondary);
+}
+
+/* Заголовок секции: слева иконка + название, справа кнопки переключения */
+.vows-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: var(--space-sm);
+  padding: 0;
+}
+
+.vows-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.vows-header-left h3 {
+  margin: 0;
+  font-size: var(--font-lg, 1.25rem);
+  font-weight: var(--font-normal, 400);
+  color: var(--color-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vows-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.vows-header-right .btn {
+  width: var(--height-control);
+  min-width: var(--height-control);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vows-divider {
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--space-md) 0;
+  flex-shrink: 0;
+}
+
+.vows-text-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0;
+  padding-bottom: var(--space-md);
+}
+
+.vows-text {
+  color: var(--color-on-surface);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  transition: opacity 0.3s ease;
+  font-size: var(--font-md, 1rem);
+  font-weight: 300;
+}
+

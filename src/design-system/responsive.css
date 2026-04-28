@@ -1,0 +1,1200 @@
+/* ============================================
+   RESPONSIVE - Узкие экраны (≤ 1100px)
+   Агрессивные универсальные правила с !important
+   ============================================ */
+
+@media (max-width: 1100px) {
+  /* 0. Скрыть вертикальный скроллбар на узких экранах */
+  * {
+    scrollbar-width: none !important;
+  }
+  *::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* 0.5. Верхнее и нижнее меню как панели без отступов и округлений */
+  .top-navigation {
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .top-navigation-calendar {
+    padding: 0 !important;
+    border-radius: 0 !important;
+    gap: 0 !important;
+  }
+  
+  .bottom-navigation,
+  .bottom-navigation-with-labels {
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Заголовок секции: без боковых отступов, но оставляем нижний — иначе прилипает к списку */
+  .section-header {
+    padding: 0 0 var(--space-sm) 0 !important;
+    margin: 0 !important;
+  }
+  
+  .section-header::after {
+    display: none !important;
+  }
+
+  /* 1. ВСЕ GRID → ОДНА КОЛОНКА (агрессивно). Второй ряд главной — flex, не grid. */
+  .layout-sidebar,
+  .page-rituals.layout-sidebar,
+  .page-diary.layout-sidebar,
+  .page-ranks.layout-sidebar,
+  .layout-control-panel,
+  .goals-modal-columns {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto !important;
+  }
+  
+  /* Секция с диаграммой - всегда в одну строку на десктопе */
+  /* .category-progress-top-grid, .category-progress-bottom-grid, .time-stats-container - оставляем как есть */
+
+  /* Категории задач - 2 колонки на узких экранах, если места достаточно */
+  /* JS логика в TasksCategoriesSection.js будет динамически управлять количеством колонок */
+  .tasks-categories-container {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto auto;
+  }
+
+  /* 2. ВСЕ FLEX ROW → COLUMN */
+  .layout-row,
+  .stats-pie-chart-container,
+  .tasks-categories-section {
+    flex-direction: column !important;
+  }
+
+  /* 3. УБРАТЬ ВСЕ ОГРАНИЧЕНИЯ ВЫСОТЫ (агрессивно) */
+  .layout-sidebar,
+  .layout-control-panel,
+  .layout-main,
+  .page-rituals,
+  .page-diary,
+  .page-ranks {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Главная: оба ряда по высоте контента — иначе 1fr + flex:1 у обёрток даёт наслоение секций */
+  .layout-main {
+    grid-template-rows: auto auto !important;
+  }
+
+  /* Обёртки опциональных секций: не растягивать на долю высоты колонки/ряда */
+  .page-section-wrap {
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    min-height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: relative;
+    overflow: visible;
+  }
+
+  /* layout.css задаёт flex:1 на .page-section-wrap > .section (после responsive) — снимаем на узких */
+  .page-section-wrap > .section:not(.modern-settings-panel) {
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    min-height: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+  }
+
+  .layout-main .layout-row:nth-child(2) > * {
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    min-height: auto !important;
+    width: 100% !important;
+  }
+
+  /* Ряды главной не тянуться на долю сетки — высота по контенту */
+  .layout-main > .layout-row {
+    flex: none !important;
+    min-height: auto !important;
+  }
+
+  /* 4. SIDEBAR КОНТЕЙНЕРЫ → 100% ШИРИНА */
+  .layout-sidebar-left,
+  .layout-sidebar-right {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  /* 5. ВСЕ СЕКЦИИ → МАКСИМАЛЬНАЯ ВЫСОТА ЭКРАНА (агрессивно перекрывает inline стили) */
+  /* Исключаем modern-settings-panel из общего правила, чтобы не обрезался верх */
+  .section:not(.modern-settings-panel),
+  .layout-section .section:not(.modern-settings-panel),
+  .layout-sidebar-left .section:not(.modern-settings-panel),
+  .layout-sidebar-right .section:not(.modern-settings-panel),
+  .layout-control-panel .layout-panel-left .section:not(.modern-settings-panel),
+  .layout-control-panel .layout-panel-right .section:not(.modern-settings-panel) {
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: calc(93vh - 36px) !important; /* Высота экрана минус titlebar */
+    overflow-y: auto !important; /* Вертикальная прокрутка при необходимости */
+    overflow-x: visible !important;
+    contain: none !important; /* Убираем contain для адаптивности */
+  }
+
+  /*
+   * Короткие секции без внутренней прокрутки: высота по контенту.
+   * (Иначе max-height 93vh + overflow-y даёт лишний скролл у «Ранг», «Управление» статистики, диаграммы на главной.)
+   */
+  .page-ranks .layout-sidebar-left > .page-section-wrap > .section,
+  .page-stats.layout-control-panel .layout-panel-left > .section,
+  .page-main .page-section-wrap[data-page-section="home.categoryProgressChart"] > .section {
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow: visible !important;
+  }
+
+  /* Секции в settings-content не должны иметь ограничение высоты на узких экранах */
+  /* Это переопределяет правило выше для секций настроек */
+  .settings-content > .section {
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow: visible !important;
+    height: auto !important;
+    flex: none !important;
+  }
+
+  /* Секции с cfg-list должны показывать весь контент на узких экранах */
+  .section > .cfg-list {
+    overflow-y: visible !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Исключение для modern-settings-panel - не ограничиваем высоту, показываем всё */
+  .modern-settings-panel.section,
+  .section.modern-settings-panel,
+  .modern-settings-panel {
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important; /* Без ограничения высоты */
+    overflow-y: visible !important; /* Показываем всё содержимое */
+    overflow-x: visible !important;
+    overflow: visible !important;
+    contain: none !important;
+  }
+
+  /* 6. RANK SECTION - СПЕЦИАЛЬНЫЕ ПРАВИЛА */
+  .layout-sidebar-left .section .rank-content,
+  .layout-sidebar-right .section .rank-content {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .rank-section {
+    flex: none !important;
+    min-height: 0 !important;
+  }
+
+  /* 7. ДНЕВНИК - УВЕЛИЧИТЬ ВЫСОТУ ПОЛЯ ВВОДА И КОНТЕЙНЕРА */
+  .page-diary .layout-sidebar-left .section textarea,
+  .page-diary .section textarea {
+    min-height: 50vh !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* ДНЕВНИК - УВЕЛИЧИТЬ ВЫСОТУ КОНТЕЙНЕРА ТЕКСТА */
+  .page-diary .layout-sidebar-left .section > div {
+    min-height: 50vh !important;
+  }
+
+  .page-diary .layout-sidebar-left .section {
+    min-height: 60vh !important;
+  }
+
+  /* 8. УБРАТЬ ФИКСИРОВАННЫЕ ШИРИНЫ */
+  .layout-control-panel .layout-panel-left {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .layout-control-panel .layout-panel-right {
+    padding-right: 0 !important;
+    overflow-y: visible !important;
+  }
+
+  /* 9. ФОРМЫ → ВЕРТИКАЛЬНО */
+  .settings-field {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: var(--space-xs) !important;
+    padding: var(--space-sm) 0 !important;
+  }
+
+  .settings-field-label {
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: unset !important;
+    padding-right: 0 !important;
+    padding-bottom: var(--space-xs) !important;
+  }
+
+  .settings-field-control {
+    width: 100% !important;
+  }
+
+  /* Настройки - улучшенные отступы на узких экранах */
+  .modern-settings-content {
+    padding: var(--space-md) !important;
+    gap: var(--space-md) !important;
+  }
+
+  .settings-category {
+    gap: var(--space-sm) !important;
+  }
+
+  .settings-category-title {
+    padding-bottom: var(--space-xs) !important;
+  }
+
+  /* Блок управления БД на узких экранах */
+  .database-management-block {
+    flex-direction: column !important;
+    gap: var(--space-xs) !important;
+  }
+
+  .database-management-button {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  /* 10. ТАБЛИЦЫ → ГОРИЗОНТАЛЬНАЯ ПРОКРУТКА */
+  .stats-table,
+  .points-history-content,
+  .showcase-table,
+  .visual-system-table {
+    overflow-x: auto !important;
+  }
+
+  /* 11. СПЕЦИФИЧНЫЕ ПРАВИЛА */
+  .layout-main .layout-row:nth-child(2) {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .page-settings.layout-control-panel,
+  .page-stats.layout-control-panel {
+    height: auto !important;
+    min-height: auto !important;
+    overflow-y: visible !important;
+  }
+
+  .stats-pie-chart-wrapper,
+  .stats-pie-chart-list {
+    flex: none !important;
+  }
+
+  .tasks-category-card {
+    min-width: 100% !important;
+  }
+
+  /* 12. Диаграмма прогресса на главной — компактно по центру, без растягивания на всю ширину колонки */
+  .page-main .category-progress-unified-container {
+    align-items: center !important;
+  }
+
+  .page-main .category-progress-chart-wrapper {
+    width: 100% !important;
+    max-width: min(100%, 22rem) !important;
+    min-height: 0 !important;
+    flex: 0 0 auto !important;
+    aspect-ratio: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: var(--space-sm) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .page-main .category-progress-chart-wrapper canvas {
+    aspect-ratio: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: min(52vw, 20rem) !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    object-fit: contain !important;
+  }
+
+  /* 12a. Карточки задач с прогрессом — колоночный layout на узких экранах */
+  
+  /* Изменяем пропорцию grid на узких экранах: больше места для задач */
+  .timer-unified-content {
+    grid-template-rows: 1fr 1.5fr !important;
+  }
+  
+  .act-card:has(.tasks-task-right) {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    min-height: auto !important;
+  }
+  .act-card:has(.tasks-task-right) [data-part="left"] {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+  .act-card:has(.tasks-task-right) .tasks-task-right {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+  .act-card:has(.tasks-task-right) .act-card-content {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-sm) !important;
+    min-width: 0 !important;
+    min-height: auto !important;
+    flex: 1 1 auto !important;
+  }
+  .act-card:has(.tasks-task-right) .act-card-content > div:first-child {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    padding-right: 0 !important;
+    min-width: 0 !important;
+  }
+  .act-card:has(.tasks-task-right) .act-card-content .tasks-task-right {
+    padding: var(--space-xs) 0 0 !important;
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-xs);
+  }
+  .act-card:has(.tasks-task-right) .act-card-content .tasks-task-right .goals-progress-cells {
+    width: 100% !important;
+    min-height: 16px !important;
+  }
+  .act-card:has(.tasks-task-right) .act-card-title {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+  }
+
+  /* 12b. Модальное окно календаря — адаптация */
+  .calendar-modal-overlay {
+    padding: 0 !important;
+  }
+  .calendar-modal-overlay .fullscreen-modal-content {
+    padding: var(--space-sm) !important;
+    margin: 0 !important;
+  }
+  .calendar-modal-header {
+    flex-wrap: wrap !important;
+    gap: var(--space-sm) !important;
+    padding: var(--space-sm) !important;
+  }
+  .calendar-modal-header::after {
+    display: none !important;
+  }
+  .calendar-modal-header-section {
+    flex: 1 1 100% !important;
+    justify-content: center !important;
+  }
+  .calendar-modal-nav-section {
+    order: 1;
+    padding-right: 0 !important;
+  }
+  .calendar-modal-data-section {
+    order: 2;
+    justify-content: stretch !important;
+    align-items: stretch !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  .calendar-modal-month-title {
+    min-width: 0 !important;
+    font-size: var(--font-md) !important;
+  }
+  .calendar-modal-data-section .custom-select-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  .calendar-modal-data-section .custom-select {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .calendar-modal-weekdays {
+    padding: var(--space-xs) var(--space-sm) !important;
+    font-size: var(--font-xs) !important;
+  }
+  .calendar-modal-grid {
+    padding: var(--space-sm) !important;
+    gap: 2px !important;
+  }
+  .calendar-modal-cell {
+    padding: var(--space-xs) !important;
+    gap: 6px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: space-between !important;
+  }
+  /* Число и замок в одну линию — визуально стабильнее, чем колонкой */
+  .calendar-modal-cell-top {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: var(--space-xs) !important;
+    width: 100% !important;
+  }
+  .calendar-modal-cell-day-number {
+    font-size: var(--font-sm) !important;
+    line-height: 1.1 !important;
+    min-width: 0 !important;
+  }
+  .calendar-modal-cell-lock {
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+  }
+  .calendar-modal-cell-bottom {
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  .calendar-modal-cell-percent {
+    font-size: var(--font-xs) !important;
+    justify-content: center !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+  .calendar-modal-cell-percent .calendar-cell-data-icon {
+    width: 12px !important;
+    height: 12px !important;
+    flex-shrink: 0 !important;
+  }
+  .calendar-modal-day-summary {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 5rem), 1fr)) !important;
+    justify-content: stretch !important;
+    align-items: stretch !important;
+    gap: var(--space-xs) !important;
+    padding: var(--space-xs) !important;
+    overflow-x: visible !important;
+  }
+  .calendar-modal-day-summary-item {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: var(--space-xs) 2px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 12c. Ячейки календаря в верхней панели — компактно, по центру */
+  .top-navigation-calendar {
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+  .top-navigation-calendar .calendar-cell {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: var(--space-xs) !important;
+    gap: 2px !important;
+    text-align: center !important;
+    border-radius: 0 !important;
+  }
+  .top-navigation-calendar .calendar-cell-top {
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: var(--space-xs) !important;
+  }
+  .top-navigation-calendar .calendar-cell-bottom {
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .top-navigation-calendar .calendar-cell-day-of-week {
+    font-size: var(--font-xs) !important;
+  }
+  .top-navigation-calendar .calendar-cell-day-number {
+    font-size: var(--font-sm) !important;
+  }
+  .top-navigation-calendar .calendar-cell-percent {
+    font-size: var(--font-xs) !important;
+    justify-content: center !important;
+  }
+  .top-navigation-calendar .calendar-cell-percent .calendar-cell-data-icon {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  /* 13. НИЖНЕЕ МЕНЮ - ТОЛЬКО ИКОНКИ НА УЗКИХ ЭКРАНАХ, НО КНОПКИ НА ВСЮ ШИРИНУ */
+  .bottom-navigation .radio-button.radio-button--nav .radio-button-content {
+    gap: 0 !important;
+  }
+  
+  .bottom-navigation .radio-button.radio-button--nav .radio-button-content::after {
+    content: '';
+    display: none !important;
+  }
+  
+  .bottom-navigation .radio-button.radio-button--nav .radio-button-content > *:not(.radio-button-icon) {
+    display: none !important;
+  }
+  
+  /* Иконки без подписей, но кнопки растягиваются на всю доступную ширину */
+  .bottom-navigation .radio-button.radio-button--nav {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  
+  /* Верхняя/нижняя полоса: общий фон под ячейками (промежутки gap не «в никуда») */
+  .top-navigation {
+    background-color: var(--color-surface) !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+
+  /* На узкой полосе прогресс в ячейке слишком шумный — ячейки остаются с фоном/рамкой из calendar-cell.css */
+  .top-navigation-calendar .calendar-cell-progress-bar {
+    display: none !important;
+  }
+
+  .top-navigation-calendar .calendar-cell {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: 1px solid var(--color-border) !important;
+    border-top: none !important;
+    border-bottom: none !important;
+  }
+
+  .top-navigation-calendar .calendar-cell:first-child {
+    border-left: 1px solid var(--color-border) !important;
+  }
+
+  .bottom-navigation,
+  .bottom-navigation-with-labels {
+    background-color: var(--color-surface) !important;
+    border-top: 1px solid var(--color-border) !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav {
+    border-radius: 0 !important;
+    border-top: none !important;
+    border-bottom: none !important;
+  }
+
+  /* Линии между вкладками: промежуток 1px цвета границы */
+  .bottom-navigation .radio-button-group,
+  .bottom-navigation-with-labels .radio-button-group {
+    justify-content: stretch !important;
+    width: 100% !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    background-color: transparent !important;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav {
+    border-left: none !important;
+    border-right: 1px solid var(--color-border) !important;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav:first-child,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav:first-child {
+    border-left: 1px solid var(--color-border) !important;
+  }
+}
+
+/* ============================================
+   УЗКИЕ ЭКРАНЫ (401–600px)
+   Модалки и список задач таймера адаптивны
+   ============================================ */
+
+@media (max-width: 600px) {
+  /* Модальные окна */
+  .modal-content,
+  .fullscreen-modal-content {
+    max-width: calc(100vw - var(--space-md) * 2) !important;
+    width: 100% !important;
+    margin: 0 var(--space-sm) !important;
+    box-sizing: border-box;
+  }
+
+  .cfg-modal-content,
+  .transaction-modal-content,
+  .edit-modal-content,
+  .diary-entry-modal-content,
+  .timer-session-modal-content,
+  .icon-picker-modal-content,
+  .description-editor-modal-content,
+  .goals-modal-content,
+  .calendar-modal-content,
+  .nutrition-entry-modal-content,
+  .nutrition-modal-content,
+  .db-modal,
+  .nav-order-modal-content {
+    min-width: 0 !important;
+    max-width: calc(100vw - var(--space-md) * 2) !important;
+    width: 100% !important;
+  }
+
+  .modal-header {
+    flex-wrap: wrap !important;
+  }
+
+  .modal-title {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    min-width: 0 !important;
+  }
+
+  .modal-body {
+    overflow-x: hidden !important;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap !important;
+  }
+
+  .goals-modal-columns {
+    flex-direction: column !important;
+  }
+
+  /* Модалка БД (.db-modal) */
+  .db-modal__header.modal-header {
+    padding-bottom: var(--space-xs) !important;
+  }
+
+  .db-modal__footer.modal-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-xs) !important;
+  }
+
+  .db-modal__footer-group--right {
+    margin-left: 0 !important;
+    justify-content: flex-start !important;
+    flex: none !important;
+    width: 100% !important;
+  }
+
+  .db-modal__footer-group--left {
+    width: 100% !important;
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-border) !important;
+  }
+
+  .db-modal__stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .db-modal__stat--full {
+    grid-column: 1 !important;
+  }
+
+  .db-modal__stat {
+    width: 100% !important;
+  }
+
+  .db-modal__tables {
+    grid-template-columns: 1fr !important;
+  }
+
+  .db-modal__scroll {
+    padding: var(--space-sm) !important;
+  }
+
+  .db-modal__row {
+    flex-wrap: wrap !important;
+    gap: var(--space-xs) !important;
+  }
+
+  .db-modal__row-main {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  .modal-footer .db-modal__btn {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  /* Календарь — ещё компактнее на 600px */
+  .calendar-modal-cell-day-number {
+    font-size: var(--font-xs) !important;
+  }
+  .calendar-modal-cell-percent {
+    font-size: var(--font-xs) !important;
+  }
+
+  /* Заголовки секций и списков — перенос при нехватке места */
+  .section-header {
+    flex-wrap: wrap !important;
+  }
+
+  .section-header-left .page-title,
+  .section > .page-title {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .act-list-header,
+  .cfg-list-header {
+    flex-wrap: wrap !important;
+  }
+
+  .act-list-title,
+  .cfg-list-title {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ============================================
+   ОЧЕНЬ УЗКИЕ ЭКРАНЫ (≤ 400px)
+   Без горизонтальной прокрутки, перенос текста
+   ============================================ */
+
+@media (max-width: 400px) {
+  /* 1. ЗАПРЕТ ГОРИЗОНТАЛЬНОЙ ПРОКРУТКИ */
+  .page-content,
+  .layout-container,
+  .page {
+    overflow-x: hidden !important;
+  }
+
+  .layout-container {
+    max-width: 100vw !important;
+  }
+
+  /* 1a. Календарь — максимально компактно */
+  .calendar-modal-overlay {
+    padding: 0 !important;
+  }
+  .calendar-modal-overlay .fullscreen-modal-content {
+    padding: var(--space-xs) !important;
+  }
+  .calendar-modal-grid {
+    padding: var(--space-xs) !important;
+    gap: 1px !important;
+  }
+  .calendar-modal-cell {
+    min-height: 2.75rem !important;
+  }
+  .calendar-modal-cell-top {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+  .calendar-modal-cell-day-number {
+    font-size: var(--font-xs) !important;
+  }
+  .calendar-modal-cell-percent {
+    font-size: var(--font-xs) !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  .calendar-modal-cell-percent .calendar-cell-data-icon {
+    width: 11px !important;
+    height: 11px !important;
+  }
+  .calendar-modal-day-summary {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.75rem), 1fr)) !important;
+    padding: 6px !important;
+    gap: 6px !important;
+  }
+
+  /* Ячейки календаря в верхней панели — ещё компактнее */
+  .top-navigation-calendar .calendar-cell {
+    padding: var(--space-xs) !important;
+  }
+  .top-navigation-calendar .calendar-cell-day-of-week,
+  .top-navigation-calendar .calendar-cell-day-number {
+    font-size: 9px !important;
+  }
+  .top-navigation-calendar .calendar-cell-percent {
+    font-size: 8px !important;
+  }
+
+  /* 2. ЗАГОЛОВКИ СЕКЦИЙ — ПЕРЕНОС НА НЕСКОЛЬКО СТРОК */
+  .section-header {
+    flex-wrap: wrap !important;
+  }
+
+  .section-header-left {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  .section-header-left .page-title,
+  .section > .page-title {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    text-overflow: unset !important;
+  }
+
+  .section-header-right {
+    flex: 0 0 auto !important;
+  }
+
+  /* 3. ЗАГОЛОВКИ СПИСКОВ — ПЕРЕНОС */
+  .act-list-header,
+  .cfg-list-header {
+    flex-wrap: wrap !important;
+    gap: var(--space-xs) !important;
+  }
+
+  .act-list-title,
+  .cfg-list-title {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* 4. КАТЕГОРИИ ЗАДАЧ — ОДНА КОЛОНКА */
+  .tasks-categories-container {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+  }
+
+  .tasks-category-card {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 5. КАРТОЧКИ — ПЕРЕНОС ТЕКСТА, УБИРАЕМ ЖЁСТКИЕ MIN-WIDTH */
+  .act-card-title {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    -webkit-line-clamp: 3 !important;
+    line-clamp: 3 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .act-card-content {
+    flex-wrap: wrap !important;
+  }
+
+  /* 6. ПЛАНЫ НА ДЕНЬ — УМЕНЬШАЕМ MIN-WIDTH КОНТРОЛОВ */
+  .plans-card-controls {
+    min-width: 0 !important;
+    flex-wrap: wrap !important;
+  }
+
+  .plans-card-actions-group {
+    flex-wrap: wrap !important;
+  }
+
+  /* 7. CARD-GROUP — КАРТОЧКИ МОГУТ СЖИМАТЬСЯ */
+  .card-group .card-item {
+    min-width: 80px !important;
+    max-width: 100% !important;
+  }
+
+  /* 8. CFG-CARD, ACT-CARD — ГИБКИЕ РАЗМЕРЫ */
+  .act-card-controls .select {
+    min-width: 80px !important;
+  }
+
+  .cfg-card {
+    min-width: 0 !important;
+  }
+
+  /* 9. СЕКЦИИ И LAYOUT — ШИРИНА 100% */
+  .layout-section,
+  .layout-row,
+  .section {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* 10. Диаграмма на главной — ещё компактнее на очень узкой ширине */
+  .page-main .category-progress-chart-wrapper {
+    max-width: min(100%, 19rem) !important;
+  }
+
+  .page-main .category-progress-chart-wrapper canvas {
+    max-height: min(48vw, 17rem) !important;
+  }
+
+  /* 11. ФИЛЬТР СТАТИСТИКИ И AMBIENT-ПАНЕЛЬ */
+  .stats-filter-control .custom-select-wrapper,
+  .stats-filter-control select {
+    min-width: 0 !important;
+  }
+
+  .timer-fullscreen-ambient-panel {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .timer-fullscreen-ambient-section {
+    min-width: 0 !important;
+  }
+
+  .timer-fullscreen-ambient-select-wrapper {
+    min-width: 0 !important;
+  }
+
+  /* 12. МОДАЛЬНЫЕ ОКНА — АДАПТАЦИЯ */
+  .modal-content,
+  .fullscreen-modal-content {
+    max-width: calc(100vw - var(--space-md) * 2) !important;
+    width: calc(100vw - var(--space-md) * 2) !important;
+    margin: 0 var(--space-sm) !important;
+    padding: var(--space-sm) !important;
+  }
+
+  .cfg-modal-content,
+  .transaction-modal-content,
+  .edit-modal-content,
+  .diary-entry-modal-content,
+  .timer-session-modal-content,
+  .icon-picker-modal-content,
+  .description-editor-modal-content,
+  .goals-modal-content,
+  .calendar-modal-content,
+  .nutrition-entry-modal-content,
+  .nutrition-modal-content,
+  .db-modal,
+  .nav-order-modal-content {
+    min-width: 0 !important;
+    max-width: calc(100vw - var(--space-md) * 2) !important;
+    width: calc(100vw - var(--space-md) * 2) !important;
+  }
+
+  .nav-order-modal-item {
+    padding: var(--space-sm) var(--space-sm) !important;
+  }
+
+  .modal-header {
+    flex-wrap: wrap !important;
+    gap: var(--space-xs) !important;
+  }
+
+  .modal-title {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .modal-body {
+    overflow-x: hidden !important;
+  }
+
+  .modal-footer {
+    flex-wrap: wrap !important;
+    gap: var(--space-xs) !important;
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .modal-footer .db-modal__btn {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  /* Элементы внутри модалок — перенос */
+  .transaction-modal-content .transaction-type-section .card-group,
+  .transaction-modal-content .category-section .card-group {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .goals-modal-columns {
+    flex-direction: column !important;
+  }
+
+  .db-modal__scroll {
+    padding: var(--space-xs) !important;
+  }
+
+  .db-modal__btn {
+    padding: 0 var(--space-xs) !important;
+    font-size: var(--font-xs) !important;
+  }
+}
+
+/* ============================================
+   MOBILE NAVIGATION (≤640px) — полоса на всю ширину, фон и разделители как в блоке ≤1100px
+   ============================================ */
+
+@media (max-width: 640px) {
+  .top-navigation,
+  .bottom-navigation,
+  .bottom-navigation-with-labels {
+    background-color: var(--color-surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .top-navigation {
+    margin: 0 !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page-content {
+    padding-top: calc(var(--layout-title-bar-height) + var(--layout-nav-top-height) + var(--space-sm)) !important;
+  }
+
+  .bottom-navigation,
+  .bottom-navigation-with-labels {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border-top: 1px solid var(--color-border) !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+
+  .bottom-navigation .radio-button-group,
+  .bottom-navigation-with-labels .radio-button-group {
+    gap: 0 !important;
+    background-color: transparent !important;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav {
+    flex: 1;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav .radio-button-content,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav .radio-button-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav .radio-button-icon,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav .radio-button-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav:has(input[type="radio"]:checked),
+  .bottom-navigation-with-labels .radio-button.radio-button--nav:has(input[type="radio"]:checked) {
+    background-color: var(--color-accent-ui) !important;
+    border-color: var(--color-accent-ui) !important;
+    color: var(--color-on-accent) !important;
+    box-shadow: none !important;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav:has(input[type="radio"]:checked) .radio-button-content,
+  .bottom-navigation .radio-button.radio-button--nav:has(input[type="radio"]:checked) .radio-button-icon,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav:has(input[type="radio"]:checked) .radio-button-content,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav:has(input[type="radio"]:checked) .radio-button-icon {
+    color: var(--color-on-accent) !important;
+  }
+}
+
+/* Small tablets and large phones (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Карточки задач на узких экранах должны быть вертикальные */
+  .act-card:has(.tasks-task-right) [data-part="left"] {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+  
+  .act-card:has(.tasks-task-right) .tasks-task-right {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    padding: var(--space-xs) 0 0 !important;
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-xs);
+  }
+  
+  .act-card:has(.tasks-task-right) .act-card-content {
+    flex-direction: column !important;
+    gap: var(--space-sm) !important;
+  }
+}
+
+/* Extra small mobile (<480px) */
+@media (max-width: 480px) {
+  .bottom-navigation .radio-button.radio-button--nav,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav {
+    min-width: 40px;
+    height: 40px;
+  }
+
+  .bottom-navigation .radio-button.radio-button--nav .radio-button-icon,
+  .bottom-navigation-with-labels .radio-button.radio-button--nav .radio-button-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+

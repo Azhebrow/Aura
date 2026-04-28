@@ -1,0 +1,113 @@
+/* Визуальная система - таблица настроек */
+.visual-system-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.visual-system-table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+  box-sizing: border-box;
+  table-layout: auto;
+}
+
+.visual-system-row {
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.visual-system-row:last-child {
+  border-bottom: none;
+}
+
+.visual-system-label {
+  padding: var(--space-md);
+  font-weight: var(--font-medium);
+  color: var(--color-on-surface);
+  min-width: 120px;
+  max-width: 200px;
+  vertical-align: top;
+  border-right: var(--border-width) solid var(--color-border);
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.visual-system-control {
+  padding: var(--space-md);
+  vertical-align: top;
+  box-sizing: border-box;
+  min-width: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Переключатель тем использует стандартные стили RadioButton */
+
+/* Выбор акцентного цвета использует стили CardGroup */
+
+/* Контролы радиусов */
+.radius-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.radius-control-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.radius-label {
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-sm);
+  color: var(--color-on-surface);
+  opacity: 0.7;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.radius-value {
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-sm);
+  color: var(--color-on-surface);
+  min-width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Контролы отступов */
+.spacing-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.spacing-control-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.spacing-label {
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-sm);
+  color: var(--color-on-surface);
+  opacity: 0.7;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.spacing-value {
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-sm);
+  color: var(--color-on-surface);
+  min-width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+

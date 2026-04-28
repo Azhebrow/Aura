@@ -1,0 +1,200 @@
+.section {
+  /* Панель секции: полупрозрачная заливка + размытие (базовый тинт в --color-section-background для контраста/графиков) */
+  background-color: var(--color-section-fill, var(--color-section-background));
+  color: var(--color-on-section, var(--color-on-surface));
+  /* Дочерние элементы с var(--color-on-surface*) читают контраст к панели, а не к page surface */
+  --color-on-surface: var(--color-on-section, var(--color-on-surface));
+  --color-on-surface-secondary: var(--color-on-section-secondary, var(--color-on-surface-secondary));
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  min-height: 0;
+  max-height: 100%;
+  font-size: var(--font-sm);
+  font-weight: var(--font-normal);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  overflow-y: auto;
+  overflow-x: visible;
+
+  box-shadow: var(--shadow-section-level);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Секции с gap: 0 не должны расширяться из-за gap */
+.section[style*="gap: 0"] {
+  gap: 0;
+}
+
+/* Убираем gap в секциях с таблицами */
+.section:has(.stats-content),
+.section:has(.points-history-content) {
+  gap: 0;
+}
+
+/* Секции в flex-контейнерах должны растягиваться на всю высоту */
+:where(.layout-sidebar-left, .layout-panel-right, .layout-row, .layout-section) > .section {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Секции в settings-content имеют высоту по содержимому на узких экранах */
+.settings-content > .section {
+  flex: none !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important; /* Убираем ограничение по высоте на узких экранах */
+  overflow: visible !important; /* Показываем всё содержимое на узких экранах */
+  overflow-y: visible !important;
+}
+
+/* На широких экранах - растягиваются на всю доступную высоту */
+@media (min-width: 1101px) {
+  .settings-content > .section {
+    flex: 1 !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* Секция с категориями задач не должна растягиваться */
+:where(.layout-sidebar-left, .layout-panel-right, .layout-row, .layout-section, .settings-content) > .section:has(.tasks-categories-section) {
+  flex: none;
+  min-height: auto;
+}
+
+/* Секция с легендой графиков не должна растягиваться */
+:where(.layout-sidebar-left, .layout-panel-right, .layout-row, .layout-section, .settings-content) > .section:has(.stats-legend-container) {
+  flex: none;
+  min-height: auto;
+}
+
+/* Контейнер заголовка секции */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  padding-bottom: var(--space-md);
+  margin-bottom: 0;
+  min-width: 0;
+  /* Не обрезаем бейджи и переносы — клип только у самого заголовка h2 */
+  overflow: visible;
+  /* Заголовок секции не должен сжиматься при переполнении контента ниже */
+  flex: 0 0 auto;
+  flex-shrink: 0;
+}
+
+/* Разделительная линия после заголовка секции */
+.section-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+/* Левая часть заголовка: иконки + название */
+.section-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 0%;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Заголовок + бейджи (Финансы и др.): перенос строки вместо обрезки */
+.section-header-left:has(.section-header-badges) {
+  flex-wrap: wrap;
+  row-gap: var(--space-xs);
+  align-items: center;
+}
+
+/* Заголовок внутри левой части */
+.section-header-left .page-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Правая часть заголовка: элементы действий */
+.section-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Кнопки в заголовке не должны выходить за границы */
+.section-header-right .btn {
+  flex-shrink: 0;
+  width: var(--height-control);
+  min-width: var(--height-control);
+  max-width: var(--height-control);
+}
+
+/* Если заголовок без контейнера (старый вариант для обратной совместимости) */
+.section > .page-title {
+  margin: 0;
+  padding-bottom: var(--space-md);
+  position: relative;
+}
+
+.section > .page-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+/* Секция с категориями задач - невидимая, без границ и фона, адаптивная высота */
+.section:has(.tasks-categories-section) {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  min-height: auto;
+  max-height: none;
+  height: auto;
+  flex: none;
+  overflow: visible;
+  box-shadow: none;
+}
+
+/* Правая панель дневника: вложенная секция (питание / записи) без своих границ и отступов */
+.page-diary .diary-content-container > .section {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  gap: 0;
+}
+
+/* Контейнер контента секции */
+.section-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--space-md);
+}

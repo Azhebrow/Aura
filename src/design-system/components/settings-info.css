@@ -1,0 +1,157 @@
+/* Информационные блоки-подсказки в секциях настроек */
+
+/* Секция с информационным блоком: список показывается полностью (без своей прокрутки), инфоблок внизу содержимого; при переполнении прокручивается вся секция */
+@media (min-width: 1101px) {
+  .section:has(.settings-info-block) > .cfg-list {
+    flex: none;
+    min-height: auto;
+    overflow-y: visible;
+    max-height: none;
+  }
+}
+
+/* На узких экранах - показываем всё содержимое */
+@media (max-width: 1100px) {
+  .section:has(.settings-info-block) {
+    overflow: visible !important;
+  }
+
+  .section:has(.settings-info-block) > .cfg-list {
+    flex: none !important;
+    min-height: auto !important;
+    overflow-y: visible !important;
+    overflow: visible !important;
+  }
+}
+
+.section:has(.settings-info-block) .ambient-default-settings {
+  flex-shrink: 0;
+}
+
+/* Информационный блок всегда прижат к низу секции */
+.section:has(.settings-info-block) .settings-info-block {
+  margin-top: auto;
+}
+
+.settings-info-block {
+  flex-shrink: 0;
+  padding: var(--space-md);
+  background-color: var(--color-element);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: var(--font-sm);
+  color: var(--color-on-surface);
+  /* Тонкий шрифт для всей информационной секции */
+  font-weight: var(--font-weight-light, 300);
+  box-sizing: border-box;
+}
+
+.settings-info-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.settings-info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-on-surface);
+  opacity: 0.7;
+}
+
+.settings-info-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.settings-info-title {
+  /* Заголовок следует общему тонкому стилю секции */
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface);
+}
+
+.settings-info-description {
+  margin: 0 0 var(--space-sm) 0;
+  line-height: 1.5;
+  color: var(--color-on-surface);
+  opacity: 0.9;
+}
+
+.settings-info-tips {
+  margin: 0;
+  padding-left: var(--space-md);
+  list-style: disc;
+}
+
+.settings-info-tip {
+  margin-bottom: var(--space-xs);
+  line-height: 1.45;
+  color: var(--color-on-surface);
+  opacity: 0.85;
+}
+
+.settings-info-tip:last-child {
+  margin-bottom: 0;
+}
+
+/* Принудительно применяем тонкий вес ко всем внутренним текстовым элементам */
+
+/* Стили для настроек музыки по умолчанию */
+.ambient-default-settings {
+  padding: var(--space-md);
+  background-color: var(--color-element);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+}
+
+.ambient-default-settings-title {
+  margin: 0 0 var(--space-md) 0;
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface);
+}
+
+.ambient-default-settings-description {
+  font-weight: var(--font-weight-light, 300) !important;
+}
+
+.ambient-default-settings-fields {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.ambient-default-setting-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ambient-default-setting-label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface);
+  opacity: 0.9;
+}
+
+/* На маленьких экранах поля располагаются в колонку */
+@media (max-width: 600px) {
+  .ambient-default-settings-fields {
+    flex-direction: column;
+  }
+  
+  .ambient-default-setting-field {
+    flex: 1 1 auto;
+  }
+}
+
+.settings-info-block * {
+  font-weight: var(--font-weight-light, 300);
+}

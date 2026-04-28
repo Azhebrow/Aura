@@ -1,0 +1,127 @@
+/* ============================================
+   FALLBACK до ColorSystem.init() (первый кадр, без localStorage).
+   Значения цветов/теней синхронизированы с generateTokens(..., accent первого пресета, theme, subtle, 1).
+   При смене палитры в ColorSystem.js пересоберите: ColorSystem.getFallbackTokensForTheme('dark'|'light'|'dim') и синхронизируйте surface / section / card / calendar-cell / element-muted.
+   ============================================ */
+
+:root {
+  --color-surface: #181511;
+  --color-on-surface: #f3eee9;
+  --color-on-surface-secondary: rgba(243, 238, 233, 0.84);
+  --color-section-background: #231e1b;
+  --color-card-background: #2c2622;
+  --color-calendar-cell-background: rgba(35, 30, 27, 0.9);
+  --color-metric-negative: #d0cbc6;
+  --color-error: #b86547;
+  --color-accent: #722f37;
+  --color-accent-ui: var(--color-accent);
+  --color-on-accent-ui: var(--color-on-accent, #ffffff);
+  --color-element-muted: #351e1e;
+  --color-on-element-muted: #f3eee9;
+  --color-element-muted-hover: #432324;
+  --effect-glass-blur: 14px;
+  --effect-modal-backdrop-blur: 10px;
+  --effect-glass-background: color-mix(in srgb, var(--color-section-background) 88%, transparent);
+  --shadow-edge-sm: 2px 0 4px rgba(108, 45, 52, 0.11);
+  --shadow-edge-md: 2px 0 4px rgba(108, 45, 52, 0.15);
+  --shadow-edge-lg: 2px 0 6px rgba(108, 45, 52, 0.12);
+  --shadow-sticky-header: 2px 0 4px rgba(108, 45, 52, 0.16);
+  --shadow-sticky-date: 2px 0 6px rgba(108, 45, 52, 0.12);
+  --shadow-popover: 0 12px 16px rgba(108, 45, 52, 0.2);
+  --shadow-elevate-sm: 0 2px 4px rgba(108, 45, 52, 0.13);
+  --shadow-tooltip: 0 4px 12px rgba(108, 45, 52, 0.13);
+  --color-border-raised-muted: rgba(243, 238, 233, 0.07);
+  --color-border-raised-emphasis: rgba(243, 238, 233, 0.12);
+  --color-error-border-muted: rgba(184, 101, 71, 0.4);
+  --color-error-border-emphasis: rgba(184, 101, 71, 0.5);
+  --color-error-background-muted: rgba(184, 101, 71, 0.1);
+  --color-error-background-hover: rgba(184, 101, 71, 0.15);
+  --shadow-error-sm: 0 2px 4px rgba(184, 101, 71, 0.2);
+}
+
+[data-theme="light"] {
+  --color-surface: #f9f7f5;
+  --color-on-surface: #111111;
+  --color-on-surface-secondary: rgba(17, 17, 17, 0.75);
+  --color-section-background: #fcfafa;
+  --color-card-background: #f7f1ef;
+  --color-calendar-cell-background: #ffffff;
+  --color-metric-negative: #363635;
+  --color-error: #935139;
+  --color-element-muted: #e9dfde;
+  --color-on-element-muted: #111111;
+  --color-element-muted-hover: #e1d3d3;
+  --shadow-edge-sm: 2px 0 4px rgba(0, 0, 0, 0.06);
+  --shadow-edge-md: 2px 0 4px rgba(0, 0, 0, 0.1);
+  --shadow-edge-lg: 2px 0 6px rgba(0, 0, 0, 0.07);
+  --shadow-sticky-header: 2px 0 4px rgba(114, 47, 55, 0.12);
+  --shadow-sticky-date: 2px 0 6px rgba(114, 47, 55, 0.08);
+  --shadow-popover: 0 12px 16px rgba(0, 0, 0, 0.1);
+  --shadow-elevate-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-tooltip: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --color-border-raised-muted: rgba(17, 17, 17, 0.12);
+  --color-border-raised-emphasis: rgba(17, 17, 17, 0.2);
+  --color-error-border-muted: rgba(147, 81, 57, 0.4);
+  --color-error-border-emphasis: rgba(147, 81, 57, 0.5);
+  --color-error-background-muted: rgba(147, 81, 57, 0.1);
+  --color-error-background-hover: rgba(147, 81, 57, 0.15);
+  --shadow-error-sm: 0 2px 4px rgba(147, 81, 57, 0.2);
+}
+
+[data-theme="dark"] {
+  --color-surface: #181511;
+  --color-on-surface: #f3eee9;
+  --color-on-surface-secondary: rgba(243, 238, 233, 0.84);
+  --color-section-background: #231e1b;
+  --color-card-background: #2c2622;
+  --color-calendar-cell-background: rgba(35, 30, 27, 0.9);
+  --color-metric-negative: #d0cbc6;
+  --color-error: #b86547;
+  --color-element-muted: #351e1e;
+  --color-on-element-muted: #f3eee9;
+  --color-element-muted-hover: #432324;
+  --shadow-edge-sm: 2px 0 4px rgba(108, 45, 52, 0.11);
+  --shadow-edge-md: 2px 0 4px rgba(108, 45, 52, 0.15);
+  --shadow-edge-lg: 2px 0 6px rgba(108, 45, 52, 0.12);
+  --shadow-sticky-header: 2px 0 4px rgba(108, 45, 52, 0.16);
+  --shadow-sticky-date: 2px 0 6px rgba(108, 45, 52, 0.12);
+  --shadow-popover: 0 12px 16px rgba(108, 45, 52, 0.2);
+  --shadow-elevate-sm: 0 2px 4px rgba(108, 45, 52, 0.13);
+  --shadow-tooltip: 0 4px 12px rgba(108, 45, 52, 0.13);
+  --color-border-raised-muted: rgba(243, 238, 233, 0.07);
+  --color-border-raised-emphasis: rgba(243, 238, 233, 0.12);
+  --color-error-border-muted: rgba(184, 101, 71, 0.4);
+  --color-error-border-emphasis: rgba(184, 101, 71, 0.5);
+  --color-error-background-muted: rgba(184, 101, 71, 0.1);
+  --color-error-background-hover: rgba(184, 101, 71, 0.15);
+  --shadow-error-sm: 0 2px 4px rgba(184, 101, 71, 0.2);
+}
+
+[data-theme="dim"] {
+  --color-surface: #2e2a24;
+  --color-on-surface: #f4efe8;
+  --color-on-surface-secondary: rgba(244, 239, 232, 0.88);
+  --color-section-background: #3e372f;
+  --color-card-background: #4a4138;
+  --color-calendar-cell-background: rgba(62, 55, 47, 0.9);
+  --color-metric-negative: #d4cfc9;
+  --color-error: #b06145;
+  --color-element-muted: #402e2a;
+  --color-on-element-muted: #f4efe8;
+  --color-element-muted-hover: #482f2d;
+  --shadow-edge-sm: 2px 0 4px rgba(108, 46, 53, 0.09);
+  --shadow-edge-md: 2px 0 4px rgba(108, 46, 53, 0.12);
+  --shadow-edge-lg: 2px 0 6px rgba(108, 46, 53, 0.1);
+  --shadow-sticky-header: 2px 0 4px rgba(114, 47, 55, 0.1), 0 0 0 1px rgba(108, 46, 53, 0.04);
+  --shadow-sticky-date: 2px 0 6px rgba(114, 47, 55, 0.06), 0 0 0 1px rgba(108, 46, 53, 0.035);
+  --shadow-popover: 0 12px 16px rgba(108, 46, 53, 0.15);
+  --shadow-elevate-sm: 0 2px 4px rgba(108, 46, 53, 0.11);
+  --shadow-tooltip: 0 4px 12px rgba(108, 46, 53, 0.11);
+  --color-border-raised-muted: rgba(244, 239, 232, 0.09);
+  --color-border-raised-emphasis: rgba(244, 239, 232, 0.15);
+  --color-error-border-muted: rgba(176, 97, 69, 0.4);
+  --color-error-border-emphasis: rgba(176, 97, 69, 0.5);
+  --color-error-background-muted: rgba(176, 97, 69, 0.1);
+  --color-error-background-hover: rgba(176, 97, 69, 0.15);
+  --shadow-error-sm: 0 2px 4px rgba(176, 97, 69, 0.2);
+}

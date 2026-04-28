@@ -1,0 +1,108 @@
+/* ============================================
+   СТРЕЛКИ ПЕРЕКЛЮЧЕНИЯ (NAVIGATION ARROWS)
+   Унифицированные стили для всех стрелок переключения
+   ============================================ */
+
+.nav-arrow-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--height-control);
+  height: var(--height-control);
+  min-width: var(--height-control);
+  min-height: var(--height-control);
+  border-radius: var(--radius);
+  background-color: var(--color-element);
+  border: var(--border-width) solid var(--color-border);
+  color: var(--color-on-surface);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.nav-arrow-button:hover {
+  background-color: var(--color-element-hover);
+}
+
+.nav-arrow-button:active {
+  filter: brightness(0.9);
+}
+
+.nav-arrow-button:disabled {
+  background-color: var(--color-element-muted, var(--color-element));
+  color: var(--color-on-element-muted, var(--color-on-surface));
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.nav-arrow-button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Переопределяем стили для Button компонента, если он используется */
+.nav-arrow-button.btn {
+  width: var(--height-control);
+  height: var(--height-control);
+  min-width: var(--height-control);
+  min-height: var(--height-control);
+  padding: 0;
+  border-radius: var(--radius);
+}
+
+/* Варианты позиционирования */
+.nav-arrow-button.nav-arrow-inline {
+  position: static;
+  display: inline-flex;
+}
+
+.nav-arrow-button.nav-arrow-left {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.nav-arrow-button.nav-arrow-right {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* Для позиционированных стрелок убираем scale, оставляем только позиционирование */
+.nav-arrow-button.nav-arrow-left:hover {
+  transform: translateY(-50%);
+}
+
+.nav-arrow-button.nav-arrow-right:hover {
+  transform: translateY(-50%);
+}
+
+.nav-arrow-button.nav-arrow-left:active {
+  transform: translateY(-50%);
+}
+
+.nav-arrow-button.nav-arrow-right:active {
+  transform: translateY(-50%);
+}
+
+/* Компактный вариант для пагинации */
+.nav-arrow-button.nav-arrow-compact {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.nav-arrow-button.nav-arrow-compact svg {
+  width: 16px;
+  height: 16px;
+}

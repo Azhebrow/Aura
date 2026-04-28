@@ -1,0 +1,483 @@
+/* Базовая система layout для секций */
+
+/* Основной контейнер страниц */
+.layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: var(--space-md);
+  box-sizing: border-box;
+  overflow: visible; /* Тени могут выходить за пределы */
+}
+
+/* Скрытие опциональных секций (дети с этим классом не участвуют во flex/grid) */
+.page-section--hidden {
+  display: none !important;
+}
+
+/* Обёртка секции: тянется в flex-рядах главной и в колонках */
+.page-section-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.page-section-wrap > .section {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Sidebar layout для страниц Ритуалы, Дневник, Ранги */
+.layout-sidebar {
+  display: grid;
+  height: 100%;
+  grid-template-columns: 1fr 1fr; /* Две равные колонки */
+  gap: var(--space-md);
+  box-sizing: border-box;
+}
+
+/* Одна видимая колонка сайдбара — на всю ширину (иначе при display:none соседа остаётся пустая grid-трек) */
+.layout-sidebar.layout-sidebar--single-column {
+  grid-template-columns: 1fr;
+}
+
+.page-rituals .rituals-page-shell.layout-sidebar.layout-sidebar--single-column,
+.page-diary.layout-sidebar.layout-sidebar--single-column,
+.page-ranks.layout-sidebar.layout-sidebar--single-column {
+  grid-template-columns: 1fr;
+}
+
+/* Специфичный layout для страницы Ритуалы: ритуалы уже́, справа колонка шире */
+.page-rituals .rituals-page-shell.layout-sidebar {
+  grid-template-columns: 1fr 2fr;
+}
+
+/* Правая колонка: цели ~⅔ высоты, обеты ~⅓ */
+.page-rituals .layout-sidebar-right {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.page-rituals .layout-sidebar-right > .page-section-wrap[data-page-section='rituals.goals'] {
+  flex: 2 1 0;
+  min-height: 0;
+}
+
+.page-rituals .layout-sidebar-right > .page-section-wrap[data-page-section='rituals.vows'] {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* Специфичный layout для страницы Дневник: первая секция 2/3, вторая 1/3 */
+.page-diary.layout-sidebar {
+  grid-template-columns: 2fr 1fr; /* Первая секция две трети, вторая одна треть */
+}
+
+/* Специфичный layout для страницы Таймер: левая секция с двумя равными подсекциями */
+.page-timer.layout-sidebar {
+  grid-template-columns: 1fr 1fr; /* Две равные колонки */
+}
+
+/* Оптимизация для левой секции страницы таймеров */
+.page-timer .layout-sidebar-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden; /* Скрываем overflow на уровне контейнера */
+}
+
+/* Секции в левой части страницы таймеров должны равномерно распределяться */
+.page-timer .layout-sidebar-left .section {
+  flex: 1 1 50%; /* Равномерное распределение 50/50 */
+  min-height: 0;
+  max-height: none; /* Убираем ограничение maxHeight */
+  overflow: hidden; /* Скрываем overflow на уровне секции */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Секция таймера: атмосферный акцент цвета выбранной задачи */
+.timer-control-content.timer-control-content-has-accent {
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 45%,
+    color-mix(in srgb, var(--timer-accent) 6%, transparent),
+    transparent 65%
+  );
+  transition: background 0.3s ease;
+}
+
+.timer-control-content-has-accent .timer-display {
+  color: var(--timer-accent);
+}
+
+/* Строка задачи в таймере: иконка + название + целевое время */
+.timer-control-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.timer-control-task-icon {
+  width: var(--height-control);
+  height: var(--height-control);
+  min-width: var(--height-control);
+}
+
+.timer-control-task-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-on-surface-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timer-control-task-target {
+  font-size: var(--font-xs, 0.75rem);
+  color: var(--color-on-surface-secondary);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.layout-sidebar-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  overflow: visible; /* Тени могут выходить за пределы */
+}
+
+.layout-sidebar-left .section {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.layout-sidebar-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-height: 0; /* Позволяет сжиматься */
+  overflow: visible; /* Тени могут выходить за пределы */
+}
+
+.layout-sidebar-right .section {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto; /* Скролл только по вертикали */
+  overflow-x: visible; /* Тени могут выходить за пределы */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Control panel layout для страниц Статистика и Настройки */
+.layout-control-panel {
+  display: grid;
+  height: 100%;
+  grid-template-columns: minmax(280px, 320px) 1fr; /* Фиксированная ширина левой панели */
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: visible; /* Тени могут выходить за пределы */
+  overflow-y: visible;
+}
+
+.layout-control-panel .layout-panel-left {
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  border-radius: var(--radius);
+  gap: var(--space-md);
+  min-width: 280px;
+  max-width: 320px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: visible; /* Тени могут выходить за пределы */
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.layout-control-panel .layout-panel-left .section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-section-fill, var(--color-section-background));
+  box-shadow: var(--shadow-section);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.layout-control-panel .layout-panel-right {
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: 0; /* Убираем gap, так как settings-content сам управляет отступами */
+  min-height: 0;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ряд секций - равномерно распределяется по высоте */
+.layout-row {
+  display: flex;
+  flex: 1;
+  gap: var(--space-md);
+  min-height: 0; /* Позволяет сжиматься */
+  box-sizing: border-box;
+  overflow: visible; /* Тени могут выходить за пределы */
+}
+
+/* Секция внутри ряда - равномерно распределяется по ширине */
+.layout-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Позволяет сжиматься */
+  min-height: 0; /* Позволяет сжиматься */
+  overflow: visible; /* Тени могут выходить за пределы */
+}
+
+.layout-section .section {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Специальный layout для главной страницы с CSS Grid */
+.layout-main {
+  display: grid;
+  height: 100%;
+  gap: var(--space-md);
+  grid-template-rows: auto 1fr; /* Первый ряд по содержимому, второй занимает оставшуюся высоту */
+  grid-template-columns: 1fr; /* Одна колонка на всю ширину */
+}
+
+/* Первый ряд - одна секция на всю ширину */
+.layout-main .layout-row:first-child {
+  grid-column: 1 / -1; /* Занимает всю ширину */
+}
+
+/* Второй ряд — N секций на всю ширину (flex: скрытые дети не участвуют в раскладке) */
+.layout-main .layout-row:nth-child(2) {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--space-md);
+}
+
+.layout-main .layout-row:nth-child(2) > * {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+
+/* ============================================
+   PAGE SETTINGS & STATS
+   ============================================ */
+
+.page-settings,
+.page-stats {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  height: auto;
+  min-height: auto;
+}
+
+/* Убираем ограничения высоты для layout-control-panel на странице настроек */
+.page-settings.layout-control-panel {
+  height: auto;
+  min-height: auto;
+  overflow-y: visible;
+}
+
+/* На узких экранах - высота по содержимому */
+.page-settings.layout-control-panel .layout-panel-right {
+  height: auto;
+  min-height: auto;
+  flex: none;
+  overflow-y: visible;
+}
+
+/* На широких экранах - занимает всю доступную высоту */
+@media (min-width: 1101px) {
+  .page-settings.layout-control-panel {
+    height: 100%;
+    min-height: 0;
+    overflow-y: hidden;
+  }
+
+  .page-settings.layout-control-panel .layout-panel-right {
+    height: 100%;
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* Для страницы статистики возвращаем нормальные правила как для других страниц */
+.page-stats.layout-control-panel {
+  height: 100%;
+  min-height: 0;
+  overflow-y: hidden;
+}
+
+.page-stats.layout-control-panel .layout-panel-right {
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: var(--space-sm);
+}
+
+/* «Управление»: без полосы прокрутки на всей колонке — только внутри списка контролов */
+.page-stats.layout-control-panel .layout-panel-left {
+  overflow-y: hidden;
+  overflow-x: visible;
+  min-height: 0;
+}
+
+/* Секции с графиками на странице статистики должны адаптироваться к высоте */
+.page-stats.layout-control-panel .layout-panel-right > .section:not(:has(.stats-legend-container)) {
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-settings-title {
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  text-align: center;
+}
+
+/* ============================================
+   DATABASE MANAGEMENT
+   ============================================ */
+
+.database-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.database-management-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.database-management-button {
+  width: 100%;
+}
+
+.database-management-button--danger {
+  background-color: var(--color-error);
+  color: var(--color-on-error);
+}
+
+.database-management-button--danger:hover {
+  background-color: var(--color-error);
+  opacity: 0.9;
+}
+
+/* ============================================
+   RITUALS PAGE — shell + встроенная панель целей
+   ============================================ */
+
+.page-rituals {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  gap: var(--space-md);
+}
+
+.page-rituals .rituals-page-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.page-rituals .rituals-goals-panel-host {
+  display: none;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.page-rituals.page-rituals--panel-open .rituals-page-shell {
+  display: none !important;
+}
+
+.page-rituals.page-rituals--panel-open .rituals-goals-panel-host {
+  display: flex;
+}
+
+.rituals-goals-panel-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Встроенное управление целями (без overlay / анимации fullscreen-modal) */
+.rituals-goals-panel-host .goals-embedded-management.goals-modal-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  padding: var(--space-sm) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: var(--radius);
+  border: var(--border-width) solid var(--color-border);
+  background-color: var(--color-section-fill, var(--color-section-background));
+  transform: none;
+  opacity: 1;
+  transition: none;
+}
+
+/* Sidebar transitions */
+.layout-sidebar {
+  transition: opacity 0.3s ease, display 0s 0.3s;
+}

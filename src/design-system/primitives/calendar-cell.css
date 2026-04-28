@@ -1,0 +1,257 @@
+/* =============================================================================
+   Ячейки календаря (верхняя полоса)
+   Состояния (взаимоисключающие по смыслу):
+   - default: открытый день, не «сегодня», не выбран
+   - calendar-cell-today: сегодня, день открыт для записей
+   - calendar-cell-selected: выбранная дата
+   - calendar-cell-future: будущий день (только просмотр)
+   - calendar-cell-locked: прошлый закрытый день (клик — только просмотр/блок)
+   Модификаторы future/locked добавляются поверх варианта normal/today/selected.
+   ============================================================================= */
+
+.calendar-cell {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+  flex: 1;
+  padding: var(--space-sm);
+  overflow: hidden;
+  border-radius: var(--radius);
+  cursor: pointer;
+  /* Без backdrop-filter: на полоске календаря несколько ячеек — каждый blur = отдельный тяжёлый слой */
+  background-color: var(--color-section-fill-dense, var(--color-section-background));
+  border: var(--border-width) solid var(--color-border);
+  color: var(--color-on-surface);
+  transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* --- Прогресс снизу: один слой, без лишних режимов --- */
+.calendar-cell-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  height: var(--fill-percent, 0%);
+  pointer-events: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background-color: var(--data-color, var(--color-accent-ui));
+  opacity: 0.22;
+  transition: height 0.28s ease, opacity 0.18s ease;
+}
+
+.calendar-cell-locked .calendar-cell-progress-bar {
+  opacity: 0.12;
+}
+
+.calendar-cell-selected .calendar-cell-progress-bar {
+  background-color: color-mix(in srgb, var(--color-on-accent-ui, var(--color-on-accent)) 32%, transparent);
+  opacity: 1;
+}
+
+.calendar-cell-future .calendar-cell-progress-bar {
+  display: none;
+}
+
+/* Сегодня (только если день открыт и не будущий) */
+.calendar-cell-today:not(.calendar-cell-future):not(.calendar-cell-locked) {
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--color-accent-ui);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-ui) 22%, transparent);
+}
+
+/* Выбранная дата */
+.calendar-cell-selected {
+  border-width: var(--border-width);
+  border-style: solid;
+  border-color: var(--color-accent-ui);
+  background-color: var(--color-accent-ui);
+  color: var(--color-on-accent-ui, var(--color-on-accent));
+}
+
+[data-theme="light"] .calendar-cell-selected,
+[data-theme="dim"] .calendar-cell-selected,
+[data-theme="dark"] .calendar-cell-selected {
+  background-color: var(--color-accent-ui);
+}
+
+.calendar-cell-selected .calendar-cell-day-of-week {
+  color: var(--color-on-accent-ui, var(--color-on-accent));
+  opacity: 0.75;
+}
+
+.calendar-cell-selected .calendar-cell-day-number,
+.calendar-cell-selected .calendar-cell-percent,
+.calendar-cell-selected .calendar-cell-lock {
+  color: var(--color-on-accent-ui, var(--color-on-accent));
+  opacity: 1;
+}
+
+/* Будущий день: отдельная «плитка», без акцентных рамок «сегодня» */
+.calendar-cell-future {
+  cursor: not-allowed !important;
+  pointer-events: none;
+  background-color: var(--color-element-muted);
+  border-style: solid;
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+.calendar-cell-future.calendar-cell-today {
+  border-width: var(--border-width);
+  border-style: solid;
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+.calendar-cell-future .calendar-cell-day-of-week,
+.calendar-cell-future .calendar-cell-day-number,
+.calendar-cell-future .calendar-cell-percent,
+.calendar-cell-future .calendar-cell-lock {
+  color: var(--color-on-surface-secondary);
+  opacity: 1;
+}
+
+/* Закрытый прошлый день: та же подложка, другая обводка (не перекрываем выбранную дату) */
+.calendar-cell-locked:not(.calendar-cell-future):not(.calendar-cell-selected) {
+  border-style: dashed;
+  border-color: var(--color-border);
+  background-color: var(--color-section-fill-dense, var(--color-section-background));
+  box-shadow: none;
+}
+
+.calendar-cell-locked:not(.calendar-cell-selected) .calendar-cell-day-of-week {
+  color: var(--color-on-surface-secondary);
+  opacity: 1;
+}
+
+.calendar-cell-locked:not(.calendar-cell-selected) .calendar-cell-day-number,
+.calendar-cell-locked:not(.calendar-cell-selected) .calendar-cell-percent {
+  color: var(--color-on-surface);
+  opacity: 1;
+}
+
+.calendar-cell-locked:not(.calendar-cell-selected) .calendar-cell-lock {
+  color: var(--color-on-surface-secondary);
+  opacity: 1;
+}
+
+/* Выбранный закрытый день: акцент как у selected, иконка замка читается на акценте */
+.calendar-cell-selected.calendar-cell-locked .calendar-cell-lock {
+  color: var(--color-on-accent-ui, var(--color-on-accent));
+  opacity: 0.85;
+}
+
+/* Кнопка календаря у выбранного дня — всегда слегка видна, без исчезновения текста */
+.calendar-cell-expand-button {
+  position: absolute;
+  right: var(--space-xs);
+  bottom: var(--space-xs);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs);
+  border: none;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-on-accent-ui, var(--color-on-accent)) 14%, transparent);
+  color: var(--color-on-accent-ui, var(--color-on-accent));
+  cursor: pointer;
+  opacity: 0.5;
+  pointer-events: auto;
+  transition: opacity 0.18s ease, background-color 0.18s ease;
+}
+
+.calendar-cell-expand-button svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+.calendar-cell-selected:hover .calendar-cell-expand-button {
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-on-accent-ui, var(--color-on-accent)) 22%, transparent);
+}
+
+/* Hover только для доступных ячеек */
+.calendar-cell:hover:not(.calendar-cell-selected):not(.calendar-cell-future) {
+  background-color: var(--color-element-hover);
+  border-color: var(--color-accent-ui);
+}
+
+.calendar-cell-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--space-sm);
+  margin-bottom: 0;
+}
+
+.calendar-cell-day-of-week {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  line-height: var(--font-sm);
+  text-transform: uppercase;
+  color: var(--color-on-surface-secondary);
+  opacity: 1;
+}
+
+.calendar-cell-day-number {
+  font-size: var(--font-sm);
+  font-weight: var(--font-medium);
+  line-height: var(--font-sm);
+  text-transform: uppercase;
+  color: var(--color-on-surface);
+  opacity: 1;
+}
+
+.calendar-cell-lock {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-end;
+  justify-content: center;
+  width: var(--font-sm);
+  height: var(--font-sm);
+  padding-bottom: 0;
+  color: var(--color-on-surface-secondary);
+  opacity: 1;
+}
+
+.calendar-cell-lock svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.calendar-cell-bottom {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+}
+
+.calendar-cell-percent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface);
+  opacity: 1;
+}
+
+.calendar-cell-percent * {
+  font-weight: var(--font-weight-light, 300);
+}

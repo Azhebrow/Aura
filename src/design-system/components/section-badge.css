@@ -1,0 +1,60 @@
+/* ============================================
+   МЕТКИ ЗАГОЛОВКОВ СЕКЦИЙ
+   ============================================ */
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--color-element);
+  border-radius: var(--radius);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface-secondary);
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
+  transition: background-color 0.2s ease;
+}
+
+.section-badge-text {
+  color: var(--color-on-surface-secondary);
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+}
+
+.section-badge-value {
+  color: var(--color-on-surface);
+  font-size: var(--font-base);
+  font-weight: var(--font-weight-light, 300);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Контейнер для меток в заголовке секции */
+.section-header-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin-left: var(--space-sm);
+}
+
+/* Адаптация для узких экранов */
+@media (max-width: 768px) {
+  .section-badge {
+    font-size: calc(var(--font-sm) * 0.9);
+    padding: calc(var(--space-xs) * 0.8) calc(var(--space-sm) * 0.8);
+  }
+  
+  .section-badge-value {
+    font-size: calc(var(--font-base) * 0.9);
+  }
+}

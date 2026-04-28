@@ -1,0 +1,374 @@
+/* ============================================
+   ПОЛНОЭКРАННЫЙ РЕЖИМ ТАЙМЕРА
+   ============================================ */
+
+.timer-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: color-mix(in srgb, var(--color-section-fill-dense, var(--color-section-background)) 92%, var(--color-surface));
+  z-index: 2000;
+  will-change: opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.timer-fullscreen-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* Поднимаем слой частиц над контентом, чтобы они точно были видны,
+     но при этом не мешали кликам */
+  z-index: 3;
+  mix-blend-mode: normal;
+  opacity: 0.35;
+}
+
+.timer-fullscreen-overlay.timer-fullscreen-open {
+  opacity: 1;
+}
+
+.timer-fullscreen-content {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  background-color: transparent;
+  will-change: transform, opacity;
+  transform: translate3d(0, 20px, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.timer-fullscreen-overlay.timer-fullscreen-open .timer-fullscreen-content {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+.timer-fullscreen-overlay.fullscreen-modal-closing .timer-fullscreen-content {
+  transform: translate3d(0, 20px, 0);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.timer-fullscreen-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Сначала панель ambient сверху, затем основной блок, центрированный
+     уже внутри своего flex-объёма */
+  justify-content: flex-start;
+  padding: var(--space-lg);
+  gap: var(--space-lg);
+  box-sizing: border-box;
+}
+
+.timer-fullscreen-main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Центруем основной таймер по вертикали в оставшемся пространстве */
+  justify-content: center;
+  gap: var(--space-lg);
+  width: 100%;
+  flex: 1;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.timer-fullscreen-task-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.timer-fullscreen-task-icon {
+  flex-shrink: 0;
+  width: var(--height-control);
+  height: var(--height-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer-fullscreen-task-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.timer-fullscreen-display {
+  font-size: clamp(4rem, 15vw, 10rem);
+  font-weight: 300;
+  color: var(--color-on-surface);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  letter-spacing: -0.02em;
+  user-select: none;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: font-size 0.3s ease, font-weight 0.3s ease;
+}
+
+/* Режим "только минуты" */
+.timer-fullscreen-display-minutes {
+  font-size: clamp(3rem, 12vw, 8rem);
+}
+
+/* Мотивационный режим */
+.timer-fullscreen-display-motivational {
+  font-size: clamp(2rem, 8vw, 5rem);
+  font-weight: var(--font-normal);
+  letter-spacing: 0.02em;
+  font-variant-numeric: normal;
+}
+
+.timer-fullscreen-task {
+  font-size: clamp(0.875rem, 2vw, 1.25rem);
+  color: var(--color-on-surface-secondary);
+  text-align: center;
+  opacity: 0.7;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timer-fullscreen-controls {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 600px;
+  width: 100%;
+  will-change: opacity;
+  transform: translateZ(0);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Кнопки полноэкранного таймера - стили как у радиокнопок, только иконки */
+.timer-fullscreen-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 60px;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  background-color: var(--color-element);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--color-on-surface);
+  box-sizing: border-box;
+  /* Без transition, без hover эффектов - как радиокнопки */
+}
+
+.timer-fullscreen-btn-active {
+  background-color: var(--color-element-active);
+  color: var(--color-on-accent);
+}
+
+.timer-fullscreen-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.timer-fullscreen-btn-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.timer-fullscreen-btn-active .timer-fullscreen-btn-icon {
+  color: var(--color-on-accent);
+}
+
+.timer-fullscreen-btn-active .timer-fullscreen-btn-icon svg {
+  stroke: var(--color-on-accent);
+}
+
+.timer-fullscreen-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.timer-fullscreen-btn-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.timer-fullscreen-btn-text {
+  white-space: nowrap;
+}
+
+/* Адаптивность: узкие экраны — горизонтальная полоса, равные кнопки, удобный захват */
+@media (max-width: 768px) {
+  .timer-fullscreen-container {
+    padding: var(--space-md);
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom, 0px));
+    gap: var(--space-md);
+  }
+
+  .timer-fullscreen-main-container {
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--space-md);
+    min-height: 0;
+    padding-top: clamp(var(--space-sm), 4vh, var(--space-xl));
+  }
+
+  .timer-fullscreen-task {
+    max-width: min(100%, 22rem);
+    padding: 0 var(--space-xs);
+  }
+
+  .timer-fullscreen-controls {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    max-width: min(20.5rem, calc(100vw - var(--space-md) * 2));
+    gap: clamp(6px, 2.5vw, var(--space-md));
+    padding: 0 var(--space-xs);
+    box-sizing: border-box;
+    margin-top: auto;
+    margin-bottom: max(var(--space-xs), env(safe-area-inset-bottom, 0px));
+  }
+
+  .timer-fullscreen-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    height: 52px;
+    min-height: 48px;
+  }
+
+  .timer-fullscreen-btn-pause,
+  .timer-fullscreen-btn-break,
+  .timer-fullscreen-btn-stop {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .timer-fullscreen-controls {
+    max-width: calc(100vw - var(--space-sm) * 2);
+    gap: 6px;
+  }
+
+  .timer-fullscreen-btn {
+    height: 48px;
+    min-height: 44px;
+  }
+
+  .timer-fullscreen-btn-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* ============================================
+   ПЕРЕРЫВ
+   ============================================ */
+
+/* Перерыв: блок по центру всего экрана (с учётом панели сверху), не в своём «остатке» */
+.timer-fullscreen-break-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  width: 100%;
+  padding: var(--space-lg);
+  box-sizing: border-box;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.timer-fullscreen-break-title {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: var(--font-medium);
+  color: var(--color-on-surface);
+  text-align: center;
+}
+
+.timer-fullscreen-break-display {
+  font-size: clamp(4rem, 15vw, 10rem);
+  font-weight: 300;
+  color: var(--color-on-surface);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Одна кнопка «Завершить» в перерыве — тот же стиль, что и остальные кнопки полноэкранного режима */
+.timer-fullscreen-break-controls-single {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .timer-fullscreen-break-container {
+    min-width: unset;
+    max-width: 100%;
+    width: 100%;
+    padding: var(--space-md);
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
+
+  .timer-fullscreen-break-controls-single.timer-fullscreen-controls {
+    margin-top: var(--space-lg);
+    margin-bottom: max(var(--space-xs), env(safe-area-inset-bottom, 0px));
+    max-width: none;
+    width: auto;
+    justify-content: center;
+  }
+
+  .timer-fullscreen-break-controls-single .timer-fullscreen-btn {
+    flex: 0 0 auto;
+    width: 52px;
+    min-width: 52px;
+    max-width: 5.5rem;
+  }
+}

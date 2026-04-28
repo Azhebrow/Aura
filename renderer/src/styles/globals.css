@@ -1,0 +1,990 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --breakpoint-3xl: 1600px;
+  --breakpoint-4xl: 2000px;
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-code: var(--code);
+  --color-code-foreground: var(--code-foreground);
+  --color-code-highlight: var(--code-highlight);
+  --color-code-number: var(--code-number);
+  --color-selection: var(--selection);
+  --color-selection-foreground: var(--selection-foreground);
+  /* Длительности/easing → утилиты Tailwind `duration-aura-*`, `ease-aura` (значения из :root). */
+  --ease-aura: var(--aura-motion-ease);
+  --duration-aura-fast: var(--aura-motion-duration-fast);
+  --duration-aura-base: var(--aura-motion-duration-base);
+  --duration-aura-slow: var(--aura-motion-duration-slow);
+  --duration-aura-glide: var(--aura-motion-duration-glide);
+}
+
+:root {
+  font-size: calc(16px * var(--aura-ui-scale, 1) * var(--aura-font-scale, 1));
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-heading: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.56 0.16 272);
+  --primary-foreground: oklch(0.985 0.01 275);
+  --secondary: oklch(0.96 0.02 272);
+  --secondary-foreground: oklch(0.28 0.05 272);
+  --muted: oklch(0.955 0.012 262);
+  --muted-foreground: oklch(0.5 0.035 262);
+  --accent: oklch(0.94 0.028 248);
+  --accent-foreground: oklch(0.28 0.06 252);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.97 0.01 17);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.62 0.13 270);
+  --chart-1: var(--color-blue-300);
+  --chart-2: var(--color-blue-500);
+  --chart-3: var(--color-blue-600);
+  --chart-4: var(--color-blue-700);
+  --chart-5: var(--color-blue-800);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.95 0.02 252);
+  --sidebar-accent-foreground: oklch(0.3 0.05 252);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+  --surface: oklch(0.98 0 0);
+  --surface-foreground: var(--foreground);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.96 0 0);
+  --code-number: oklch(0.56 0 0);
+  --selection: oklch(0.145 0 0);
+  --selection-foreground: oklch(1 0 0);
+  /* Категории задач и финансы — дефолты до синхронизации из БД (`DesignTokensSync`). */
+  --task-rituals: hsl(24, 58%, 52%);
+  --task-time: hsl(165, 50%, 46%);
+  --task-body: hsl(258, 48%, 56%);
+  --task-deps: hsl(352, 58%, 52%);
+  --rituals-morning: hsl(38, 78%, 54%);
+  --rituals-evening: hsl(226, 52%, 58%);
+  --rituals-vows: hsl(278, 48%, 56%);
+  --ambient-music: hsl(204, 62%, 56%);
+  --finance-income: hsl(148, 50%, 46%);
+  --finance-expense: hsl(356, 62%, 56%);
+  --finance-transfer: hsl(214, 56%, 54%);
+  --leisure-filling: hsl(42, 58%, 55%);
+  --leisure-escape: hsl(232, 48%, 56%);
+  --semantic-negative: hsl(356, 58%, 48%);
+  --semantic-success: hsl(145, 58%, 40%);
+  --semantic-warning: hsl(45, 84%, 52%);
+  --semantic-info: hsl(218, 42%, 54%);
+  /* Единая шкала движения интерфейса (hover, раскрытия, прогресс). */
+  --aura-motion-duration-fast: 150ms;
+  --aura-motion-duration-base: 200ms;
+  --aura-motion-duration-slow: 300ms;
+  /* Длинные переходы: прогресс-кольца, таймер, подсветки. */
+  --aura-motion-duration-glide: 500ms;
+  --aura-motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --aura-gradient-intensity: 1;
+  --aura-ui-scale: 1;
+  --aura-font-scale: 1;
+  --ranks-aura-core-mix: 20%;
+  --ranks-aura-mid-mix: 9%;
+  --ranks-aura-flow-soft-mix: 8%;
+  --ranks-aura-flow-strong-mix: 12%;
+  --ranks-aura-glow-opacity: 0.3;
+  --ranks-aura-band-opacity: 0.16;
+  --mobile-control-h: 2.25rem;
+  --mobile-density-gap: 0.625rem;
+  --mobile-font-sm: 0.8125rem;
+  --mobile-font-base: 0.875rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --aura-motion-duration-fast: 0ms;
+    --aura-motion-duration-base: 0ms;
+    --aura-motion-duration-slow: 0ms;
+    --aura-motion-duration-glide: 0ms;
+  }
+}
+
+/* Светлая тема: чуть сильнее границы и кольцо фокуса, чтобы карточки не «растворялись». */
+html[data-theme='light'] {
+  --border: oklch(0.84 0.02 262);
+  --input: oklch(0.84 0.02 262);
+  --ring: oklch(0.6 0.13 270);
+  --muted: oklch(0.94 0.015 262);
+  --ranks-aura-core-mix: 12%;
+  --ranks-aura-mid-mix: 5%;
+  --ranks-aura-flow-soft-mix: 4%;
+  --ranks-aura-flow-strong-mix: 7%;
+  --ranks-aura-glow-opacity: 0.18;
+  --ranks-aura-band-opacity: 0.11;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.72 0.12 272);
+  --primary-foreground: oklch(0.2 0.03 272);
+  --secondary: oklch(0.3 0.02 262);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.285 0.015 262);
+  --muted-foreground: oklch(0.74 0.02 262);
+  --accent: oklch(0.36 0.03 250);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.58 0.22 27);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.68 0.1 270);
+  --chart-1: var(--color-blue-300);
+  --chart-2: var(--color-blue-500);
+  --chart-3: var(--color-blue-600);
+  --chart-4: var(--color-blue-700);
+  --chart-5: var(--color-blue-800);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.439 0 0);
+  --surface: oklch(0.2 0 0);
+  --surface-foreground: oklch(0.708 0 0);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.27 0 0);
+  --code-number: oklch(0.72 0 0);
+  --selection: oklch(0.922 0 0);
+  --selection-foreground: oklch(0.205 0 0);
+  --ranks-aura-core-mix: 28%;
+  --ranks-aura-mid-mix: 14%;
+  --ranks-aura-flow-soft-mix: 15%;
+  --ranks-aura-flow-strong-mix: 21%;
+  --ranks-aura-glow-opacity: 0.36;
+  --ranks-aura-band-opacity: 0.2;
+}
+
+/* Приглушённая тёмная тема (между light и dark), `data-theme="dim"` на html вместе с классом `.dark`. */
+.dark[data-theme='dim'] {
+  --background: oklch(0.25 0.008 262);
+  --foreground: oklch(0.96 0.01 262);
+  --card: oklch(0.31 0.01 262);
+  --card-foreground: oklch(0.96 0.01 262);
+  --popover: oklch(0.31 0.01 262);
+  --popover-foreground: oklch(0.96 0.01 262);
+  --primary: oklch(0.72 0.1 272);
+  --primary-foreground: oklch(0.3 0.03 272);
+  --secondary: oklch(0.38 0.018 262);
+  --secondary-foreground: oklch(0.96 0.01 262);
+  --muted: oklch(0.37 0.014 262);
+  --muted-foreground: oklch(0.81 0.02 262);
+  --accent: oklch(0.43 0.03 252);
+  --accent-foreground: oklch(0.96 0.01 262);
+  --border: color-mix(in oklab, var(--foreground) 18%, transparent);
+  --input: color-mix(in oklab, var(--foreground) 22%, transparent);
+  --ring: oklch(0.72 0.09 270);
+  --surface: oklch(0.3 0.01 262);
+  --surface-foreground: oklch(0.82 0.01 262);
+  --sidebar: oklch(0.3 0.01 262);
+  --sidebar-foreground: oklch(0.96 0.01 262);
+  --sidebar-accent: oklch(0.35 0.012 262);
+  --sidebar-accent-foreground: oklch(0.95 0.01 262);
+  --sidebar-border: color-mix(in oklab, var(--foreground) 16%, transparent);
+  --code-highlight: oklch(0.35 0.01 262);
+  --code-number: oklch(0.78 0.01 262);
+  --ranks-aura-core-mix: 24%;
+  --ranks-aura-mid-mix: 12%;
+  --ranks-aura-flow-soft-mix: 12%;
+  --ranks-aura-flow-strong-mix: 17%;
+  --ranks-aura-glow-opacity: 0.32;
+  --ranks-aura-band-opacity: 0.18;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  input[type='range'] {
+    accent-color: var(--primary);
+  }
+}
+
+html[data-aura-miniapp='1'],
+html[data-aura-miniapp='1'] body,
+html[data-aura-miniapp='1'] #root {
+  height: var(--aura-app-height, 100svh);
+  max-height: var(--aura-app-height, 100svh);
+  overflow: hidden;
+  overscroll-behavior-y: none;
+}
+
+html[data-aura-miniapp='1'] body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+html[data-aura-miniapp='1'] input,
+html[data-aura-miniapp='1'] textarea,
+html[data-aura-miniapp='1'] [contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --radius: 0.58rem;
+  }
+
+  body {
+    font-size: var(--mobile-font-base);
+  }
+}
+
+@media (max-width: 767px) {
+  .aura-mobile-dock {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 1.15rem);
+    padding-top: 0.45rem;
+  }
+}
+
+@media (max-width: 430px), (max-height: 760px) {
+  .aura-mobile-dock {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 1.35rem);
+    padding-top: 0.55rem;
+  }
+}
+
+html[data-page-transitions='off'] *,
+html[data-page-transitions='off'] *::before,
+html[data-page-transitions='off'] *::after {
+  animation-duration: 0ms !important;
+  transition-duration: 0ms !important;
+  animation-delay: 0ms !important;
+}
+
+@layer utilities {
+  /* Согласованные переходы: длительность и easing из :root, уважают prefers-reduced-motion. */
+  .aura-tx-opacity {
+    transition-property: opacity;
+    transition-duration: var(--aura-motion-duration-base);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+  .aura-tx-opacity-fast {
+    transition-property: opacity;
+    transition-duration: var(--aura-motion-duration-fast);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+  .aura-tx-colors {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-duration: var(--aura-motion-duration-base);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+  .aura-tx-surface {
+    transition-property: box-shadow, background-color, border-color;
+    transition-duration: var(--aura-motion-duration-slow);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+  .aura-tx-transform {
+    transition-property: transform;
+    transition-duration: var(--aura-motion-duration-base);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+  .aura-tx-width {
+    transition-property: width;
+    transition-duration: var(--aura-motion-duration-slow);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+  .aura-tx-interactive {
+    transition-property: width, background-color, opacity, transform;
+    transition-duration: var(--aura-motion-duration-base);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+
+}
+
+/* Подложка под CFG-иконки (согласовано с `data-icon-theme` из темы). */
+.aura-icon-plate {
+  background: linear-gradient(145deg, oklch(0.98 0.01 250 / 0.9), oklch(0.94 0.02 260 / 0.85));
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.06);
+  filter: saturate(var(--aura-gradient-intensity));
+}
+
+.dark .aura-icon-plate {
+  background: linear-gradient(145deg, oklch(0.32 0.02 260 / 0.55), oklch(0.22 0.03 260 / 0.45));
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.35);
+}
+
+html[data-icon-theme='gradient']:not(.dark) .aura-icon-plate {
+  background: linear-gradient(135deg, oklch(0.97 0.04 280 / 0.95), oklch(0.9 0.06 200 / 0.9));
+}
+
+html.dark[data-icon-theme='gradient'] .aura-icon-plate {
+  background: linear-gradient(135deg, oklch(0.4 0.08 280 / 0.5), oklch(0.28 0.1 220 / 0.45));
+}
+
+html[data-icon-theme='minimal']:not(.dark) .aura-icon-plate {
+  background: oklch(0.96 0.005 260 / 0.9);
+  box-shadow: none;
+}
+
+html.dark[data-icon-theme='minimal'] .aura-icon-plate {
+  background: oklch(0.26 0.01 260 / 0.55);
+  box-shadow: none;
+}
+
+.aura-icon-plate img {
+  filter: drop-shadow(0 0 0.35px oklch(0.2 0 0 / 0.35));
+}
+
+.dark .aura-icon-plate img {
+  filter: drop-shadow(0 0 0.5px oklch(1 0 0 / 0.25));
+}
+
+/* Основная ветка иконок в данных (ColoredAuraIcon) — реагирует на icon theme. */
+.aura-colored-icon {
+  filter: drop-shadow(0 0 0.35px oklch(0.2 0 0 / 0.24));
+  transition:
+    filter var(--aura-motion-duration-base) var(--aura-motion-ease),
+    opacity var(--aura-motion-duration-base) var(--aura-motion-ease),
+    transform var(--aura-motion-duration-base) var(--aura-motion-ease);
+}
+
+html[data-icon-theme='minimal'] .aura-colored-icon {
+  opacity: 0.88;
+  filter: none;
+}
+
+html[data-icon-theme='gradient'] .aura-colored-icon {
+  opacity: 1;
+  background-image:
+    linear-gradient(
+      145deg,
+      color-mix(in oklab, var(--aura-icon-paint) 86%, white 14%) 0%,
+      var(--aura-icon-paint) 62%,
+      color-mix(in oklab, var(--aura-icon-paint) 76%, var(--foreground) 24%) 100%
+    );
+  filter:
+    drop-shadow(0 0 1.4px color-mix(in oklab, var(--aura-icon-paint) 42%, transparent))
+    drop-shadow(0 0 0.35px oklch(0.2 0 0 / 0.2));
+}
+
+html.dark[data-icon-theme='gradient'] .aura-colored-icon {
+  filter:
+    drop-shadow(0 0 2px color-mix(in oklab, var(--aura-icon-paint) 48%, transparent))
+    drop-shadow(0 0 0.45px oklch(1 0 0 / 0.2));
+}
+
+/* Плавное появление артов рангов при смене картинки / вкладки */
+@keyframes ranks-media-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ranks-media-in {
+  animation: ranks-media-in 0.42s ease-out both;
+}
+
+@keyframes calendar-cell-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.calendar-cell-in {
+  animation: calendar-cell-in 0.22s ease-out both;
+}
+
+@keyframes aura-mech-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  45% {
+    opacity: 0.72;
+    transform: translateY(3px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.aura-mech-in {
+  animation: aura-mech-in 180ms steps(5, end) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ranks-media-in,
+  .calendar-cell-in,
+  .aura-mech-in {
+    animation: none;
+  }
+}
+
+.calendar-water-fill {
+  height: var(--calendar-water-level, 0%);
+  background: color-mix(in srgb, var(--calendar-water-color, var(--primary)) 40%, transparent);
+  opacity: 0.34;
+  transition:
+    height var(--aura-motion-duration-slow) var(--aura-motion-ease),
+    background-color var(--aura-motion-duration-base) var(--aura-motion-ease);
+}
+
+@keyframes aura-startup-star-warp {
+  0% {
+    opacity: 0;
+    transform: translate3d(calc(var(--sx) * 8vw), calc(var(--sy) * 8vh), 0) scale(0.2);
+  }
+  8% {
+    opacity: 0.4;
+    transform: translate3d(calc(var(--sx) * 18vw), calc(var(--sy) * 18vh), 0) scale(0.4);
+  }
+  30% {
+    opacity: 0.85;
+    transform: translate3d(calc(var(--sx) * 38vw), calc(var(--sy) * 38vh), 0) scale(0.75);
+  }
+  55% {
+    opacity: 1;
+    transform: translate3d(calc(var(--sx) * 62vw), calc(var(--sy) * 62vh), 0) scale(1.1);
+  }
+  78% {
+    opacity: 0.7;
+    transform: translate3d(calc(var(--sx) * 80vw), calc(var(--sy) * 80vh), 0) scale(1.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(var(--sx) * 95vw), calc(var(--sy) * 95vh), 0) scale(1.8);
+  }
+}
+
+.aura-startup-star {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--star-size, 2px);
+  height: var(--star-size, 2px);
+  border-radius: 999px;
+  background: var(--muted-foreground);
+  animation: aura-startup-star-warp var(--star-dur, 1.8s) cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  animation-delay: var(--star-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.aura-startup-star[data-tone='primary'] {
+  background: var(--primary);
+}
+
+.aura-startup-star[data-tone='accent'] {
+  background: var(--accent-foreground);
+}
+
+.aura-startup-star[data-tone='muted'] {
+  background: var(--muted-foreground);
+}
+
+.aura-startup-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border) 70%);
+  background: color-mix(in srgb, var(--background) 92%, var(--muted) 8%);
+  animation: aura-startup-logo-pulse 2400ms cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  box-shadow: 0 0 32px -8px color-mix(in srgb, var(--primary) 30%, transparent);
+  will-change: transform, opacity;
+}
+
+.aura-startup-core {
+  animation: none;
+  transform-origin: 50% 50%;
+}
+
+.aura-startup-logo {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+@keyframes aura-startup-logo-pulse {
+  0% {
+    transform: scale(0.97);
+    opacity: 0.75;
+    box-shadow: 0 0 20px -8px color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+    box-shadow: 0 0 48px -8px color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+  100% {
+    transform: scale(0.97);
+    opacity: 0.75;
+    box-shadow: 0 0 20px -8px color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+}
+
+@keyframes aura-page-soft-enter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.aura-page-enter {
+  animation: aura-page-soft-enter 600ms var(--aura-motion-ease) both;
+}
+
+@keyframes aura-timer-shell-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.988);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes aura-timer-head-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes aura-timer-mainpanel-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-28px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes aura-timer-sidepanel-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(30px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.aura-timer-fs-shell {
+  animation: aura-timer-shell-enter 760ms cubic-bezier(0.17, 0.84, 0.32, 1) both;
+}
+
+.aura-timer-fs-head {
+  animation: aura-timer-head-enter 700ms cubic-bezier(0.17, 0.84, 0.32, 1) both;
+  animation-delay: 70ms;
+}
+
+.aura-timer-fs-mainpanel {
+  animation: aura-timer-mainpanel-enter 950ms cubic-bezier(0.16, 0.84, 0.3, 1) both;
+  animation-delay: 120ms;
+}
+
+.aura-timer-fs-sidepanel {
+  animation: aura-timer-sidepanel-enter 1020ms cubic-bezier(0.16, 0.84, 0.3, 1) both;
+  animation-delay: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura-page-enter,
+  .aura-startup-core,
+  .aura-startup-logo-wrap,
+  .aura-startup-star,
+  .aura-timer-fs-shell,
+  .aura-timer-fs-head,
+  .aura-timer-fs-mainpanel,
+  .aura-timer-fs-sidepanel {
+    animation: none !important;
+  }
+}
+
+.calendar-cell-open {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.calendar-cell-open:hover {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.calendar-cell-future,
+.calendar-ghost-day {
+  opacity: 0.22;
+  filter: saturate(0.1) contrast(0.8);
+  box-shadow: none !important;
+}
+
+.calendar-cell-future .calendar-water-fill,
+.calendar-ghost-day .calendar-water-fill {
+  opacity: 0 !important;
+}
+
+.calendar-cell-future .font-mono,
+.calendar-cell-future .calendar-status-future,
+.calendar-ghost-day .font-mono,
+.calendar-ghost-day .calendar-status-future {
+  opacity: 0.5;
+}
+
+.calendar-status-open,
+.calendar-status-locked,
+.calendar-status-future {
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.calendar-status-open {
+  color: color-mix(in srgb, var(--foreground) 86%, var(--primary) 24%);
+}
+
+.calendar-status-locked {
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+}
+
+.calendar-status-future {
+  color: color-mix(in srgb, var(--foreground) 42%, transparent);
+}
+
+/* Анимация для чекбокса: заливка foreground цветом + появление галочки */
+@keyframes checkbox-fill {
+  from {
+    background-color: oklch(0.97 0 0 / 0);
+    border-color: currentColor;
+  }
+  to {
+    background-color: var(--foreground);
+    border-color: var(--foreground);
+  }
+}
+
+@keyframes checkbox-check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-45deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.checkbox-fill-animation {
+  animation: checkbox-fill 0.4s ease-out forwards;
+}
+
+.checkbox-check-pop {
+  animation: checkbox-check-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+}
+
+/* Плавное «дыхание» подсветки зоны таймера цветом выбранной задачи */
+@keyframes timer-task-ambient-a {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.28;
+  }
+}
+
+@keyframes timer-task-ambient-b {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.22;
+  }
+}
+
+.timer-task-ambient-a {
+  animation: timer-task-ambient-a 5s ease-in-out infinite;
+}
+
+.timer-task-ambient-b {
+  animation: timer-task-ambient-b 7s ease-in-out infinite;
+  animation-delay: -1.5s;
+}
+
+@keyframes ranks-hero-aura-flow {
+  0% {
+    transform: translateX(-22%);
+  }
+  100% {
+    transform: translateX(22%);
+  }
+}
+
+.ranks-hero-aura-flow::before,
+.ranks-hero-aura-flow::after {
+  content: '';
+  position: absolute;
+  inset: -28% -18%;
+  pointer-events: none;
+}
+
+.ranks-hero-aura-flow::before {
+  background:
+    radial-gradient(45% 85% at 12% 50%, color-mix(in srgb, var(--rank-aura) var(--ranks-aura-flow-strong-mix), transparent) 0%, transparent 72%),
+    radial-gradient(40% 70% at 45% 50%, color-mix(in srgb, var(--rank-aura) var(--ranks-aura-flow-soft-mix), transparent) 0%, transparent 78%);
+  filter: blur(24px);
+  opacity: var(--ranks-aura-glow-opacity);
+  animation: ranks-hero-aura-flow 10.5s ease-in-out infinite alternate;
+}
+
+.ranks-hero-aura-flow::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--rank-aura) var(--ranks-aura-flow-soft-mix), transparent) 24%,
+    color-mix(in srgb, var(--rank-aura) var(--ranks-aura-flow-strong-mix), transparent) 50%,
+    color-mix(in srgb, var(--rank-aura) var(--ranks-aura-flow-soft-mix), transparent) 76%,
+    transparent 100%
+  );
+  opacity: var(--ranks-aura-band-opacity);
+  filter: blur(30px);
+  animation: ranks-hero-aura-flow 8.8s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.aura-content-fade-in > * {
+  animation: fade-in 600ms var(--aura-motion-ease) both;
+}
+
+.aura-content-fade-in > *:nth-child(1) { animation-delay: 0ms; }
+.aura-content-fade-in > *:nth-child(2) { animation-delay: 80ms; }
+.aura-content-fade-in > *:nth-child(3) { animation-delay: 160ms; }
+.aura-content-fade-in > *:nth-child(4) { animation-delay: 240ms; }
+.aura-content-fade-in > *:nth-child(5) { animation-delay: 320ms; }
+.aura-content-fade-in > *:nth-child(n+6) { animation-delay: 400ms; }
+
+.aura-list-fade-in li,
+.aura-list-fade-in > [role="listitem"],
+.aura-list-fade-in [data-slot="list-item"] {
+  animation: fade-in-up 500ms var(--aura-motion-ease) both;
+}
+
+.aura-list-fade-in li:nth-child(1),
+.aura-list-fade-in > [role="listitem"]:nth-child(1),
+.aura-list-fade-in [data-slot="list-item"]:nth-child(1) { animation-delay: 50ms; }
+
+.aura-list-fade-in li:nth-child(2),
+.aura-list-fade-in > [role="listitem"]:nth-child(2),
+.aura-list-fade-in [data-slot="list-item"]:nth-child(2) { animation-delay: 100ms; }
+
+.aura-list-fade-in li:nth-child(3),
+.aura-list-fade-in > [role="listitem"]:nth-child(3),
+.aura-list-fade-in [data-slot="list-item"]:nth-child(3) { animation-delay: 150ms; }
+
+.aura-list-fade-in li:nth-child(4),
+.aura-list-fade-in > [role="listitem"]:nth-child(4),
+.aura-list-fade-in [data-slot="list-item"]:nth-child(4) { animation-delay: 200ms; }
+
+.aura-list-fade-in li:nth-child(5),
+.aura-list-fade-in > [role="listitem"]:nth-child(5),
+.aura-list-fade-in [data-slot="list-item"]:nth-child(5) { animation-delay: 250ms; }
+
+.aura-list-fade-in li:nth-child(n+6),
+.aura-list-fade-in > [role="listitem"]:nth-child(n+6),
+.aura-list-fade-in [data-slot="list-item"]:nth-child(n+6) { animation-delay: 300ms; }
+
+/* Tab/Tabs slide animations */
+@keyframes slide-out-to-left {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes slide-out-to-right {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+@keyframes slide-in-from-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-right {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.aura-tabs-slide-exit-left {
+  animation: slide-out-to-left 300ms var(--aura-motion-ease) forwards;
+  will-change: transform, opacity;
+}
+
+.aura-tabs-slide-exit-right {
+  animation: slide-out-to-right 300ms var(--aura-motion-ease) forwards;
+  will-change: transform, opacity;
+}
+
+.aura-tabs-slide-enter-left {
+  animation: slide-in-from-left 300ms var(--aura-motion-ease);
+  will-change: transform, opacity;
+}
+
+.aura-tabs-slide-enter-right {
+  animation: slide-in-from-right 300ms var(--aura-motion-ease);
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-task-ambient-a,
+  .timer-task-ambient-b,
+  .ranks-hero-aura-flow::before,
+  .ranks-hero-aura-flow::after {
+    animation: none;
+  }
+
+  .timer-task-ambient-a,
+  .timer-task-ambient-b {
+    opacity: 0.18;
+  }
+
+  .aura-content-fade-in > * {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .aura-tabs-slide-exit-left,
+  .aura-tabs-slide-exit-right,
+  .aura-tabs-slide-enter-left,
+  .aura-tabs-slide-enter-right {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,0 +1,114 @@
+/* Стили для компонента EmptyState — компактное, приглушённое пустое состояние */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  text-align: center;
+  gap: var(--space-sm);
+  align-self: stretch;
+}
+
+.empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(40px * var(--app-scale, 1));
+  height: calc(40px * var(--app-scale, 1));
+  flex-shrink: 0;
+  margin-bottom: 0;
+  position: relative;
+  border-radius: var(--radius);
+  background: transparent;
+  box-shadow: none;
+  transition: opacity 0.2s ease;
+}
+
+[data-theme="light"] .empty-state-icon {
+  box-shadow: none;
+}
+
+.empty-state-icon::before {
+  display: none;
+}
+
+.empty-state-icon svg {
+  width: calc(22px * var(--app-scale, 1));
+  height: calc(22px * var(--app-scale, 1));
+  stroke-width: calc(1.25 * var(--app-scale, 1));
+  color: var(--color-on-surface-secondary);
+  opacity: 0.32;
+  transition: opacity 0.2s ease;
+  filter: none;
+}
+
+[data-theme="light"] .empty-state-icon svg {
+  filter: none;
+}
+
+.empty-state:hover .empty-state-icon {
+  box-shadow: none;
+}
+
+[data-theme="light"] .empty-state:hover .empty-state-icon {
+  box-shadow: none;
+}
+
+.empty-state:hover .empty-state-icon::before {
+  opacity: 0;
+}
+
+.empty-state:hover .empty-state-icon svg {
+  opacity: 0.42;
+}
+
+.empty-state-title {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface);
+  margin: 0;
+  line-height: 1.45;
+  opacity: 0.72;
+  letter-spacing: -0.01em;
+  transition: opacity 0.2s ease;
+  max-width: min(20rem, 92%);
+  text-wrap: balance;
+}
+
+.empty-state-message {
+  font-size: var(--font-xs);
+  font-weight: var(--font-weight-light, 300);
+  color: var(--color-on-surface-secondary);
+  margin: 0;
+  line-height: 1.55;
+  max-width: min(18.5rem, 92%);
+  opacity: 0.65;
+  transition: opacity 0.2s ease;
+  text-wrap: balance;
+}
+
+.empty-state:hover .empty-state-title {
+  opacity: 0.82;
+}
+
+.empty-state:hover .empty-state-message {
+  opacity: 0.72;
+}
+
+.empty-state-button-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-sm);
+  width: 100%;
+}
+
+.empty-state-button-wrapper .btn {
+  width: auto;
+  min-width: calc(140px * var(--app-scale, 1));
+}
+

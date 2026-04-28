@@ -1,0 +1,173 @@
+/* ============================================
+   AMBIENT CONTROLS - Управление ambient музыкой
+   ============================================ */
+
+.timer-fullscreen-ambient-panel {
+  /* Живём в потоке layout контейнера, чтобы верхний отступ был стабильным
+     на разных высотах экрана и не зависел от центровки по высоте */
+  position: relative;
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  align-self: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  background-color: var(--color-element);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-sm);
+  z-index: 10;
+  min-width: 400px;
+  max-width: min(960px, 90%);
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Секция (выбор или громкость) */
+.timer-fullscreen-ambient-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  flex: 1;
+}
+
+/* Иконка */
+.timer-fullscreen-ambient-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--color-on-surface-secondary);
+}
+
+.timer-fullscreen-ambient-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+}
+
+/* Обертка для Select */
+.timer-fullscreen-ambient-select-wrapper {
+  flex: 1;
+  min-width: 200px;
+}
+
+.timer-fullscreen-ambient-select-wrapper .custom-select-wrapper {
+  width: 100%;
+}
+
+/* Разделитель между секциями */
+.timer-fullscreen-ambient-divider {
+  width: 1px;
+  height: 32px;
+  background-color: var(--color-border);
+  flex-shrink: 0;
+  margin: 0 var(--space-xs);
+}
+
+/* Обертка для слайдера громкости */
+.timer-fullscreen-ambient-volume-wrapper {
+  flex: 1;
+  min-width: 120px;
+  max-width: 180px;
+  display: flex;
+  align-items: center;
+}
+
+.timer-fullscreen-ambient-volume {
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius);
+  background: var(--color-border);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.timer-fullscreen-ambient-volume:hover {
+  background: var(--color-border-hover);
+}
+
+.timer-fullscreen-ambient-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent-ui);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.timer-fullscreen-ambient-volume::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.timer-fullscreen-ambient-volume::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+
+.timer-fullscreen-ambient-volume::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent-ui);
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.timer-fullscreen-ambient-volume::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.timer-fullscreen-ambient-volume::-moz-range-thumb:active {
+  transform: scale(1.1);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .timer-fullscreen-ambient-panel {
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-width: unset;
+    width: calc(100% - var(--space-lg) * 2);
+    padding: var(--space-sm);
+  }
+
+  .timer-fullscreen-ambient-section {
+    width: 100%;
+    padding: var(--space-xs);
+  }
+
+  .timer-fullscreen-ambient-divider {
+    width: 100%;
+    height: 1px;
+    margin: var(--space-xs) 0;
+  }
+
+  .timer-fullscreen-ambient-select-wrapper {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .timer-fullscreen-ambient-volume-wrapper {
+    width: 100%;
+    max-width: 100%;
+  }
+}

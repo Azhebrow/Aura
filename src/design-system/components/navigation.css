@@ -1,0 +1,140 @@
+/* ============================================
+   НАВИГАЦИЯ — overlay поверх контента
+   ============================================ */
+
+/* Контейнеры навигации — фиксированные overlay */
+.top-navigation-container,
+.bottom-navigation-container {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.top-navigation-container {
+  top: var(--layout-title-bar-height);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.top-navigation-container > * {
+  pointer-events: auto;
+}
+
+.bottom-navigation-container {
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+.bottom-navigation-container > * {
+  pointer-events: auto;
+}
+
+/* Top Navigation - верхняя навигация */
+.top-navigation {
+  padding: var(--space-sm);
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.top-navigation-calendar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Bottom Navigation - нижняя навигация */
+.bottom-navigation,
+.bottom-navigation-with-labels {
+  width: 100%;
+  padding: var(--space-sm);
+  box-sizing: border-box;
+  overflow: visible;
+  transition: all 0.3s ease;
+}
+
+/* ========================================
+   RESPONSIVE BACKDROP OPACITY
+   ======================================== */
+
+/* Backdrop and borders only on mobile (≤640px) */
+
+.bottom-navigation .radio-button-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-sm);
+  width: auto;
+  margin: 0 auto;
+}
+
+/* Режим с названиями - равномерное распределение по всей ширине */
+.bottom-navigation-with-labels .radio-button-group {
+  justify-content: stretch;
+  align-items: stretch;
+  width: 100%;
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Кнопки растягиваются на всю доступную ширину поровну */
+.bottom-navigation-with-labels .radio-button.radio-button--nav {
+  flex: 1 1 0%;
+  min-width: 0;
+  max-width: none;
+}
+
+/* Нижнее меню — модификатор radio-button--nav (см. BottomNavigation): «ячейка» с рамкой, как плотный field-контроль */
+.bottom-navigation .radio-button.radio-button--nav,
+.bottom-navigation-with-labels .radio-button.radio-button--nav {
+  /* Сплошная подложка вместо backdrop-filter на каждой кнопке — дешевле для композитора */
+  background-color: var(--color-section-fill-dense, var(--color-section-background));
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-sm);
+  box-shadow: none;
+  color: var(--color-on-surface);
+  min-width: 0;
+  transition: var(--control-transition, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease);
+}
+
+/* Без подписей — кнопки по контенту по центру */
+.bottom-navigation:not(.bottom-navigation-with-labels) .radio-button.radio-button--nav {
+  flex: 1;
+}
+
+.bottom-navigation .radio-button.radio-button--nav:not(:has(input[type="radio"]:checked)):hover,
+.bottom-navigation-with-labels .radio-button.radio-button--nav:not(:has(input[type="radio"]:checked)):hover {
+  background-color: var(--color-element-hover);
+  border-color: var(--color-accent-ui);
+}
+
+.bottom-navigation .radio-button.radio-button--nav:has(input[type="radio"]:checked):hover,
+.bottom-navigation-with-labels .radio-button.radio-button--nav:has(input[type="radio"]:checked):hover {
+  background-color: color-mix(in srgb, var(--color-accent-ui) 92%, var(--color-surface) 8%);
+}
+
+.bottom-navigation .radio-button.radio-button--nav:has(input[type="radio"]:checked),
+.bottom-navigation-with-labels .radio-button.radio-button--nav:has(input[type="radio"]:checked) {
+  border: var(--border-width) solid var(--color-accent-ui);
+  background-color: var(--color-accent-ui);
+  color: var(--color-on-accent);
+}
+
+.bottom-navigation .radio-button.radio-button--nav:has(input[type="radio"]:checked) .radio-button-content,
+.bottom-navigation .radio-button.radio-button--nav:has(input[type="radio"]:checked) .radio-button-icon,
+.bottom-navigation-with-labels .radio-button.radio-button--nav:has(input[type="radio"]:checked) .radio-button-content,
+.bottom-navigation-with-labels .radio-button.radio-button--nav:has(input[type="radio"]:checked) .radio-button-icon {
+  color: var(--color-on-accent);
+}
+

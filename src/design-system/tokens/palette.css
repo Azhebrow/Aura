@@ -1,0 +1,238 @@
+/* ============================================================================
+   ЦВЕТОВАЯ СИСТЕМА - HSL палитра для cfg элементов
+   ============================================================================
+   
+   ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ для всех цветов cfg элементов
+   Все цвета определены здесь как CSS переменные
+   
+   ============================================================================ */
+
+:root {
+  /* Fallback до загрузки ColorSystem.js */
+  --theme-hue: 350;   /* hue Винного #722F37 */
+  --intensity: 1;
+
+  /* === НАСЫЩЕННОСТЬ ПАЛИТР (сдержанная: 55–65%) === */
+  --palette-sat: calc(55% + var(--intensity) * 5%);
+  --category-accent: hsl(210, 48%, 58%);
+  
+  /* === ПАЛИТРА (10 цветов) - сдержанные тона, L 55–60% === */
+  --palette-1: hsl(calc(var(--theme-hue) + 0),   var(--palette-sat), 56%);
+  --palette-2: hsl(calc(var(--theme-hue) + 30),  var(--palette-sat), 58%);
+  --palette-3: hsl(calc(var(--theme-hue) + 60),  var(--palette-sat), 60%);
+  --palette-4: hsl(calc(var(--theme-hue) + 90),  var(--palette-sat), 55%);
+  --palette-5: hsl(calc(var(--theme-hue) + 120), var(--palette-sat), 54%);
+  --palette-6: hsl(calc(var(--theme-hue) + 180), var(--palette-sat), 56%);
+  --palette-7: hsl(calc(var(--theme-hue) + 210), var(--palette-sat), 58%);
+  --palette-8: hsl(calc(var(--theme-hue) + 240), var(--palette-sat), 56%);
+  --palette-9: hsl(calc(var(--theme-hue) + 270), var(--palette-sat), 58%);
+  --palette-10: hsl(calc(var(--theme-hue) + 300), var(--palette-sat), 60%);
+  
+  /* === СЧЕТА (10 цветов) — сдержанная палитра S 55–65%, L 55–62% === */
+  --account-1:  hsl(200, 60%, 58%);
+  --account-2:  hsl(210, 58%, 56%);
+  --account-3:  hsl(220, 56%, 54%);
+  --account-4:  hsl(230, 54%, 54%);
+  --account-5:  hsl(240, 52%, 52%);
+  --account-6:  hsl(250, 52%, 54%);
+  --account-7:  hsl(260, 50%, 56%);
+  --account-8:  hsl(270, 48%, 58%);
+  --account-9:  hsl(280, 48%, 56%);
+  --account-10: hsl(290, 46%, 54%);
+  
+  /* === ДОХОДЫ (10 цветов) — сдержанная зелёная палитра S 50–60%, L 52–58% === */
+  --income-1:  hsl(110, 55%, 56%);
+  --income-2:  hsl(120, 54%, 54%);
+  --income-3:  hsl(130, 52%, 56%);
+  --income-4:  hsl(140, 52%, 54%);
+  --income-5:  hsl(150, 50%, 52%);
+  --income-6:  hsl(155, 50%, 54%);
+  --income-7:  hsl(160, 48%, 52%);
+  --income-8:  hsl(165, 50%, 56%);
+  --income-9:  hsl(170, 48%, 54%);
+  --income-10: hsl(175, 50%, 56%);
+  
+  /* === РАСХОДЫ (10 цветов) — сдержанная тёплая палитра S 50–60%, L 52–58% === */
+  --expense-1:  hsl(0,   55%, 58%);
+  --expense-2:  hsl(5,   54%, 56%);
+  --expense-3:  hsl(10,  52%, 55%);
+  --expense-4:  hsl(15,  52%, 54%);
+  --expense-5:  hsl(20,  50%, 54%);
+  --expense-6:  hsl(25,  50%, 54%);
+  --expense-7:  hsl(30,  48%, 54%);
+  --expense-8:  hsl(340, 52%, 56%);
+  --expense-9:  hsl(345, 50%, 54%);
+  --expense-10: hsl(350, 52%, 56%);
+  
+  /* === ДОСУГ FILLING (10 цветов) — сдержанная тёплая палитра S 50–55%, L 52–56% === */
+  --leisure-filling-1:  hsl(0,   52%, 54%);
+  --leisure-filling-2:  hsl(8,   52%, 54%);
+  --leisure-filling-3:  hsl(16,  50%, 55%);
+  --leisure-filling-4:  hsl(24,  50%, 55%);
+  --leisure-filling-5:  hsl(32,  52%, 56%);
+  --leisure-filling-6:  hsl(38,  52%, 56%);
+  --leisure-filling-7:  hsl(44,  52%, 56%);
+  --leisure-filling-8:  hsl(48,  52%, 56%);
+  --leisure-filling-9:  hsl(50,  50%, 55%);
+  --leisure-filling-10: hsl(54,  50%, 54%);
+  
+  /* === ДОСУГ ESCAPE (10 цветов) — сдержанная сине-фиолетовая палитра S 45–55%, L 48–54% === */
+  --leisure-escape-1:  hsl(180, 48%, 50%);
+  --leisure-escape-2:  hsl(190, 48%, 52%);
+  --leisure-escape-3:  hsl(200, 46%, 52%);
+  --leisure-escape-4:  hsl(210, 46%, 50%);
+  --leisure-escape-5:  hsl(220, 44%, 48%);
+  --leisure-escape-6:  hsl(230, 44%, 48%);
+  --leisure-escape-7:  hsl(240, 42%, 46%);
+  --leisure-escape-8:  hsl(250, 42%, 48%);
+  --leisure-escape-9:  hsl(260, 40%, 50%);
+  --leisure-escape-10: hsl(270, 40%, 52%);
+  
+  --ritual-morning-1:  hsl(45,  50%, 54%);
+  --ritual-evening-1:  hsl(270, 42%, 52%);
+  
+  /* === МАКРОСЫ ПИТАНИЯ (аппетитные: белок коричневый, жир жёлтый, углеводы зелёный) === */
+  --macro-calories: hsl(15, 85%, 58%);
+  --macro-proteins: hsl(28, 48%, 46%);
+  --macro-fats: hsl(48, 72%, 52%);
+  --macro-carbs: hsl(135, 48%, 44%);
+
+  /* === CURATED-ПАЛИТРА КАТЕГОРИЙ ЗАДАЧ (12 цветов, S 40–50%, L 48–52%) === */
+  --task-category-palette-0: hsl(15, 50%, 50%);
+  --task-category-palette-1: hsl(140, 45%, 48%);
+  --task-category-palette-2: hsl(260, 45%, 50%);
+  --task-category-palette-3: hsl(0, 48%, 48%);
+  --task-category-palette-4: hsl(195, 45%, 50%);
+  --task-category-palette-5: hsl(35, 50%, 52%);
+  --task-category-palette-6: hsl(300, 40%, 50%);
+  --task-category-palette-7: hsl(170, 42%, 48%);
+  --task-category-palette-8: hsl(25, 48%, 50%);
+  --task-category-palette-9: hsl(270, 42%, 50%);
+  --task-category-palette-10: hsl(45, 48%, 52%);
+  --task-category-palette-11: hsl(330, 42%, 50%);
+
+  --task-rituals: hsl(15, 50%, 50%);
+  --task-time: hsl(140, 45%, 48%);
+  --task-body: hsl(260, 45%, 50%);
+  --task-deps: hsl(0, 48%, 48%);
+}
+
+/* ============================================================================
+   ДОПОЛНИТЕЛЬНАЯ ЯРКОСТЬ ДЛЯ ТЕМНОЙ ТЕМЫ
+   ============================================================================ */
+[data-theme="dark"] {
+  /* Умеренное повышение L (+5–6%), снижение S для сдержанности */
+  --palette-1: hsl(calc(var(--theme-hue) + 0),   calc(var(--palette-sat) - 5%), 62%);
+  --palette-2: hsl(calc(var(--theme-hue) + 30),  calc(var(--palette-sat) - 5%), 64%);
+  --palette-3: hsl(calc(var(--theme-hue) + 60),  calc(var(--palette-sat) - 5%), 66%);
+  --palette-4: hsl(calc(var(--theme-hue) + 90),  calc(var(--palette-sat) - 5%), 61%);
+  --palette-5: hsl(calc(var(--theme-hue) + 120), calc(var(--palette-sat) - 5%), 60%);
+  --palette-6: hsl(calc(var(--theme-hue) + 180), calc(var(--palette-sat) - 5%), 62%);
+  --palette-7: hsl(calc(var(--theme-hue) + 210), calc(var(--palette-sat) - 5%), 64%);
+  --palette-8: hsl(calc(var(--theme-hue) + 240), calc(var(--palette-sat) - 5%), 62%);
+  --palette-9: hsl(calc(var(--theme-hue) + 270), calc(var(--palette-sat) - 5%), 64%);
+  --palette-10: hsl(calc(var(--theme-hue) + 300), calc(var(--palette-sat) - 5%), 66%);
+  
+  --account-1:  hsl(200, 52%, 62%);
+  --account-2:  hsl(210, 50%, 60%);
+  --account-3:  hsl(220, 48%, 58%);
+  --account-4:  hsl(230, 46%, 58%);
+  --account-5:  hsl(240, 44%, 56%);
+  --account-6:  hsl(250, 44%, 58%);
+  --account-7:  hsl(260, 42%, 60%);
+  --account-8:  hsl(270, 40%, 62%);
+  --account-9:  hsl(280, 40%, 60%);
+  --account-10: hsl(290, 38%, 58%);
+  
+  --income-1:  hsl(110, 48%, 60%);
+  --income-2:  hsl(120, 46%, 58%);
+  --income-3:  hsl(130, 44%, 60%);
+  --income-4:  hsl(140, 44%, 58%);
+  --income-5:  hsl(150, 42%, 56%);
+  --income-6:  hsl(155, 42%, 58%);
+  --income-7:  hsl(160, 40%, 56%);
+  --income-8:  hsl(165, 42%, 60%);
+  --income-9:  hsl(170, 40%, 58%);
+  --income-10: hsl(175, 42%, 60%);
+  
+  --expense-1:  hsl(0,   48%, 62%);
+  --expense-2:  hsl(5,   46%, 60%);
+  --expense-3:  hsl(10,  44%, 59%);
+  --expense-4:  hsl(15,  44%, 58%);
+  --expense-5:  hsl(20,  42%, 58%);
+  --expense-6:  hsl(25,  42%, 58%);
+  --expense-7:  hsl(30,  40%, 58%);
+  --expense-8:  hsl(340, 44%, 60%);
+  --expense-9:  hsl(345, 42%, 58%);
+  --expense-10: hsl(350, 44%, 60%);
+  
+  --leisure-filling-1:  hsl(0,   44%, 58%);
+  --leisure-filling-2:  hsl(8,   44%, 58%);
+  --leisure-filling-3:  hsl(16,  42%, 59%);
+  --leisure-filling-4:  hsl(24,  42%, 59%);
+  --leisure-filling-5:  hsl(32,  44%, 60%);
+  --leisure-filling-6:  hsl(38,  44%, 60%);
+  --leisure-filling-7:  hsl(44,  44%, 60%);
+  --leisure-filling-8:  hsl(48,  44%, 60%);
+  --leisure-filling-9:  hsl(50,  42%, 59%);
+  --leisure-filling-10: hsl(54,  42%, 58%);
+  
+  --leisure-escape-1:  hsl(180, 40%, 54%);
+  --leisure-escape-2:  hsl(190, 40%, 56%);
+  --leisure-escape-3:  hsl(200, 38%, 56%);
+  --leisure-escape-4:  hsl(210, 38%, 54%);
+  --leisure-escape-5:  hsl(220, 36%, 52%);
+  --leisure-escape-6:  hsl(230, 36%, 52%);
+  --leisure-escape-7:  hsl(240, 34%, 50%);
+  --leisure-escape-8:  hsl(250, 34%, 52%);
+  --leisure-escape-9:  hsl(260, 32%, 54%);
+  --leisure-escape-10: hsl(270, 32%, 56%);
+  
+  --ritual-morning-1:  hsl(45,  42%, 58%);
+  --ritual-evening-1:  hsl(270, 34%, 56%);
+  
+  --task-category-palette-0: hsl(15, 42%, 55%);
+  --task-category-palette-1: hsl(140, 38%, 53%);
+  --task-category-palette-2: hsl(260, 38%, 55%);
+  --task-category-palette-3: hsl(0, 40%, 53%);
+  --task-category-palette-4: hsl(195, 38%, 55%);
+  --task-category-palette-5: hsl(35, 42%, 57%);
+  --task-category-palette-6: hsl(300, 32%, 55%);
+  --task-category-palette-7: hsl(170, 34%, 53%);
+  --task-category-palette-8: hsl(25, 40%, 55%);
+  --task-category-palette-9: hsl(270, 34%, 55%);
+  --task-category-palette-10: hsl(45, 40%, 57%);
+  --task-category-palette-11: hsl(330, 34%, 55%);
+
+  --task-rituals: hsl(15, 42%, 55%);
+  --task-time: hsl(140, 38%, 53%);
+  --task-body: hsl(260, 38%, 55%);
+  --task-deps: hsl(0, 40%, 53%);
+  
+  --category-accent: hsl(210, 40%, 62%);
+
+  --macro-calories: hsl(15, 55%, 54%);
+  --macro-proteins: hsl(28, 48%, 46%);
+  --macro-fats: hsl(48, 72%, 52%);
+  --macro-carbs: hsl(135, 48%, 44%);
+}
+
+[data-theme="dim"] {
+  --palette-1: hsl(calc(var(--theme-hue) + 0),   calc(var(--palette-sat) - 4%), 59%);
+  --palette-2: hsl(calc(var(--theme-hue) + 30),  calc(var(--palette-sat) - 4%), 61%);
+  --palette-3: hsl(calc(var(--theme-hue) + 60),  calc(var(--palette-sat) - 4%), 63%);
+  --palette-4: hsl(calc(var(--theme-hue) + 90),  calc(var(--palette-sat) - 4%), 58%);
+  --palette-5: hsl(calc(var(--theme-hue) + 120), calc(var(--palette-sat) - 4%), 57%);
+  --palette-6: hsl(calc(var(--theme-hue) + 180), calc(var(--palette-sat) - 4%), 59%);
+  --palette-7: hsl(calc(var(--theme-hue) + 210), calc(var(--palette-sat) - 4%), 61%);
+  --palette-8: hsl(calc(var(--theme-hue) + 240), calc(var(--palette-sat) - 4%), 59%);
+  --palette-9: hsl(calc(var(--theme-hue) + 270), calc(var(--palette-sat) - 4%), 61%);
+  --palette-10: hsl(calc(var(--theme-hue) + 300), calc(var(--palette-sat) - 4%), 63%);
+
+  --category-accent: hsl(210, 42%, 60%);
+  --macro-calories: hsl(15, 62%, 56%);
+  --macro-proteins: hsl(28, 48%, 46%);
+  --macro-fats: hsl(48, 72%, 52%);
+  --macro-carbs: hsl(135, 48%, 44%);
+}
+

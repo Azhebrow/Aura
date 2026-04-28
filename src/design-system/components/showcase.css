@@ -1,0 +1,316 @@
+.settings-sections-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.components-container {
+  padding: 0;
+  gap: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.showcase-table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  border: var(--border-width) solid var(--color-border);
+  box-sizing: border-box;
+  table-layout: auto;
+}
+
+.showcase-table td {
+  padding: var(--space-md);
+  border-bottom: var(--border-width) solid var(--color-border);
+  border-right: var(--border-width) solid var(--color-border);
+  vertical-align: top;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.showcase-table td:last-child {
+  border-right: none;
+}
+
+.showcase-table td:first-child {
+  min-width: 120px;
+  max-width: 200px;
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  opacity: 0.7;
+}
+
+.showcase-table td:nth-child(2) {
+  min-width: 120px;
+  max-width: 200px;
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  opacity: 0.7;
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-sm);
+}
+
+
+.showcase-category-header {
+  font-weight: var(--font-medium);
+  font-size: var(--font-sm);
+  color: var(--color-on-surface);
+  background-color: var(--color-section-fill-dense, var(--color-section-background));
+}
+
+.showcase-category-header td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: var(--border-width) solid var(--color-border);
+  border-right: var(--border-width) solid var(--color-border);
+}
+
+.showcase-category-header td:last-child {
+  border-right: none;
+}
+
+.showcase-element-wrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+.showcase-slider-wrapper {
+  display: flex;
+  align-items: center;
+  height: var(--height-control);
+  width: 100%;
+}
+
+.showcase-icon-group {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.showcase-icon {
+  width: var(--height-control);
+  height: var(--height-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-element);
+  border-radius: var(--radius);
+  color: var(--color-on-surface);
+  padding: var(--space-sm);
+}
+
+.showcase-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.showcase-calendar-group {
+  display: flex;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+/* ============================================
+   TOKEN SHOWCASE - Демонстрация токенов
+   ============================================ */
+
+.token-showcase {
+  padding: var(--space-md);
+}
+
+.token-showcase-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  margin-bottom: var(--space-md);
+}
+
+/* Скрываем дублированный заголовок в token-showcase */
+.token-showcase-title {
+  display: none;
+}
+
+.token-section {
+  margin-bottom: var(--space-md);
+}
+
+.token-section:last-child {
+  margin-bottom: 0;
+}
+
+.token-section-title {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--font-sm);
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  opacity: 0.6;
+}
+
+.token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-sm);
+}
+
+/* Цвета */
+.token-color-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.token-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  border: var(--border-width) solid var(--color-border);
+}
+
+.token-color-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.token-color-name {
+  font-size: var(--font-sm);
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Отступы */
+.token-spacing-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.token-spacing-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-element);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.token-spacing-box {
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-accent);
+  border-radius: var(--radius);
+}
+
+.token-spacing-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.token-spacing-name {
+  font-size: var(--font-sm);
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-spacing-pixels {
+  font-size: var(--font-sm);
+  color: var(--color-accent);
+  font-weight: var(--font-normal);
+  margin-top: 2px;
+}
+
+/* Типографика */
+.token-typography-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.token-typography-sample {
+  color: var(--color-on-surface);
+  line-height: 1.3;
+}
+
+.token-typography-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.token-typography-name {
+  font-size: var(--font-sm);
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-typography-pixels {
+  font-size: var(--font-sm);
+  color: var(--color-accent);
+  font-weight: var(--font-normal);
+}
+
+/* Рамки */
+.token-border-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.token-border-demo {
+  flex-shrink: 0;
+}
+
+.token-border-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.token-border-name {
+  font-size: var(--font-sm);
+  font-weight: var(--font-normal);
+  color: var(--color-on-surface);
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-border-pixels {
+  font-size: var(--font-sm);
+  color: var(--color-accent);
+  font-weight: var(--font-normal);
+  margin-top: 2px;
+}

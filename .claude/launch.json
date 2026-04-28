@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "AURA Dev (Vite + Electron)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "AURA Renderer only (Vite)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:renderer"],
+      "port": 5173
+    },
+    {
+      "name": "AURA Mini App (Mini-server + Vite)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:mini-app"],
+      "port": 5173
+    }
+  ]
+}
