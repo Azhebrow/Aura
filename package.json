@@ -4,7 +4,10 @@
   "description": "Offline Electron application",
   "main": "main.js",
   "scripts": {
-    "desktop": "concurrently -k \"node server-mini-app/index.js\" \"vite\" \"wait-on http://127.0.0.1:5173 && cross-env AURA_USE_VITE=1 electron .\"",
+    "postinstall": "cd server-mini-app && npm install && cd .. && npm run rebuild-native",
+    "rebuild-native": "electron-rebuild -f -w better-sqlite3 || true",
+    "setup": "node scripts/setup.js",
+    "desktop": "node scripts/cleanup-ports.js && concurrently -k \"node server-mini-app/index.js\" \"vite\" \"wait-on http://127.0.0.1:5173 && cross-env AURA_USE_VITE=1 electron .\"",
     "build": "echo '🔨 Сборка renderer + Electron…' && vite build && electron-builder --dir",
     "build:mac": "echo '🍎 Создание установщика AURA для macOS...' && vite build && electron-builder --mac",
     "clear-db": "echo '🗑️  Очистка базы данных...' && node scripts/clear-db-standalone.js"

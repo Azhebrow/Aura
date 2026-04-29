@@ -65,6 +65,7 @@ import { MobileSectionSwitcher } from '@/shared/ui/mobile-section-switcher';
 import { ModeSwitchHeader } from '@/shared/ui/mode-switch-header';
 import { SectionControlCard } from '@/shared/ui/section-control-card';
 import { ActAffixValueField, ActModalFooter } from '@/features/act/ActModal';
+import { AURA_DATA_CHANGED } from '@/features/stats/stats-data-events';
 
 type RitualKind = 'morning' | 'evening';
 type GoalsMode = 'active' | 'archive';
@@ -96,7 +97,7 @@ type GoalsDbApi = {
 };
 
 const RITUALS_KIND_STORAGE = 'aura-rituals-kind';
-const RAW_BUTTON_FOCUS_CN = 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none';
+const RAW_BUTTON_FOCUS_CN = 'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none';
 const CFG_DIALOG_INPUT_CN =
   'border-input bg-background h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-xs';
 const CFG_DIALOG_ICON_TRIGGER_CN =
@@ -835,7 +836,7 @@ function GoalTaskDialog({
 function RitualsChecklistPanel() {
   const { dateString } = useSelectedDate();
   const { db, ready } = useAuraDb();
-  const { getCached, setCached } = useRitualsCache(dateString);
+  const { getCached, setCached, invalidate } = useRitualsCache(dateString);
   const [kind, setKind] = useState<RitualKind>('morning');
   const [priorityKind, setPriorityKind] = useState<RitualKind>('morning');
   const [morningRituals, setMorningRituals] = useState<AuraRow[]>(() => {
@@ -887,9 +888,21 @@ function RitualsChecklistPanel() {
     setIsLoaded(true);
   }, [db, dateString, setCached]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     reload();
   }, [reload]);
+
+  useEffect(() => {
+    const onData = (ev: Event) => {
+      const t = (ev as CustomEvent<{ type?: string }>).detail?.type;
+      if (t === 'ritual') {
+        invalidate();
+        reload();
+      }
+    };
+    window.addEventListener(AURA_DATA_CHANGED, onData);
+    return () => window.removeEventListener(AURA_DATA_CHANGED, onData);
+  }, [reload, invalidate]);
 
   const toggle = (kind: RitualKind, ritualId: string, checked: boolean) => {
     if (!db) return;
@@ -977,7 +990,7 @@ function RitualsChecklistPanel() {
               <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-0.5 lg:hidden">
               {orderedSections.map((section) => (
                 <section key={section.kind} className="flex min-h-0 flex-col gap-1.5">
-                  <p className="text-muted-foreground px-1 text-[10px] font-semibold uppercase tracking-wider">
+                  <p className="text-muted-foreground px-1 text-xs font-semibold uppercase tracking-wider">
                     {section.title}
                   </p>
                   {section.rituals.length === 0 ? (

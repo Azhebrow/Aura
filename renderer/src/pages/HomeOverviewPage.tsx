@@ -24,7 +24,7 @@ export function HomeOverviewPage() {
   const vis = useMemo(() => {
     if (!db) return getPageSectionsFromSettings(null);
     return getPageSectionsFromSettings(db.getAppSettings());
-  }, [db, ready]);
+  }, [db]);
 
   const showTasks = vis.home.tasksCategories !== false;
   const showTx = vis.home.transactions !== false;

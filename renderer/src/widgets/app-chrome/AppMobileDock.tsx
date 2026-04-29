@@ -10,18 +10,28 @@ function DockPageButton({ page, active, onSelect }: { page: NavPageDefinition; a
     <button
       type="button"
       className={cn(
-        'relative flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-xl px-1 py-2 text-xs font-medium transition-all duration-aura-fast ease-aura',
-        'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none',
+        'relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-2 aura-tx-interactive',
+        'focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
         active
-          ? 'bg-muted text-foreground'
-          : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground active:scale-[0.98]'
+          ? 'text-primary'
+          : 'text-muted-foreground hover:text-foreground active:scale-[0.95]'
       )}
       aria-current={active ? 'page' : undefined}
       onClick={onSelect}
     >
-      <Icon className="size-5 shrink-0" strokeWidth={active ? 2.35 : 2} aria-hidden />
+      <Icon
+        className="size-[var(--nav-icon-size)] shrink-0"
+        strokeWidth={active ? 2.2 : 1.9}
+        aria-hidden
+      />
       <span className="sr-only">{page.label}</span>
-      {active ? <span className="bg-foreground/80 absolute -bottom-0.5 h-0.5 w-4 rounded-full" aria-hidden /> : null}
+      <span
+        className={cn(
+          'h-0.5 w-3.5 rounded-full aura-tx-interactive',
+          active ? 'bg-primary opacity-100' : 'opacity-0'
+        )}
+        aria-hidden
+      />
     </button>
   );
 }

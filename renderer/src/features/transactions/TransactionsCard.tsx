@@ -7,12 +7,12 @@ import { useSelectedDate } from '@/features/selected-date/selected-date-context'
 import { AddTransactionDialog } from '@/features/transactions/AddTransactionDialog';
 import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
+import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
 import { formatAmount } from '@/shared/lib/money';
 import { resolveTransactionRow } from '@/shared/lib/finance-display';
 import type { AuraRow } from '@/types/aura';
 import { cn } from '@/lib/utils';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
-import { AURA_DATA_CHANGED } from '@/features/stats/stats-data-events';
 
 type TransactionsCardProps = {
   cardClassName?: string;
@@ -54,6 +54,7 @@ function loadTopAccounts(db: NonNullable<ReturnType<typeof useAuraDb>['db']>): F
 export function TransactionsCard({ cardClassName, contentClassName }: TransactionsCardProps = {}) {
   const { dateString } = useSelectedDate();
   const { db, ready } = useAuraDb();
+  const dataTick = useAuraDataRefresh({ types: ['transaction'] });
   const [rows, setRows] = useState<AuraRow[]>([]);
   const [currency, setCurrency] = useState<string | undefined>('RUB');
   const [topAccounts, setTopAccounts] = useState<FinanceAccountSummary[]>([]);
@@ -74,16 +75,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
   useEffect(() => {
     if (!ready) return;
     reload();
-  }, [ready, reload]);
-
-  useEffect(() => {
-    const onData = (event: Event) => {
-      const type = (event as CustomEvent<{ type?: string }>).detail?.type;
-      if (type === 'transaction') reload();
-    };
-    window.addEventListener(AURA_DATA_CHANGED, onData);
-    return () => window.removeEventListener(AURA_DATA_CHANGED, onData);
-  }, [reload]);
+  }, [ready, reload, dataTick]);
 
   const remove = (id: string) => {
     if (!db) return;
@@ -166,7 +158,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                               <span className="inline-flex min-w-0 items-center gap-1.5">
                                 <span className="truncate">{r.title}</span>
                                 <span
-                                  className="inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-[10px] leading-none text-amber-700 dark:text-amber-200"
+                                  className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200"
                                   title="Импульсивная покупка"
                                 >
                                   <AlertTriangle className="size-3" aria-hidden />

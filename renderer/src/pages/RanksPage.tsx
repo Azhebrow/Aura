@@ -444,7 +444,8 @@ function RankLadder({
         ref={stripRef}
         className={cn(
           'min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4',
-          'grid auto-rows-[minmax(7.5rem,1fr)] gap-2 content-stretch',
+          'grid gap-2 content-stretch',
+          'auto-rows-[minmax(5rem,1fr)] sm:auto-rows-[minmax(6rem,1fr)] xl:auto-rows-[minmax(6.75rem,1fr)]',
           'grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))]'
         )}
       >
@@ -501,13 +502,13 @@ function RankRibbonCard({
     return (
       <div
         className={cn(
-          'isolate flex min-h-[7.5rem] flex-col items-center justify-center rounded-xl border border-border/30 bg-muted/20 p-2 text-center',
+          'isolate flex flex-col items-center justify-center rounded-xl border border-border/30 bg-muted/20 p-2 text-center',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura'
         )}
         title={`${tier.name} — ${tier.threshold}+`}
       >
         <Lock className="size-5 text-muted-foreground/40" aria-hidden />
-        <span className="mt-1 font-mono text-[10px] text-muted-foreground/40 tabular-nums">{tier.threshold}+</span>
+        <span className="mt-1 font-mono text-xs text-muted-foreground/40 tabular-nums">{tier.threshold}+</span>
       </div>
     );
   }
@@ -517,7 +518,7 @@ function RankRibbonCard({
       type="button"
       onClick={() => onSelect(tier.id)}
         className={cn(
-          'isolate flex min-h-[7.5rem] flex-col items-stretch rounded-xl border border-border/60 px-2 py-2 text-center',
+          'isolate flex flex-col items-stretch rounded-xl border border-border/60 px-2 py-2 text-center',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura',
           'w-full self-start',
           !isCurrent && 'bg-card/85 opacity-95',
@@ -550,7 +551,7 @@ function RankRibbonCard({
           {tier.name}
         </span>
       </div>
-      <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+      <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
         {tier.threshold}+
       </span>
     </button>
@@ -584,7 +585,7 @@ function RankImage({
       <div
         aria-hidden
         className={cn(
-          'absolute inset-0 rounded-md bg-muted/45 transition-opacity duration-200 ease-out',
+          'absolute inset-0 rounded-md bg-muted/45 aura-tx-opacity',
           loaded && 'opacity-0'
         )}
       />

@@ -491,7 +491,7 @@ export function TimerStatusPage() {
                                       className={cn(
                                         'rounded-none border-0 bg-transparent shadow-none pointer-events-none',
                                         'hover:border-0 hover:bg-transparent hover:shadow-none',
-                                        'transition-all duration-200 ease-in-out'
+                                        'aura-tx-surface'
                                       )}
                                       onEdit={undefined}
                                     />
@@ -580,7 +580,7 @@ export function TimerStatusPage() {
                         <div className="bg-muted-foreground/25 h-full w-full" />
                       )}
                     </div>
-                    <p className="text-muted-foreground text-center text-[10px] leading-none tabular-nums">
+                    <p className="text-muted-foreground text-center text-xs leading-none tabular-nums">
                       {timerShare.totalSec > 0
                         ? `${Math.round(timerShare.focusPct)} / ${Math.round(timerShare.escapePct)} / ${Math.round(timerShare.fillingPct)}`
                         : '0 / 0 / 0'}
@@ -604,7 +604,7 @@ export function TimerStatusPage() {
                     className={cn(
                       'text-foreground flex w-full min-w-0 shrink-0 items-center gap-3 rounded-lg border border-border/60 bg-muted/10 px-3 py-2.5 text-left shadow-sm',
                       'motion-safe:transition-[transform,box-shadow,opacity] motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]',
-                      'hover:bg-muted/20 focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none',
+                      'hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
                       'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.99] motion-safe:duration-300'
                     )}
                   >
@@ -690,7 +690,7 @@ export function TimerStatusPage() {
                             iconTint={resolvedRowTint}
                             title={label}
                             amount={`${mins} мин · ${isStopwatch ? 'секундомер' : 'таймер'}`}
-                            className="transition-all duration-200 ease-in-out"
+                            className="aura-tx-surface"
                             onEdit={() => {
                               if (!dayLocked) openEditSession(s);
                             }}

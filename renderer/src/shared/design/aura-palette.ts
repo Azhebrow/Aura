@@ -78,10 +78,10 @@ export const FINANCE_SEMANTIC = {
   negative: 'hsl(356, 58%, 48%)',
 } as const;
 
-/** Насыщенные статичные токены для режимов статистики и таблиц. */
+/** Токены для эскапизма/наполнения — адаптируются к теме через CSS-переменные. */
 export const LEISURE_SEMANTIC = {
-  filling: 'hsl(42, 58%, 55%)',
-  escape: 'hsl(232, 48%, 56%)',
+  filling: 'var(--leisure-filling)',
+  escape: 'var(--leisure-escape)',
 } as const;
 
 export const RITUAL_SEMANTIC = {

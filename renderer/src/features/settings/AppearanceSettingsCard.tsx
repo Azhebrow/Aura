@@ -209,7 +209,7 @@ export function AppearanceSettingsCard() {
                   aria-pressed={selected}
                   onClick={() => persistAccentPreset(item.value)}
                   className={cn(
-                    'relative inline-flex size-9 items-center justify-center rounded-full transition-transform duration-200 ease-out hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                    'relative inline-flex size-9 items-center justify-center rounded-full aura-tx-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     ACCENT_SWATCH[item.value],
                     selected && 'ring-2 ring-foreground/40 ring-offset-2 ring-offset-background scale-110'
                   )}

@@ -71,7 +71,7 @@ function StatRow({ icon: Icon, label, value, muted, compact }: RowProps) {
   if (compact) {
     return (
       <div className="flex items-center gap-1.5">
-        <span className="bg-muted/80 text-muted-foreground flex size-5 shrink-0 items-center justify-center rounded-md ring-1 ring-border/50">
+        <span className="bg-muted/80 text-muted-foreground flex size-5 shrink-0 items-center justify-center rounded-lg ring-1 ring-border/50">
           <Icon className="size-3 opacity-90" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -85,7 +85,7 @@ function StatRow({ icon: Icon, label, value, muted, compact }: RowProps) {
 
   return (
     <div className="flex items-center gap-2.5">
-      <span className="bg-muted/80 text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-border/50">
+      <span className="bg-muted/80 text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-lg ring-1 ring-border/50">
         <Icon className="size-3.5 opacity-90" aria-hidden />
       </span>
       <div className="min-w-0 flex-1 leading-tight">
@@ -212,7 +212,7 @@ export function SidebarDaySnapshot({ compact = false }: { compact?: boolean } = 
   if (compact) {
     return (
       <section
-        className="border-border/70 bg-card/80 mb-2 shrink-0 rounded-lg border p-2 shadow-sm ring-1 ring-foreground/8"
+        className="border-border/70 bg-card/80 mb-2 shrink-0 rounded-xl border p-2 shadow-sm"
         aria-label="Сводка по выбранному дню"
       >
         <div className="mb-1.5 border-b border-border/60 pb-1.5">
@@ -247,7 +247,7 @@ export function SidebarDaySnapshot({ compact = false }: { compact?: boolean } = 
 
   return (
     <section
-      className="border-border/70 bg-card/80 mb-2 shrink-0 rounded-xl border p-3 shadow-sm ring-1 ring-foreground/8"
+      className="border-border/70 bg-card/80 mb-2 shrink-0 rounded-xl border p-3 shadow-sm"
       aria-label="Сводка по выбранному дню"
     >
       <div className="mb-2.5 border-b border-border/60 pb-2">
@@ -278,8 +278,8 @@ export function SidebarDaySnapshot({ compact = false }: { compact?: boolean } = 
         <StatRow icon={UtensilsCrossed} label="Питание, ккал" value={snap.kcalLabel} muted={snap.kcalLabel === '—'} />
         <StatRow icon={Flame} label="Ритуалы" value={snap.ritualsLabel} muted={snap.ritualsLabel === '—'} />
         <div className="flex items-center gap-2.5">
-          <span className="bg-muted/80 text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-md ring-1 ring-border/50">
-            <BookOpen className="size-3.5 opacity-90" aria-hidden />
+          <span className="bg-muted/80 text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-lg ring-1 ring-border/50" aria-hidden>
+            <BookOpen className="size-3.5 opacity-90" />
           </span>
           <div className="min-w-0 flex-1 leading-tight">
             <p className="text-muted-foreground text-xs font-medium tracking-wide">Дневник</p>

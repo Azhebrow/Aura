@@ -7,6 +7,7 @@ import { PageFrame } from '@/widgets/page-frame/PageFrame';
 import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
 import { useSelectedDate, dateToYmd } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
+import { usePointsService } from '@/shared/hooks/use-points-service';
 import {
   MEGA_PAGEFRAME_CN,
   MEGA_PAGEFRAME_CONTENT_CN,
@@ -91,7 +92,7 @@ function monthCells(year: number, monthIndex: number): { d: Date; inMonth: boole
 
 export function CalendarPage() {
   const { dateString, setDateString, todayString } = useSelectedDate();
-  const { db } = useAuraDb();
+  const { db, ready } = useAuraDb();
   const todayD = parseYmd(todayString);
   const selectedDate = parseYmd(dateString) ?? todayD ?? new Date();
   const [view, setView] = useState(() => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
@@ -111,16 +112,7 @@ export function CalendarPage() {
     localStorage.setItem(DATA_TYPE_STORAGE, dataType);
   }, [dataType]);
 
-  const pointsApi = useMemo<LegacyPointsApi | null>(() => {
-    if (!db) return null;
-    const Ctor = typeof window !== 'undefined' ? window.PointsService : undefined;
-    if (!Ctor) return null;
-    try {
-      return new Ctor(db) as unknown as LegacyPointsApi;
-    } catch {
-      return null;
-    }
-  }, [db]);
+  const pointsApi = usePointsService(db, ready) as LegacyPointsApi | null;
 
   const monthData = useMemo(() => {
     if (!pointsApi) return null;
@@ -284,7 +276,7 @@ export function CalendarPage() {
                           inMonth ? 'bg-card border-border/70 text-foreground' : 'bg-muted/30 border-border/45 text-muted-foreground',
                           !future && inMonth && !isSel && 'hover:border-border hover:bg-muted/20',
                           isSel && 'border-primary/50 bg-primary/8 text-foreground shadow-sm',
-                          'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none',
+                          'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
                           future && '!bg-transparent !border-border/25 !text-muted-foreground',
                           future && 'pointer-events-none',
                           statusSurface

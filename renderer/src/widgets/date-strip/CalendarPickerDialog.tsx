@@ -223,7 +223,7 @@ export function CalendarPickerDialog({ open, onOpenChange, mode = 'compact' }: P
                       !future && inMonth && 'hover:bg-muted/50',
                       isSel && 'border-primary bg-primary text-primary-foreground shadow-sm',
                       !isSel && isToday && 'ring-primary/35 ring-1',
-                      'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none',
+                      'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
                       future && '!bg-transparent !border-border/20 !text-muted-foreground',
                       future && 'calendar-ghost-day pointer-events-none'
                     )}

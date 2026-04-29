@@ -576,7 +576,7 @@ export function DiaryEditorPage() {
                     onMouseUp={saveEditorSelection}
                     onKeyUp={saveEditorSelection}
                   />
-                  <span className="text-muted-foreground pointer-events-none absolute bottom-1.5 right-3 text-[10px] tabular-nums sm:right-4">
+                  <span className="text-muted-foreground pointer-events-none absolute bottom-1.5 right-3 text-xs tabular-nums sm:right-4">
                     S {toPlainText(text).length}
                   </span>
                 </div>

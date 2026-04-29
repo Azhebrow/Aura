@@ -24,13 +24,13 @@ export function CheckStatusControl({
   return (
     <label
       className={cn(
-        'inline-flex items-center gap-1.5 transition-all duration-aura-base ease-aura',
+        'inline-flex items-center gap-1.5 aura-tx-colors',
         className
       )}
     >
       <span
         className={cn(
-          'inline-flex size-5 items-center justify-center rounded-[5px] border transition-all duration-aura-base ease-aura',
+          'inline-flex size-5 items-center justify-center rounded-md border aura-tx-interactive',
           checked
             ? 'border-primary bg-primary text-primary-foreground shadow-sm'
             : 'border-border/50 bg-muted/20 text-transparent hover:border-border/70 hover:bg-muted/35'

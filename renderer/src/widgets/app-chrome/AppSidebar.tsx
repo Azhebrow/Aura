@@ -55,10 +55,11 @@ export function AppSidebar() {
             type="button"
             onClick={toggleCalendar}
             className={cn(
-              'border-border bg-background/90 text-foreground hover:bg-muted/80 focus-visible:ring-ring/80 inline-flex h-8 items-center gap-1.5 rounded-lg border px-2 text-xs font-medium outline-none shadow-sm transition-all duration-aura-base ease-aura focus-visible:ring-2',
+              'border-border inline-flex h-8 items-center gap-1.5 rounded-lg border px-2 text-xs font-medium outline-none aura-tx-interactive',
+              'focus-visible:ring-2 focus-visible:ring-ring/70',
               activePageId === 'calendar'
-                ? 'border-primary/40 bg-primary/10 text-primary'
-                : 'opacity-80 hover:opacity-100'
+                ? 'border-primary/40 bg-primary/15 text-primary'
+                : 'bg-background/80 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
             )}
             aria-label={activePageId === 'calendar' ? 'Вернуться назад' : 'Открыть календарь'}
             title={activePageId === 'calendar' ? 'Вернуться назад' : 'Открыть календарь'}

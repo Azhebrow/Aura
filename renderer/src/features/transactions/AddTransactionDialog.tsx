@@ -438,7 +438,7 @@ export function AddTransactionDialog({
                                 <span className="truncate">{label}</span>
                                 {isCompulsiveCategory(c) ? (
                                   <span
-                                    className="inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-[10px] leading-none text-amber-700 dark:text-amber-200"
+                                    className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200"
                                     title="Импульсивная категория"
                                   >
                                     <AlertTriangle className="size-3" aria-hidden />

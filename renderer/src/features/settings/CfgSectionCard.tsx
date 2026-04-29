@@ -1089,7 +1089,7 @@ export function CfgSectionCard({ spec }: Props) {
             setColorDraft(pickerSeed);
             setDialogSub({ k: 'color', field: f.key });
           }}
-          className="border-input focus-visible:ring-ring/50 h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-xs aura-tx-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
+          className="border-input focus-visible:ring-ring/70 h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-xs aura-tx-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
           style={{
             backgroundColor: paint ?? undefined,
             backgroundImage: paint ? undefined : emptyPattern,
@@ -1274,7 +1274,7 @@ export function CfgSectionCard({ spec }: Props) {
                         <span className="inline-flex min-w-0 items-center gap-1.5">
                           <span className="truncate">{rowTitle(r, spec.rowTitleKeys)}</span>
                           <span
-                            className="inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-[10px] leading-none text-amber-700 dark:text-amber-200"
+                            className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200"
                             title="Импульсивная категория"
                           >
                             <AlertTriangle className="size-3" aria-hidden />

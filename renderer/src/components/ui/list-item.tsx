@@ -75,7 +75,7 @@ export function ListItem({
       <div
         onClick={handleMainClick}
         className={cn(
-          'group border-border/40 bg-muted/8 overflow-hidden rounded border transition-all duration-aura-base ease-aura',
+          'group border-border/40 bg-muted/8 overflow-hidden rounded-lg border aura-tx-surface',
           'hover:bg-muted/12 hover:border-border/50 cursor-pointer',
           className
         )}
@@ -124,7 +124,7 @@ export function ListItem({
     <div
       onClick={handleMainClick}
       className={cn(
-        'group border-border/40 bg-muted/8 grid overflow-hidden rounded border transition-all duration-aura-base ease-aura',
+        'group border-border/40 bg-muted/8 grid overflow-hidden rounded-lg border aura-tx-surface',
         'hover:bg-muted/12 hover:border-border/50 cursor-pointer',
         gridClass,
         className
@@ -161,7 +161,7 @@ export function ListItem({
           </div>
           {/* ИСПРАВЛЕНИЕ #7: Amount для edit-delete */}
           {amount && mode === 'edit-delete' && (
-            <div className="text-xs text-foreground/85 mt-0.5 font-medium transition-[color,opacity] duration-200 ease-in-out">
+            <div className="text-xs text-foreground/85 mt-0.5 font-medium aura-tx-colors">
               {amount}
             </div>
           )}
@@ -203,7 +203,7 @@ export function ListItem({
               }}
               disabled={!onMoveUp}
               className={cn(
-                'flex h-full shrink-0 items-center justify-center px-2 py-2 transition-all duration-aura-base ease-aura',
+                'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
                 onMoveUp ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
               )}
               aria-label="Переместить вверх"
@@ -219,7 +219,7 @@ export function ListItem({
               }}
               disabled={!onMoveDown}
               className={cn(
-                'flex h-full shrink-0 items-center justify-center px-2 py-2 transition-all duration-aura-base ease-aura',
+                'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
                 onMoveDown ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
               )}
               aria-label="Переместить вниз"
@@ -235,7 +235,7 @@ export function ListItem({
                   onDelete();
                 }}
                 className={cn(
-                  'flex h-full shrink-0 items-center justify-center px-2 py-2 transition-all duration-aura-base ease-aura',
+                  'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
                   'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
                 )}
                 aria-label="Удалить"
@@ -269,7 +269,7 @@ export function ListItem({
                   onMoveUp();
                 }}
                 className={cn(
-                  'flex items-center justify-center px-2 py-2 transition-all duration-aura-base ease-aura h-full',
+                  'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
                   'text-muted-foreground hover:text-foreground hover:bg-muted/20'
                 )}
                 aria-label="Переместить вверх"
@@ -285,7 +285,7 @@ export function ListItem({
                   onMoveDown();
                 }}
                 className={cn(
-                  'flex items-center justify-center px-2 py-2 transition-all duration-aura-base ease-aura h-full',
+                  'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
                   'text-muted-foreground hover:text-foreground hover:bg-muted/20'
                 )}
                 aria-label="Переместить вниз"
@@ -301,7 +301,7 @@ export function ListItem({
                   onDelete();
                 }}
                 className={cn(
-                  'flex items-center justify-center px-2 py-2 transition-all duration-aura-base ease-aura h-full',
+                  'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
                   'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
                 )}
                 aria-label="Удалить"

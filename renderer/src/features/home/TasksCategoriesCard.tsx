@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Check,
+  Flame,
   Moon,
   Sun,
   Sunrise,
@@ -17,7 +18,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
-import { AURA_DATA_CHANGED } from '@/features/stats/stats-data-events';
 import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
@@ -183,8 +183,10 @@ function TaskRowFrame({
     const titleW = titleEl.getBoundingClientRect().width;
     const pctW = pctEl.getBoundingClientRect().width;
 
+    const iconCovered = coveredPx(iconEl);
+
     const next = {
-      iconPx: coveredPx(iconEl),
+      iconPx: iconCovered,
       iconW,
       titlePct: pctFor(coveredPx(titleEl), titleW),
       pctPct: pctFor(coveredPx(pctEl), pctW),
@@ -322,7 +324,7 @@ function TaskRowFrame({
         ref={rowRef}
         className={cn(
           'relative z-10 hidden lg:flex min-w-0 flex-1 items-center gap-x-2 px-2.5 py-1.5 pointer-events-none',
-          'lg:gap-x-2.5 lg:px-3 lg:py-2 lg:transition-opacity lg:duration-150 lg:group-hover/task:pointer-events-none lg:group-hover/task:opacity-0'
+          'lg:gap-x-2.5 lg:px-3 lg:py-2 lg:transition-opacity lg:duration-aura-fast lg:ease-aura lg:group-hover/task:pointer-events-none lg:group-hover/task:opacity-0'
         )}
       >
         <div ref={iconSegRef} className="shrink-0">
@@ -334,7 +336,7 @@ function TaskRowFrame({
             />
             <div
               className="pointer-events-none absolute inset-0 overflow-hidden"
-              style={{ width: `${Math.max(0, segClip.iconPx)}px` }}
+              style={{ width: uiPct >= 100 ? '100%' : `${Math.max(0, segClip.iconPx)}px` }}
               aria-hidden
             >
               <div className="absolute inset-0">
@@ -377,7 +379,7 @@ function TaskRowFrame({
         className={cn(
           'relative z-20 flex items-center justify-center basis-1/2 shrink-0',
           'lg:min-w-[3rem] lg:border-l lg:border-border/40 lg:bg-background/92 lg:pr-0',
-          'lg:absolute lg:inset-0 lg:z-30 lg:min-h-0 lg:min-w-[auto] lg:basis-auto lg:items-stretch lg:justify-stretch lg:bg-popover lg:text-popover-foreground lg:pr-0 lg:opacity-0 lg:pointer-events-none lg:shadow-sm lg:ring-1 lg:ring-border/60 lg:transition-opacity lg:duration-150 lg:group-hover/task:opacity-100 lg:group-hover/task:pointer-events-auto'
+          'lg:absolute lg:inset-0 lg:z-30 lg:min-h-0 lg:min-w-[auto] lg:basis-auto lg:items-stretch lg:justify-stretch lg:bg-popover lg:text-popover-foreground lg:pr-0 lg:opacity-0 lg:pointer-events-none lg:shadow-sm lg:ring-1 lg:ring-border/60 lg:transition-opacity lg:duration-aura-fast lg:ease-aura lg:group-hover/task:opacity-100 lg:group-hover/task:pointer-events-auto'
         )}
       >
         {control}
@@ -392,7 +394,7 @@ export function TasksCategoriesCard() {
   const preferBootstrap = typeof window !== 'undefined' && Boolean(window.__auraMiniApi);
   const dayLocked = useDayLocked(db, ready, dateString);
   const { setActivePageId } = useShell();
-  const dataTick = useAuraDataRefresh({ types: ['task-progress', 'timer', 'ritual'] });
+  const dataTick = useAuraDataRefresh({ types: ['task-progress', 'timer', 'ritual', 'nutrition'] });
   const [values, setValues] = useState<Record<string, number>>({});
   const [sheetTask, setSheetTask] = useState<AuraRow | null>(null);
   const [progress, setProgress] = useState<AuraTaskProgress | null>(null);
@@ -510,16 +512,7 @@ export function TasksCategoriesCard() {
   useEffect(() => {
     if (!ready) return;
     reload();
-  }, [ready, reload]);
-
-  useEffect(() => {
-    const onData = (ev: Event) => {
-      const t = (ev as CustomEvent<{ type?: string }>).detail?.type;
-      if (t === 'timer' || t === 'ritual' || t === 'task-progress' || t === 'nutrition') reload();
-    };
-    window.addEventListener(AURA_DATA_CHANGED, onData);
-    return () => window.removeEventListener(AURA_DATA_CHANGED, onData);
-  }, [reload]);
+  }, [ready, reload, dataTick]);
 
   const tasksByCat = useMemo(() => {
     if (!db) return {} as Record<string, AuraRow[]>;
@@ -963,7 +956,7 @@ export function TasksCategoriesCard() {
                   setActivePageId('diary');
                 }}
               >
-                <span className={cn(TASK_ICON_SIZE_CN, 'shrink-0 rounded-full bg-muted/70')} />
+                <Flame className={cn(TASK_ICON_SIZE_CN, 'shrink-0')} style={{ color: accent }} />
                 <span className="text-sm font-semibold tabular-nums">{targetLabel}</span>
               </button>
             </TaskControlSlot>
@@ -1005,7 +998,7 @@ export function TasksCategoriesCard() {
                   goRituals(rt);
                 }}
               >
-                <RitIcon className={cn(TASK_ICON_SIZE_CN, 'shrink-0', satisfied ? 'text-primary' : 'text-accent')} style={!satisfied ? { color: accent } : undefined} />
+                <RitIcon className={cn(TASK_ICON_SIZE_CN, 'shrink-0')} style={{ color: accent }} />
                 <span className="text-sm font-semibold tabular-nums">
                   {completed}/{total}
                 </span>

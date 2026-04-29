@@ -117,7 +117,7 @@ export function SettingsPage() {
                 <nav className="flex flex-col gap-0.5 px-1 pt-1 pb-1.5 sm:px-1.5 sm:pt-1.5 sm:pb-2" aria-label="Разделы настроек">
                   {SETTINGS_NAV_GROUPS.map((group, gIdx) => (
                     <div key={group.id} className="flex flex-col gap-0.5">
-                      <p className="text-muted-foreground px-2 pt-1 pb-0 text-[10px] font-semibold uppercase tracking-wider sm:pt-1.5 sm:text-xs">
+                      <p className="text-muted-foreground px-2 pt-1 pb-0 text-xs font-semibold uppercase tracking-wider sm:pt-1.5">
                         {group.label}
                       </p>
                       <div className="flex flex-col gap-1 px-0.5">

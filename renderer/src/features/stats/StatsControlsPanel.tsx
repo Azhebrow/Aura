@@ -215,27 +215,27 @@ export function StatsControlsPanel({ state, onChange, seriesKeys, meta }: Props)
             </Button>
           ))}
         </div>
-        <div className="border-border/50 bg-muted/15 space-y-2.5 rounded-xl border p-2.5 pt-2">
+        <div className="space-y-2">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider">
-              <CalendarRange className="text-foreground/85 size-3.5 shrink-0" aria-hidden />
-              <span className="text-muted-foreground">Начало периода</span>
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+              <CalendarRange className="text-foreground/85 size-3 shrink-0" aria-hidden />
+              <span className="text-muted-foreground">От</span>
             </div>
             <Input
               type="date"
-              className="h-9 bg-background/80"
+              className="h-8 w-full"
               value={state.startDate}
               onChange={(e) => onStartDate(e.target.value)}
             />
           </div>
-          <div className="border-border/40 space-y-1 border-t pt-2.5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider">
-              <CalendarCheck2 className="text-foreground/85 size-3.5 shrink-0" aria-hidden />
-              <span className="text-muted-foreground">Конец периода</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+              <CalendarCheck2 className="text-foreground/85 size-3 shrink-0" aria-hidden />
+              <span className="text-muted-foreground">До</span>
             </div>
             <Input
               type="date"
-              className="h-9 bg-background/80"
+              className="h-8 w-full"
               value={state.endDate}
               onChange={(e) => onEndDate(e.target.value)}
             />

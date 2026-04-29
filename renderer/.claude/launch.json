@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "AURA (Vite + DB)",
+      "name": "desktop",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:mini-app"],
+      "runtimeArgs": ["run", "desktop"],
       "port": 5173
     }
   ]

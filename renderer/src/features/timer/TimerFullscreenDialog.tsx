@@ -72,14 +72,12 @@ function storeVolume(value: number) {
   }
 }
 
-function toFileUrl(filePath: string) {
-  const normalized = filePath.replace(/\\/g, '/');
-  if (normalized.startsWith('/')) return encodeURI(`file://${normalized}`);
-  return encodeURI(`file:///${normalized}`);
-}
+const ambientBlobCache = new Map<string, string>();
 
 function resolveAmbientFileUrl(fileName: string): string | null {
   if (!fileName) return null;
+
+  if (ambientBlobCache.has(fileName)) return ambientBlobCache.get(fileName)!;
 
   const userDataPath = window.__auraUserDataPath;
   const appPath = window.__auraAppPath;
@@ -92,20 +90,36 @@ function resolveAmbientFileUrl(fileName: string): string | null {
 
   if (runtimeRequire) {
     try {
-      const fs = runtimeRequire('fs') as { existsSync: (path: string) => boolean };
+      const fs = runtimeRequire('fs') as {
+        existsSync: (path: string) => boolean;
+        readFileSync: (path: string) => Buffer;
+      };
       const pathMod = runtimeRequire('path') as { join: (...parts: string[]) => string };
       const candidates: string[] = [];
       if (appPath) candidates.push(pathMod.join(appPath, 'public', 'ambient-stock', fileName));
       if (userDataPath) candidates.push(pathMod.join(userDataPath, 'ambient', fileName));
       const existing = candidates.find((candidate) => fs.existsSync(candidate));
-      if (existing) return toFileUrl(existing);
+      if (existing) {
+        const buf = fs.readFileSync(existing);
+        const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+        const mime =
+          ext === 'mp3' ? 'audio/mpeg' :
+          ext === 'm4a' ? 'audio/mp4' :
+          ext === 'ogg' ? 'audio/ogg' :
+          ext === 'wav' ? 'audio/wav' :
+          ext === 'flac' ? 'audio/flac' :
+          ext === 'aac' ? 'audio/aac' :
+          'audio/mpeg';
+        const blob = new Blob([buf], { type: mime });
+        const url = URL.createObjectURL(blob);
+        ambientBlobCache.set(fileName, url);
+        return url;
+      }
     } catch {
       /* ignore runtime module errors */
     }
   }
 
-  if (appPath) return toFileUrl(`${appPath}/public/ambient-stock/${fileName}`);
-  if (userDataPath) return toFileUrl(`${userDataPath}/ambient/${fileName}`);
   return null;
 }
 

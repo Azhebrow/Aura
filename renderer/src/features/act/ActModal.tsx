@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { XIcon, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,6 +186,7 @@ export function ActAffixValueField({
   const snapshotRef = useRef(value);
   const lastAutoStartKeyRef = useRef<string | number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const committedByKeyRef = useRef(false);
 
   useEffect(() => {
     if (!editing) snapshotRef.current = value;
@@ -226,16 +228,16 @@ export function ActAffixValueField({
   const commit = () => {
     const snap = snapshotRef.current;
     const t = draft.trim();
-    if (!t) {
-      onCommit(snap);
-    } else if (inputKind === 'number' || inputKind === 'integer') {
-      const n = parseFloat(t.replace(',', '.'));
-      onCommit(Number.isFinite(n) ? t : snap);
-    } else {
-      onCommit(draft);
-    }
+    const committed =
+      !t ? snap
+      : inputKind === 'number' || inputKind === 'integer'
+        ? (Number.isFinite(parseFloat(t.replace(',', '.'))) ? t : snap)
+        : draft;
     setEditing(false);
     setDraft('');
+    // flushSync ensures parent state is updated synchronously before any
+    // concurrent click handler (e.g. Save button) reads the state.
+    flushSync(() => { onCommit(committed); });
   };
 
   const cancel = () => {
@@ -285,19 +287,31 @@ export function ActAffixValueField({
       onChange={(e) =>
         setDraft(inputKind === 'number' || inputKind === 'integer' ? sanitizeNumericDraft(e.target.value) : e.target.value)
       }
-      onBlur={commit}
+      onBlur={() => { if (!committedByKeyRef.current) commit(); }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          const input = e.currentTarget as HTMLInputElement;
-          input.blur();
+          e.stopPropagation();
+          committedByKeyRef.current = true;
+          // Commit directly — don't rely on blur to avoid phantom form submit
+          const snap = snapshotRef.current;
+          const t = draft.trim();
+          const committed =
+            !t ? snap
+            : inputKind === 'number' || inputKind === 'integer'
+              ? (Number.isFinite(parseFloat(t.replace(',', '.'))) ? t : snap)
+              : draft;
+          setEditing(false);
+          setDraft('');
+          onCommit(committed);
           window.setTimeout(() => {
-            const confirm = document.querySelector<HTMLElement>('[data-modal-confirm="true"]');
-            confirm?.focus();
+            committedByKeyRef.current = false;
+            document.querySelector<HTMLElement>('[data-modal-confirm="true"]')?.focus();
           }, 0);
         }
         if (e.key === 'Escape') {
           e.preventDefault();
+          e.stopPropagation();
           cancel();
         }
       }}
@@ -333,7 +347,7 @@ export function ActModalFooter({
       </Button>
       <Button
         data-modal-confirm="true"
-        type="submit"
+        type="button"
         variant={submitVariant}
         className="h-10 w-full rounded-md"
         onClick={onSubmit}
