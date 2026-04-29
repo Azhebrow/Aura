@@ -268,8 +268,6 @@ export function TimerStatusPage() {
   const durationInputMinutes = Math.max(1, Math.round(timer.model.targetDuration / 60));
   const sel = timer.model.selectedTask;
   const isTimerSessionActive = timer.model.isRunning || timer.model.elapsedTime > 0;
-  const accent =
-    sel && typeof sel.color === 'string' && sel.color.trim() ? String(sel.color) : 'var(--primary)';
 
   const pickerGroupOrder = ['Фокус', 'Эскапизм', 'Наполнение'] as const;
   const groupAccentByKey = useMemo<Record<TimerTaskTab, string>>(
@@ -280,6 +278,35 @@ export function TimerStatusPage() {
     }),
     [db]
   );
+
+  // Логика выбора цвета зависит от группы:
+  // - Фокус: всегда цвет категории (группа), игнорирует цвет задачи
+  // - Эскапизм/Наполнение: цвет из задачи, fallback на группу
+  const getTaskColor = (group: TimerTaskTab, taskColor?: string): string => {
+    if (group === 'tasks') {
+      return getCategoryColor('time', db);
+    }
+    if (taskColor && typeof taskColor === 'string' && taskColor.trim()) {
+      return taskColor;
+    }
+    return groupAccentByKey[group] ?? 'var(--primary)';
+  };
+
+  // Определяем группу выбранной задачи
+  const selectedTaskGroup = useMemo<TimerTaskTab>(() => {
+    if (!sel) return 'tasks';
+    for (const group of ['tasks', 'escape', 'filling'] as const) {
+      if (byGroup[group].some((t) => t.id === sel.id)) {
+        return group;
+      }
+    }
+    return 'tasks';
+  }, [sel, byGroup]);
+
+  const accent =
+    sel && sel.color
+      ? getTaskColor(selectedTaskGroup, sel.color)
+      : 'var(--primary)';
 
   const totalTimerTasks = TIMER_TASK_GROUPS.reduce((n, g) => n + byGroup[g.key].length, 0);
   const rawDailyProgressByTaskId = useMemo(() => {
@@ -351,7 +378,7 @@ export function TimerStatusPage() {
       id: found.task.id,
       title: found.task.title,
       cfg_target_hours: found.task.cfg_target_hours,
-      color: groupAccentByKey[found.group] ?? 'var(--primary)',
+      color: getTaskColor(found.group, found.task.color),
       icon: found.task.icon,
     });
   }, [byGroup, groupAccentByKey, ready, timer]);
@@ -367,7 +394,7 @@ export function TimerStatusPage() {
           id: first.id,
           title: first.title,
           cfg_target_hours: first.cfg_target_hours,
-          color: groupAccentByKey[group] ?? 'var(--primary)',
+          color: getTaskColor(group, first.color),
           icon: first.icon,
         });
         return;
