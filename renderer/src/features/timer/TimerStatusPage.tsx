@@ -272,11 +272,11 @@ export function TimerStatusPage() {
   const pickerGroupOrder = ['Фокус', 'Эскапизм', 'Наполнение'] as const;
   const groupAccentByKey = useMemo<Record<TimerTaskTab, string>>(
     () => ({
-      tasks: getCategoryColor('time', db),
+      tasks: 'var(--task-time)',  // CSS переменная для категории "Время" (динамическая)
       escape: 'var(--leisure-escape)',
       filling: 'var(--leisure-filling)',
     }),
-    [db]
+    []
   );
 
   // Логика выбора цвета зависит от группы:
