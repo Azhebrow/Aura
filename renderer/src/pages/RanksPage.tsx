@@ -502,7 +502,7 @@ function RankRibbonCard({
     return (
       <div
         className={cn(
-          'isolate flex flex-col items-center justify-center rounded-xl border border-border/30 bg-muted/20 p-2 text-center',
+          'isolate flex h-full flex-col items-center justify-center rounded-xl border border-border/30 bg-muted/20 p-2 text-center',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura'
         )}
         title={`${tier.name} — ${tier.threshold}+`}
@@ -518,7 +518,7 @@ function RankRibbonCard({
       type="button"
       onClick={() => onSelect(tier.id)}
         className={cn(
-          'isolate flex flex-col items-stretch rounded-xl border border-border/60 px-2 py-2 text-center',
+          'isolate flex h-full flex-col items-stretch rounded-xl border border-border/60 px-2 py-2 text-center',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura',
           'w-full self-start',
           !isCurrent && 'bg-card/85 opacity-95',
