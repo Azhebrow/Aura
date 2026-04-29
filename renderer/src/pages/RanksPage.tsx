@@ -518,15 +518,15 @@ function RankRibbonCard({
       type="button"
       onClick={() => onSelect(tier.id)}
         className={cn(
-          'isolate flex h-full flex-col items-stretch rounded-xl border border-border/60 px-2 py-2 text-center',
+          'isolate relative flex h-full flex-col items-center justify-center rounded-xl border border-border/60 px-2 py-2 text-center gap-2',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura',
-          'w-full self-start',
+          'w-full',
           !isCurrent && 'bg-card/85 opacity-95',
         isSelected && 'ring-primary/35 ring-2'
       )}
       style={cardStyle}
     >
-      <div className="hidden sm:flex shrink-0 flex-col items-center gap-1">
+      <div className="hidden sm:flex flex-col items-center">
         <div className="relative size-10 shrink-0 sm:size-12">
           {assetsReady ? (
             <RankImage
@@ -541,17 +541,15 @@ function RankRibbonCard({
           )}
         </div>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-0.5">
-        <span
-          className={cn(
-            'line-clamp-2 w-full text-[11px] font-semibold leading-tight tracking-wide',
-            isCurrent ? 'text-foreground' : 'text-foreground/90'
-          )}
-        >
-          {tier.name}
-        </span>
-      </div>
-      <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+      <span
+        className={cn(
+          'line-clamp-2 w-full text-[11px] font-semibold leading-tight tracking-wide',
+          isCurrent ? 'text-foreground' : 'text-foreground/90'
+        )}
+      >
+        {tier.name}
+      </span>
+      <span className="absolute bottom-1 right-1.5 font-mono text-[9px] tabular-nums text-muted-foreground/50">
         {tier.threshold}+
       </span>
     </button>
