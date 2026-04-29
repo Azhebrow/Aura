@@ -486,7 +486,7 @@ export function TimerStatusPage() {
                                 const selected = timer.model.selectedTask?.id === t.id;
                                 const targetH = t.cfg_target_hours ?? 0;
                                 const curH = t.currentSeconds / 3600;
-                                const rowAccent = groupAccent;
+                                const rowAccent = getTaskColor(key, t.color);
                                 const dailyPct = visibleDailyProgressByTaskId.get(t.id) ?? 0;
                                 const hasTarget = targetH > 0;
                                 return (
