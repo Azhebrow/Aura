@@ -33,18 +33,27 @@ class PointsService {
         ? this.db.getAppSettings()
         : null;
       const nutritionTarget = Number(settings?.nutrition_target_calories || 0);
-      const nutritionPercent = nutritionTarget > 0
+      const hasNutritionTarget = nutritionTarget > 0;
+      const nutritionPercent = hasNutritionTarget
         ? Math.min(100, ((nutritionTotals?.calories || 0) / nutritionTarget) * 100)
-        : ((nutritionTotals?.calories || 0) > 0 ? 100 : 0);
+        : 0;
 
-      // Средний процент: (rituals + time + body + deps + nutrition) / 5
-      const avgPercent = (
-        (completion.rituals_percent || 0) +
-        (completion.time_percent || 0) +
-        (completion.body_percent || 0) +
-        (completion.deps_percent || 0) +
-        nutritionPercent
-      ) / 5;
+      // Средний процент считает только те категории, которые настроены
+      // Если питание не имеет цели, оно не входит в расчет среднего
+      const categories = [
+        completion.rituals_percent || 0,
+        completion.time_percent || 0,
+        completion.body_percent || 0,
+        completion.deps_percent || 0,
+      ];
+
+      if (hasNutritionTarget) {
+        categories.push(nutritionPercent);
+      }
+
+      const avgPercent = categories.length > 0
+        ? categories.reduce((a, b) => a + b, 0) / categories.length
+        : 0;
 
       // Преобразование: очки = (процент * 2) - 100
       const dailyPoints = (avgPercent * 2) - 100;
