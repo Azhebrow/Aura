@@ -443,11 +443,10 @@ function RankLadder({
       <div
         ref={stripRef}
         className={cn(
-          'min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4',
+          'h-full min-h-0 flex-1 overflow-hidden p-3 sm:p-4',
           'grid gap-2',
           'grid-cols-5',
-          'auto-rows-[1fr]',
-          '[&_>_*]:aspect-square'
+          'auto-rows-[1fr]'
         )}
       >
         {RANK_TIERS.map((tier) => (
