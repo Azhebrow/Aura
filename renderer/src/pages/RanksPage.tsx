@@ -444,9 +444,9 @@ function RankLadder({
         ref={stripRef}
         className={cn(
           'min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4',
-          'grid gap-2 content-stretch',
-          'auto-rows-[1fr]',
-          'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7'
+          'grid gap-2 content-start',
+          'grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] sm:grid-cols-[repeat(auto-fit,minmax(7rem,1fr))] md:grid-cols-[repeat(auto-fit,minmax(7.25rem,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))] xl:grid-cols-[repeat(auto-fit,minmax(7.75rem,1fr))]',
+          '[&_>_*]:aspect-square'
         )}
       >
         {RANK_TIERS.map((tier) => (
