@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useShell } from '@/app/navigation/shell-context';
 import { getNavPagesInOrder, type NavPageDefinition } from '@/shared/config/nav-model';
@@ -55,8 +55,9 @@ export function AppSidebar() {
             type="button"
             onClick={toggleCalendar}
             className={cn(
-              'border-border inline-flex h-8 items-center gap-1.5 rounded-lg border px-2 text-xs font-medium outline-none aura-tx-interactive',
+              'border-border flex h-8 w-full items-center justify-between gap-1.5 rounded-lg border px-2 text-xs font-medium outline-none aura-tx-interactive',
               'focus-visible:ring-2 focus-visible:ring-ring/70',
+              'transition-[background-color,border-color] duration-aura-base ease-aura',
               activePageId === 'calendar'
                 ? 'border-primary/40 bg-primary/15 text-primary'
                 : 'bg-background/80 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
@@ -64,8 +65,14 @@ export function AppSidebar() {
             aria-label={activePageId === 'calendar' ? 'Вернуться назад' : 'Открыть календарь'}
             title={activePageId === 'calendar' ? 'Вернуться назад' : 'Открыть календарь'}
           >
-            <CalendarDays className="size-3.5 shrink-0" />
-            <span className="hidden xl:inline">Календарь</span>
+            <span className="flex items-center gap-1.5 min-w-0">
+              <CalendarDays className="size-3.5 shrink-0" />
+              <span className="hidden xl:inline">Календарь</span>
+            </span>
+            <ChevronDown className={cn(
+              'size-3.5 shrink-0 transition-transform duration-aura-base ease-aura',
+              activePageId === 'calendar' && 'rotate-180'
+            )} />
           </button>
         </div>
       </div>
