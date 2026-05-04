@@ -85,7 +85,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
   return (
     <>
       <div className={cn('flex min-h-0 flex-1 flex-col', cardClassName)}>
-        <div className={cn('flex min-h-0 flex-1 flex-col gap-1', contentClassName)}>
+        <div className={cn('flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain', contentClassName)}>
           {status === 'loading' ? (
             <LoadingShell />
           ) : !db ? (
@@ -93,7 +93,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
           ) : (
             <>
               {topAccounts.length > 0 ? (
-                <div className="mb-2 grid auto-cols-fr gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(topAccounts.length, 3)}, 1fr)` }}>
+                <div className="mb-2 grid auto-cols-fr gap-2 shrink-0" style={{ gridTemplateColumns: `repeat(${Math.min(topAccounts.length, 3)}, 1fr)` }}>
                   {topAccounts.map((acc) => {
                     const isSavings = acc.type === 'savings';
                     const hasTarget = acc.target > 0;
@@ -135,7 +135,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                 </div>
               ) : null}
               {rows.length === 0 ? null : (
-                <ul className="flex min-h-0 flex-1 flex-col gap-1">
+                <ul className="flex flex-col gap-1">
                   {rows.map((t) => {
                     const id = String(t.id);
                     const r = resolveTransactionRow(db, t);

@@ -76,11 +76,11 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
   return (
     <>
       <div className={cn('flex min-h-0 flex-1 flex-col', cardClassName)}>
-        <div className={cn('flex min-h-0 flex-1 flex-col gap-1', contentClassName)}>
+        <div className={cn('flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain', contentClassName)}>
           {status === 'loading' ? (
             <LoadingShell />
           ) : rowsList.length === 0 ? null : (
-            <ul className="flex min-h-0 flex-1 flex-col gap-1.5">
+            <ul className="flex flex-col gap-1.5">
               {rowsList.map((p) => {
                 const id = String(p.id);
                 const done = p.completed === 1 || p.completed === true;
