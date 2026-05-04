@@ -50,6 +50,18 @@ export type SettingsReferenceImpact = {
   description: string;
 };
 
+export type TaskTypeGuide = {
+  type: 'checkbox' | 'number' | 'timer' | 'nutrition' | 'list' | 'ritual';
+  name: string;
+  emoji: string;
+  available: boolean;
+  unavailableReason?: string;
+  description: string;
+  howToComplete: string;
+  example: string;
+  note?: string;
+};
+
 export type SettingsReference = {
   id: string;
   icon: LucideIcon;
@@ -60,6 +72,7 @@ export type SettingsReference = {
   relatedSettings: SettingsReferenceRelated[];
   additionalFunctions: SettingsReferenceAdditionalFunction[];
   impacts?: SettingsReferenceImpact[];
+  taskTypeGuide?: TaskTypeGuide[];
 };
 
 export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
@@ -440,6 +453,65 @@ export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
         example: 'Одна практика может быть просто "галочкой", другая — с числовой целью.',
       },
     ],
+    taskTypeGuide: [
+      {
+        type: 'checkbox',
+        name: 'Чекбокс',
+        emoji: '☑️',
+        available: true,
+        description: 'Простейший тип — сделал или нет. Никаких чисел, никакого таймера.',
+        howToComplete: 'На главной нажмите на задачу — она отмечается выполненной. Нажмите ещё раз — снимается.',
+        example: 'Медитировал сегодня? Да / Нет. Выпил витамины? Да / Нет.',
+      },
+      {
+        type: 'number',
+        name: 'Число',
+        emoji: '🔢',
+        available: true,
+        description: 'Отслеживает количество — сколько раз что-то сделано. Вы задаёте цель, приложение считает прогресс.',
+        howToComplete: 'Нажмите на задачу и введите текущее значение. Прогресс-бар заполняется до достижения цели.',
+        example: 'Отжимания: цель 30 раз, единица "раз". Выпито воды: цель 8, единица "стакан".',
+      },
+      {
+        type: 'ritual',
+        name: 'Ритуал',
+        emoji: '🌅',
+        available: true,
+        description: 'Привязывает задачу к утреннему или вечернему чек-листу ритуалов. Выполнение отмечается там же.',
+        howToComplete: 'Задача отображается на странице "Ритуалы" в соответствующем чек-листе. Отметьте выполнение там.',
+        example: 'Задача "Холодный душ" типа Ритуал → Утренний. Появляется в утреннем чек-листе.',
+        note: 'Не забудьте выбрать "Вид ритуала": Утренний, Вечерний или Дневной.',
+      },
+      {
+        type: 'list',
+        name: 'Список',
+        emoji: '📋',
+        available: true,
+        description: 'Задача-чек-лист из нескольких подпунктов. Прогресс рассчитывается по количеству выполненных пунктов.',
+        howToComplete: 'На главной раскройте задачу — появится список подпунктов. Отмечайте каждый по мере выполнения.',
+        example: 'Задача "Утренняя рутина": подпункты — зарядка, контрастный душ, дневник.',
+      },
+      {
+        type: 'timer',
+        name: 'Таймер',
+        emoji: '⏱️',
+        available: false,
+        unavailableReason: 'Таймер доступен только в категории "Фокус" — для отслеживания рабочего времени.',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+      {
+        type: 'nutrition',
+        name: 'Питание',
+        emoji: '🥗',
+        available: false,
+        unavailableReason: 'Питание доступно только в категории "Здоровье" — там оно связано с базой продуктов.',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+    ],
   },
 
   'tasks-time': {
@@ -530,6 +602,58 @@ export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
         example: 'Быстрый взгляд на главную показывает, достаточно ли вы сосредоточены сегодня.',
       },
     ],
+    taskTypeGuide: [
+      {
+        type: 'timer',
+        name: 'Таймер',
+        emoji: '⏱️',
+        available: true,
+        description: 'Единственный доступный тип для категории "Фокус". Вы задаёте дневную цель в часах, запускаете таймер во время работы — приложение суммирует все сессии.',
+        howToComplete: 'Откройте страницу "Таймер", выберите задачу и нажмите Старт. Останавливайте на перерывах. Всё время за день суммируется автоматически.',
+        example: 'Задача "Программирование", цель 4 ч. За день: 3 сессии по 1.5 ч, 30 мин и 40 мин = итого 2.7 ч из 4.',
+        note: 'Прогресс категории "Фокус" считается именно по времени, а не по количеству задач.',
+      },
+      {
+        type: 'checkbox',
+        name: 'Чекбокс',
+        emoji: '☑️',
+        available: false,
+        unavailableReason: 'В категории "Фокус" используется только Таймер — цель этой категории измеряется в часах работы.',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+      {
+        type: 'number',
+        name: 'Число',
+        emoji: '🔢',
+        available: false,
+        unavailableReason: 'Числовой тип не подходит для "Фокуса" — здесь важно время, а не количество.',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+      {
+        type: 'list',
+        name: 'Список',
+        emoji: '📋',
+        available: false,
+        unavailableReason: 'Список не подходит для "Фокуса" — категория работает через таймер.',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+      {
+        type: 'nutrition',
+        name: 'Питание',
+        emoji: '🥗',
+        available: false,
+        unavailableReason: 'Питание доступно только в категории "Здоровье".',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+    ],
   },
 
   'tasks-body': {
@@ -606,6 +730,55 @@ export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
         name: 'Числовые цели',
         description: 'Отслеживание повторений, подходов или расстояния для упражнений.',
         example: 'Задача "Приседания" с целью 50 раз в день.',
+      },
+    ],
+    taskTypeGuide: [
+      {
+        type: 'checkbox',
+        name: 'Чекбокс',
+        emoji: '☑️',
+        available: true,
+        description: 'Отметить факт выполнения активности без подробностей. Подходит для регулярных занятий, где важен сам факт.',
+        howToComplete: 'Нажмите на задачу на главной — отмечается выполненной на сегодня.',
+        example: 'Тренировка в зале — был / не был. Прогулка — да / нет.',
+      },
+      {
+        type: 'number',
+        name: 'Число',
+        emoji: '🔢',
+        available: true,
+        description: 'Считает количество: повторения, километры, минуты. Задайте цель и единицу измерения — прогресс отображается в процентах.',
+        howToComplete: 'Нажмите на задачу и введите текущее число. Можно вводить несколько раз в день — значение накапливается.',
+        example: 'Отжимания: цель 50 раз → утром 20, вечером 30 = 50/50 ✓. Шаги: цель 10000.',
+      },
+      {
+        type: 'nutrition',
+        name: 'Питание',
+        emoji: '🥗',
+        available: true,
+        description: 'Особый тип — одна задача отслеживает все приёмы пищи за день. Подключается к базе продуктов и пресетов, считает калории и макросы.',
+        howToComplete: 'Нажмите на задачу, выберите продукты или готовые блюда (пресеты), укажите количество. Данные суммируются за день.',
+        example: 'Задача "Питание сегодня": завтрак — овсянка + яйца, обед — куриный суп, итого 1850 ккал / цель 2000 ккал.',
+        note: 'Можно добавить только ОДНУ задачу типа Питание — дублирование не имеет смысла, все приёмы пищи фиксируются в ней.',
+      },
+      {
+        type: 'list',
+        name: 'Список',
+        emoji: '📋',
+        available: true,
+        description: 'Чек-лист упражнений или шагов тренировки. Удобно для комплексных тренировок с несколькими упражнениями.',
+        howToComplete: 'Раскройте задачу на главной и отмечайте упражнения по очереди. Прогресс = выполнено / всего пунктов.',
+        example: 'Задача "Утренняя тренировка": подпункты — 20 приседаний, 15 отжиманий, планка 60 сек.',
+      },
+      {
+        type: 'timer',
+        name: 'Таймер',
+        emoji: '⏱️',
+        available: false,
+        unavailableReason: 'Таймер доступен только в категории "Фокус" — для отслеживания рабочего времени.',
+        description: '',
+        howToComplete: '',
+        example: '',
       },
     ],
   },
@@ -686,6 +859,58 @@ export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
         name: 'Мотивация к нулю',
         description: 'Система нацелена на минимизацию или полное исключение вредной привычки.',
         example: 'Идеальное состояние — 0 / 0, то есть вы полностью избежали привычки в день.',
+      },
+    ],
+    taskTypeGuide: [
+      {
+        type: 'checkbox',
+        name: 'Чекбокс',
+        emoji: '☑️',
+        available: true,
+        description: 'Единственный доступный тип для "Детокса". Фиксирует факт — поддался ли вы вредной привычке сегодня. Цель — чтобы задача оставалась незачёркнутой.',
+        howToComplete: 'Не нажимайте на задачу. Если вы поддались — нажмите, чтобы зафиксировать срыв. Это честная история для анализа.',
+        example: '"Сигареты сегодня": если галочка не стоит в конце дня — вы справились. Если стоит — был срыв.',
+        note: 'Прогресс в этой категории считается как "избегание" — чем меньше отмечено, тем лучше.',
+      },
+      {
+        type: 'number',
+        name: 'Число',
+        emoji: '🔢',
+        available: false,
+        unavailableReason: 'В категории "Детокс" только чекбокс — фиксируется факт срыва, а не количество.',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+      {
+        type: 'timer',
+        name: 'Таймер',
+        emoji: '⏱️',
+        available: false,
+        unavailableReason: 'Таймер доступен только в категории "Фокус".',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+      {
+        type: 'list',
+        name: 'Список',
+        emoji: '📋',
+        available: false,
+        unavailableReason: 'В категории "Детокс" только чекбокс — всё просто: поддался или нет.',
+        description: '',
+        howToComplete: '',
+        example: '',
+      },
+      {
+        type: 'nutrition',
+        name: 'Питание',
+        emoji: '🥗',
+        available: false,
+        unavailableReason: 'Питание доступно только в категории "Здоровье".',
+        description: '',
+        howToComplete: '',
+        example: '',
       },
     ],
   },

@@ -133,6 +133,11 @@ export function RitualsChecklistPanel() {
     });
   };
 
+  const handleKindChange = (newKind: RitualKind) => {
+    console.log(`[setKind] Changed from ${kind} to ${newKind}`);
+    setKind(newKind);
+  };
+
   const orderedSections: Array<{ kind: RitualKind; title: string; rituals: AuraRow[]; done: Set<string> }> =
     priorityKind === 'morning'
       ? [
@@ -160,7 +165,7 @@ export function RitualsChecklistPanel() {
         <div className="hidden lg:block">
           <ModeSwitchHeader
             value={kind}
-            onValueChange={setKind}
+            onValueChange={handleKindChange}
             ariaLabel="Режим ритуалов"
             locked={dayLocked}
             options={modeOptions}
