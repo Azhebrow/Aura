@@ -107,7 +107,7 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                 );
               })}
               <li className="mt-2">
-                <AddListButton onClick={() => setAddOpen(true)} disabled={status === 'loading'} />
+                <AddListButton onClick={() => setAddOpen(true)} />
               </li>
             </>
           )}
