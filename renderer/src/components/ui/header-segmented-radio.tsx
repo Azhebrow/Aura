@@ -38,7 +38,6 @@ export function UniversalRadioGroup<T extends string>({
   selectedOptionClassName,
   unselectedOptionClassName,
 }: UniversalRadioGroupProps<T>) {
-  console.log(`[UniversalRadioGroup] rendering with value=${value}, options=${options.map(o => o.value).join(',')}`);
   return (
     <div
       role="radiogroup"

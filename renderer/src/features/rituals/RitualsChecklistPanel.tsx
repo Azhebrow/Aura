@@ -27,16 +27,11 @@ export function RitualsChecklistPanel() {
   const { getCached, setCached, invalidate } = useRitualsCache(dateString);
   const [kind, setKind] = useState<RitualKind>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.RITUALS_KIND);
-    if (stored === 'morning' || stored === 'evening') {
-      localStorage.removeItem(STORAGE_KEYS.RITUALS_KIND);
-      console.log(`[RitualsChecklistPanel] initialized kind=${stored} from localStorage`);
-      return stored;
-    }
+    if (stored === 'morning' || stored === 'evening') return stored;
     return 'morning';
   });
   const [priorityKind, setPriorityKind] = useState<RitualKind>('morning');
 
-  console.log(`[RitualsChecklistPanel] render: kind=${kind}, activePageId=${activePageId}`);
   const cache = getCached();
   const [morningRituals, setMorningRituals] = useState<AuraRow[]>(cache?.morning ?? []);
   const [eveningRituals, setEveningRituals] = useState<AuraRow[]>(cache?.evening ?? []);
@@ -75,21 +70,11 @@ export function RitualsChecklistPanel() {
   );
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.RITUALS_KIND);
-      console.log(`[RitualsChecklistPanel effect] activePageId=${activePageId}, raw=${raw}`);
-      if (raw === 'morning' || raw === 'evening') {
-        console.log(`[RitualsChecklistPanel] Setting kind to ${raw}`);
-        setKind(raw as RitualKind);
-        console.log(`[RitualsChecklistPanel] Setting priorityKind to ${raw}`);
-        setPriorityKind(raw as RitualKind);
-        localStorage.removeItem(STORAGE_KEYS.RITUALS_KIND);
-        console.log(`[RitualsChecklistPanel] Successfully switched to ${raw} mode`);
-      } else {
-        console.log(`[RitualsChecklistPanel] No RITUALS_KIND in localStorage`);
-      }
-    } catch (e) {
-      console.error(`[RitualsChecklistPanel] Error:`, e);
+    const raw = localStorage.getItem(STORAGE_KEYS.RITUALS_KIND);
+    if (raw === 'morning' || raw === 'evening') {
+      setKind(raw);
+      setPriorityKind(raw);
+      localStorage.removeItem(STORAGE_KEYS.RITUALS_KIND);
     }
   }, [activePageId]);
 
@@ -153,17 +138,12 @@ export function RitualsChecklistPanel() {
   const desktopDone = useMemo(() => (kind === 'morning' ? morningDone : eveningDone), [kind, morningDone, eveningDone]);
 
   const modeOptions = useMemo(
-    () => {
-      console.log(`[RitualsChecklistPanel] modeOptions memo computed, dayLocked=${dayLocked}`);
-      return [
-        { value: 'morning' as const, label: 'Утро', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Sunrise className="size-3.5 shrink-0" aria-hidden /> },
-        { value: 'evening' as const, label: 'Вечер', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Moon className="size-3.5 shrink-0" aria-hidden /> },
-      ];
-    },
+    () => [
+      { value: 'morning' as const, label: 'Утро', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Sunrise className="size-3.5 shrink-0" aria-hidden /> },
+      { value: 'evening' as const, label: 'Вечер', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Moon className="size-3.5 shrink-0" aria-hidden /> },
+    ],
     [dayLocked]
   );
-
-  console.log(`[RitualsChecklistPanel] About to render ModeSwitchHeader: kind=${kind}, options length=${modeOptions.length}`);
 
   return (
     <>
