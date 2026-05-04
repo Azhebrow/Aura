@@ -14,72 +14,58 @@ import {
   Sparkles,
   Star,
   Sun,
-  Target,
   Timer,
   Trophy,
-  Zap,
 } from 'lucide-react';
 
-/* ─── primitive building blocks ─────────────────────────────────────────────── */
+/* ─── atoms ──────────────────────────────────────────────────────────────────── */
 
-function Badge({ children, color = 'muted' }: { children: React.ReactNode; color?: 'muted' | 'violet' | 'amber' | 'blue' | 'green' | 'rose' }) {
-  const cls = {
-    muted:  'bg-muted/40 text-muted-foreground border-border/30',
-    violet: 'bg-violet-500/10 text-violet-700 border-violet-400/25',
-    amber:  'bg-amber-500/10 text-amber-700 border-amber-400/25',
-    blue:   'bg-blue-500/10 text-blue-700 border-blue-400/25',
-    green:  'bg-green-500/10 text-green-700 border-green-400/25',
-    rose:   'bg-rose-500/10 text-rose-700 border-rose-400/25',
-  }[color];
+function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className={cn('inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold', cls)}>
+    <span className="inline-flex items-center rounded-full border border-border/40 bg-muted/40 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
       {children}
     </span>
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground/60 mb-4">
+    <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/50 mb-4 mt-10 first:mt-0">
       {children}
-    </p>
+    </h3>
   );
 }
 
-function Divider() {
-  return <div className="border-t border-border/20 my-8" />;
-}
-
-/* ─── feature card ───────────────────────────────────────────────────────────── */
+/* ─── feature card ────────────────────────────────────────────────────────────── */
 
 type FeatureCardProps = {
   icon: React.ElementType;
   title: string;
   description: string;
   items?: string[];
-  badge?: string;
-  badgeColor?: 'muted' | 'violet' | 'amber' | 'blue' | 'green' | 'rose';
-  accent?: string;
+  tag?: string;
 };
 
-function FeatureCard({ icon: Icon, title, description, items, badge, badgeColor = 'violet', accent = 'text-foreground/70' }: FeatureCardProps) {
+function FeatureCard({ icon: Icon, title, description, items, tag }: FeatureCardProps) {
   return (
-    <div className="rounded-xl border border-border/25 bg-card/60 p-5 flex flex-col gap-3">
+    <div className="rounded-xl border border-border/20 bg-muted/8 p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
-        <div className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/40 border border-border/20', accent)}>
-          <Icon className="size-4.5" aria-hidden />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/40 border border-border/15">
+          <Icon className="size-4 text-foreground/55" aria-hidden />
         </div>
-        {badge && <Badge color={badgeColor}>{badge}</Badge>}
+        {tag && (
+          <span className="text-[10px] font-medium text-muted-foreground/55 mt-1.5">{tag}</span>
+        )}
       </div>
       <div>
-        <h4 className="text-sm font-semibold text-foreground mb-1">{title}</h4>
+        <p className="text-sm font-semibold text-foreground mb-1">{title}</p>
         <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
       </div>
       {items && items.length > 0 && (
-        <ul className="space-y-1 mt-1">
+        <ul className="space-y-1">
           {items.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-              <span className="mt-0.5 size-1 shrink-0 rounded-full bg-muted-foreground/40 mt-1.5" />
+            <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground/80">
+              <span className="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground/35" />
               <span>{item}</span>
             </li>
           ))}
@@ -89,28 +75,27 @@ function FeatureCard({ icon: Icon, title, description, items, badge, badgeColor 
   );
 }
 
-/* ─── workflow step ──────────────────────────────────────────────────────────── */
+/* ─── workflow step ───────────────────────────────────────────────────────────── */
 
-function WorkflowStep({ step, icon: Icon, time, title, description, color }: {
-  step: number;
+function WorkflowStep({ icon: Icon, time, title, description, last = false }: {
   icon: React.ElementType;
   time: string;
   title: string;
   description: string;
-  color: string;
+  last?: boolean;
 }) {
   return (
     <div className="flex gap-4">
-      <div className="flex flex-col items-center">
-        <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold', color)}>
-          <Icon className="size-4" aria-hidden />
+      <div className="flex flex-col items-center shrink-0">
+        <div className="flex size-9 items-center justify-center rounded-full bg-muted/40 border border-border/25">
+          <Icon className="size-4 text-foreground/60" aria-hidden />
         </div>
-        {step < 3 && <div className="w-px flex-1 bg-border/30 mt-2 mb-1 min-h-6" />}
+        {!last && <div className="w-px flex-1 bg-border/25 my-2 min-h-5" />}
       </div>
-      <div className="pb-6 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-mono text-muted-foreground/60">{time}</span>
-          <span className="text-sm font-semibold text-foreground">{title}</span>
+      <div className={cn('min-w-0', last ? 'pb-0' : 'pb-5')}>
+        <div className="flex items-baseline gap-2 mb-1">
+          <span className="text-xs font-semibold text-foreground">{title}</span>
+          <span className="text-[11px] text-muted-foreground/50">{time}</span>
         </div>
         <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
       </div>
@@ -118,353 +103,250 @@ function WorkflowStep({ step, icon: Icon, time, title, description, color }: {
   );
 }
 
-/* ─── points tier ────────────────────────────────────────────────────────────── */
+/* ─── task type row ───────────────────────────────────────────────────────────── */
 
-function PointTier({ label, range, description, color }: { label: string; range: string; description: string; color: string }) {
+function TaskTypeRow({ icon: Icon, name, hint, description, example }: {
+  icon: React.ElementType;
+  name: string;
+  hint: string;
+  description: string;
+  example: string;
+}) {
   return (
-    <div className={cn('rounded-lg border p-3.5', color)}>
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs font-bold text-foreground">{label}</span>
-        <span className="font-mono text-xs font-semibold text-muted-foreground">{range}</span>
+    <div className="flex gap-3.5 py-4 border-b border-border/15 last:border-0">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/40 border border-border/15 mt-0.5">
+        <Icon className="size-4 text-foreground/55" aria-hidden />
       </div>
-      <p className="text-[11px] leading-relaxed text-muted-foreground">{description}</p>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+          <span className="text-sm font-semibold text-foreground">{name}</span>
+          <span className="text-[10px] text-muted-foreground/50 border border-border/25 rounded-full px-2 py-px">{hint}</span>
+        </div>
+        <p className="text-xs leading-relaxed text-muted-foreground mb-1.5">{description}</p>
+        <p className="text-[11px] text-muted-foreground/55 italic">{example}</p>
+      </div>
     </div>
   );
 }
 
-/* ─── main component ─────────────────────────────────────────────────────────── */
+/* ─── quick start step ────────────────────────────────────────────────────────── */
+
+function StartStep({ n, title, desc }: { n: string; title: string; desc: string }) {
+  return (
+    <div className="flex gap-3.5 py-3 border-b border-border/12 last:border-0">
+      <span className="font-mono text-xs font-semibold text-muted-foreground/35 w-5 shrink-0 mt-px">{n}</span>
+      <div>
+        <p className="text-xs font-semibold text-foreground mb-0.5">{title}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── main ────────────────────────────────────────────────────────────────────── */
 
 export function AppGuidePanel() {
   return (
-    <div className="space-y-0 max-w-3xl">
+    <div className="max-w-2xl space-y-0 pb-4">
 
       {/* ── Hero ── */}
-      <div className="rounded-xl border border-border/30 bg-gradient-to-br from-muted/30 via-muted/15 to-transparent p-7 mb-6">
-        <div className="flex items-start gap-4">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-foreground/8 border border-border/30">
-            <Sparkles className="size-7 text-foreground/70" aria-hidden />
+      <div className="rounded-xl border border-border/25 bg-muted/10 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted/50 border border-border/25">
+            <Sparkles className="size-5 text-foreground/60" aria-hidden />
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5 flex-wrap mb-2">
-              <h2 className="text-xl font-bold text-foreground tracking-tight">AURA</h2>
-              <Badge color="violet">Desktop only</Badge>
-              <Badge color="amber">Gamified</Badge>
+          <div>
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h2 className="text-lg font-bold text-foreground tracking-tight">AURA</h2>
+              <Chip>Только на компьютере</Chip>
             </div>
-            <p className="text-sm leading-relaxed text-muted-foreground max-w-lg">
-              Геймифицированная панель управления жизнью. Открыл утром — вписал планы и ритуалы. Закрыл вечером — всё сверено. Один инструмент вместо десяти приложений.
-            </p>
+            <p className="text-xs text-muted-foreground">Геймифицированная панель управления жизнью</p>
           </div>
         </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <p className="text-sm leading-relaxed text-muted-foreground mb-5">
+          Один инструмент вместо десяти приложений. Открыл утром — вписал ритуалы, задачи, дневник. Закрыл вечером — сверил финансы, посмотрел итог дня. Всё в одном окне, без телефона.
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
-            { icon: CheckSquare, label: 'Задачи и цели' },
+            { icon: CheckSquare, label: 'Задачи' },
             { icon: BookHeart,   label: 'Дневник' },
             { icon: PiggyBank,   label: 'Финансы' },
             { icon: BarChart3,   label: 'Статистика' },
           ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-2.5 rounded-lg bg-background/50 border border-border/25 px-3 py-2.5">
-              <Icon className="size-4 shrink-0 text-muted-foreground/70" aria-hidden />
-              <span className="text-xs font-medium text-foreground/80">{label}</span>
+            <div key={label} className="flex items-center gap-2 rounded-lg border border-border/20 bg-background/40 px-3 py-2">
+              <Icon className="size-3.5 shrink-0 text-muted-foreground/60" aria-hidden />
+              <span className="text-xs text-muted-foreground">{label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Концепция ── */}
-      <SectionLabel>Основная идея</SectionLabel>
-      <div className="rounded-xl border border-border/25 bg-card/40 p-6 mb-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-lg bg-violet-500/6 border border-violet-400/20 p-4">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-violet-500/15 mb-3">
-              <Target className="size-4 text-violet-600" aria-hidden />
-            </div>
-            <p className="text-xs font-semibold text-foreground mb-1.5">Всё в одном месте</p>
-            <p className="text-[11px] leading-relaxed text-muted-foreground">Задачи, дневник, питание, финансы, ритуалы, досуг — всё в одном окне без переключения между приложениями.</p>
-          </div>
-          <div className="rounded-lg bg-amber-500/6 border border-amber-400/20 p-4">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500/15 mb-3">
-              <Trophy className="size-4 text-amber-600" aria-hidden />
-            </div>
-            <p className="text-xs font-semibold text-foreground mb-1.5">Геймификация</p>
-            <p className="text-[11px] leading-relaxed text-muted-foreground">Каждое выполненное действие приносит очки. Ежедневный прогресс отображается в процентах. Цель — 100% к вечеру.</p>
-          </div>
-          <div className="rounded-lg bg-blue-500/6 border border-blue-400/20 p-4">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-500/15 mb-3">
-              <Zap className="size-4 text-blue-600" aria-hidden />
-            </div>
-            <p className="text-xs font-semibold text-foreground mb-1.5">Только компьютер</p>
-            <p className="text-[11px] leading-relaxed text-muted-foreground">Приложение только для компьютера — намеренно. Телефон отвлекает, а AURA — инструмент для осознанной работы с собой.</p>
-          </div>
-        </div>
-      </div>
-
-      <Divider />
-
       {/* ── Дневной ритм ── */}
-      <SectionLabel>Дневной ритм</SectionLabel>
-      <div className="rounded-xl border border-border/25 bg-card/40 p-6 mb-6">
+      <SectionTitle>Дневной ритм</SectionTitle>
+      <div className="rounded-xl border border-border/25 bg-muted/8 px-5 py-5">
         <WorkflowStep
-          step={1}
           icon={Sun}
-          time="Утро"
+          time="утро"
           title="Запуск дня"
-          description="Открываешь AURA, отмечаешь утренние ритуалы (душ, зарядка, медитация), вписываешь запись в дневник, выставляешь настроение, планируешь задачи на день."
-          color="border-amber-400/60 bg-amber-400/10 text-amber-600"
+          description="Отмечаешь утренние ритуалы, пишешь запись в дневник, выставляешь настроение, намечаешь задачи на день."
         />
         <WorkflowStep
-          step={2}
           icon={Timer}
-          time="День"
+          time="день"
           title="Работа и задачи"
-          description="Запускаешь таймеры фокуса, отмечаешь чекбоксы выполненных задач, вносишь числовые показатели (тренировка, шаги, вода), логируешь приёмы пищи."
-          color="border-blue-400/60 bg-blue-400/10 text-blue-600"
+          description="Запускаешь таймеры фокуса, отмечаешь чекбоксы, вводишь числовые показатели, логируешь приёмы пищи."
         />
         <WorkflowStep
-          step={3}
           icon={Moon}
-          time="Вечер"
-          title="Итоги дня"
-          description="Отмечаешь вечерние ритуалы, проверяешь финансы (доходы и расходы за день), смотришь итоговый % прогресса и очки. При желании — статистика за неделю/месяц."
-          color="border-violet-400/60 bg-violet-400/10 text-violet-600"
+          time="вечер"
+          title="Итоги"
+          description="Отмечаешь вечерние ритуалы, проверяешь финансы за день, смотришь итоговый % прогресса и очки."
+          last
         />
       </div>
-
-      <Divider />
 
       {/* ── Система очков ── */}
-      <SectionLabel>Система очков</SectionLabel>
-      <div className="rounded-xl border border-border/25 bg-card/40 p-6 mb-6 space-y-4">
+      <SectionTitle>Система очков</SectionTitle>
+      <div className="rounded-xl border border-border/25 bg-muted/8 p-5 space-y-4">
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Каждый день получает оценку от 0% до 100% на основе выполненных задач, ритуалов и других активностей. Из процента считаются ежедневные очки — они суммируются в недельную и месячную статистику.
+          Каждый день получает оценку от 0% до 100% на основе выполненных задач и ритуалов. Из процента вычисляются ежедневные очки.
         </p>
-        <div className="rounded-lg bg-muted/25 border border-border/20 px-5 py-4">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-3">Формула очков</p>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="rounded-md bg-background border border-border/30 px-3 py-2 text-center">
-              <p className="text-[10px] text-muted-foreground/60 mb-0.5">Прогресс</p>
-              <p className="font-mono text-sm font-bold text-foreground">75%</p>
-            </div>
-            <span className="text-lg text-muted-foreground/50">→</span>
-            <div className="rounded-md bg-background border border-border/30 px-3 py-2 text-center">
-              <p className="text-[10px] text-muted-foreground/60 mb-0.5">Очки дня</p>
-              <p className="font-mono text-sm font-bold text-amber-600">+50</p>
-            </div>
-            <div className="text-xs text-muted-foreground/60 max-w-[200px]">
-              При 100% — +100 очков. При 50% — 0. Ниже 50% — отрицательные.
-            </div>
-          </div>
-        </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <PointTier label="Отличный день" range="+50 — +100" description="75–100% прогресса. Большинство задач и ритуалов выполнено." color="border-green-400/25 bg-green-500/5" />
-          <PointTier label="Нейтральный" range="-50 — +50" description="40–75% прогресса. Частичное выполнение." color="border-amber-400/25 bg-amber-500/5" />
-          <PointTier label="Упущенный" range="-100 — -50" description="Менее 40%. День прошёл без структуры." color="border-rose-400/25 bg-rose-500/5" />
+          {[
+            { label: 'Отличный день',  range: '+50 — +100', sub: '75–100% прогресса' },
+            { label: 'Нейтральный',    range: '−50 — +50',  sub: '40–75% прогресса' },
+            { label: 'Упущенный день', range: '−100 — −50', sub: 'менее 40%' },
+          ].map(({ label, range, sub }) => (
+            <div key={label} className="rounded-lg border border-border/20 bg-muted/20 px-4 py-3">
+              <p className="text-xs font-semibold text-foreground mb-0.5">{label}</p>
+              <p className="font-mono text-sm font-bold text-foreground/70 mb-1">{range}</p>
+              <p className="text-[11px] text-muted-foreground/60">{sub}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 rounded-lg border border-border/20 bg-muted/25 px-4 py-3">
+          <Trophy className="size-4 shrink-0 text-muted-foreground/50" aria-hidden />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Очки суммируются в недельную и месячную статистику — можно отслеживать долгосрочные паттерны.
+          </p>
         </div>
       </div>
 
-      <Divider />
-
       {/* ── Функции ── */}
-      <SectionLabel>Функции по разделам</SectionLabel>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-6">
+      <SectionTitle>Функции</SectionTitle>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <FeatureCard
           icon={Flame}
           title="Ритуалы"
-          badge="Ежедневно"
-          badgeColor="amber"
-          accent="text-amber-600"
-          description="Утренние и вечерние ритуалы — повторяющиеся действия, которые формируют привычки. Отмечаются каждый день."
-          items={[
-            'Утренние: зарядка, душ, медитация, витамины',
-            'Вечерние: планирование, чтение, прогулка',
-            'Обеты — долгосрочные практики с отслеживанием серии',
-          ]}
+          tag="Ежедневно"
+          description="Утренние и вечерние ритуалы — повторяющиеся действия для формирования привычек."
+          items={['Утренние: зарядка, медитация, витамины', 'Вечерние: планирование, чтение', 'Обеты — долгосрочные практики с серией']}
         />
         <FeatureCard
           icon={CheckSquare}
           title="Задачи"
-          badge="4 категории"
-          badgeColor="violet"
-          accent="text-violet-600"
-          description="Задачи разбиты на 4 настраиваемые категории. Каждая категория имеет свой набор доступных типов задач."
-          items={[
-            'Чекбокс — выполнено / не выполнено',
-            'Число — ввести значение (шаги, км, повторения)',
-            'Таймер — отслеживание времени в фокусе',
-            'Питание — автоматически из журнала питания',
-          ]}
+          tag="4 категории"
+          description="4 настраиваемые категории задач с разными типами: чекбокс, число, таймер, питание, список."
+          items={['Переименуй категории под себя', 'Каждый тип задачи считается отдельно', 'Прогресс агрегируется в дневной %']}
         />
         <FeatureCard
           icon={BookHeart}
           title="Дневник и настроение"
-          badge="Каждый день"
-          badgeColor="rose"
-          accent="text-rose-600"
-          description="Текстовый дневник с категориями, тегами и оценкой настроения. Записи сохраняются локально."
-          items={[
-            'Свободный текст + форматированные записи',
-            'Настроение от 1 до 5 с кастомными эмодзи',
-            'Категории и цитаты-подсказки для записей',
-          ]}
+          tag="Каждый день"
+          description="Текстовые записи с категориями и оценкой настроения от 1 до 5."
+          items={['Кастомные эмодзи для настроений', 'Категории и цитаты-подсказки', 'Хранится локально']}
         />
         <FeatureCard
           icon={PiggyBank}
           title="Финансы"
-          badge="Доходы / Расходы"
-          badgeColor="green"
-          accent="text-green-700"
-          description="Учёт доходов и расходов по категориям, несколько счетов, баланс в реальном времени."
-          items={[
-            'Несколько счетов (карта, наличные, вклад)',
-            'Категории доходов и расходов',
-            'Общий баланс в боковой панели',
-          ]}
+          tag="Доходы / Расходы"
+          description="Несколько счетов, категории транзакций, баланс в реальном времени."
+          items={['Карта, наличные, вклад — любые счета', 'Категории доходов и расходов', 'Итог дня в боковой панели']}
         />
         <FeatureCard
           icon={Salad}
           title="Питание"
-          badge="Калории"
-          badgeColor="green"
-          accent="text-green-600"
-          description="База продуктов питания, готовые пресеты приёмов пищи, учёт калорий и БЖУ за день."
-          items={[
-            'Собственная база продуктов с КБЖУ',
-            'Пресеты блюд — быстрое добавление',
-            'Дневная цель калорий и отображение в статистике',
-          ]}
+          tag="КБЖУ"
+          description="База продуктов, пресеты приёмов пищи, учёт калорий и БЖУ."
+          items={['Собственная база продуктов', 'Пресеты для быстрого добавления', 'Цель по калориям в задачах']}
         />
         <FeatureCard
           icon={BarChart3}
           title="Статистика"
-          badge="Графики"
-          badgeColor="blue"
-          accent="text-blue-600"
-          description="Визуальные графики прогресса по всем разделам за любой период — день, неделю, месяц."
-          items={[
-            'Ежедневные очки и прогресс по категориям',
-            'История настроения и дневника',
-            'Финансовые тренды и баланс',
-          ]}
+          tag="Графики"
+          description="Визуальные графики прогресса по всем разделам за любой период."
+          items={['Ежедневные очки и категории', 'История настроения', 'Финансовые тренды']}
         />
         <FeatureCard
           icon={Ghost}
           title="Досуг"
-          badge="2 типа"
-          badgeColor="violet"
-          accent="text-violet-500"
-          description="Две категории досуга: наполняющий (книги, прогулки, творчество) и эскапизм (сериалы, игры). Отслеживание баланса."
-          items={[
-            'Наполнение — полезный отдых, который заряжает',
-            'Эскапизм — расслабление, но в меру',
-          ]}
+          tag="2 типа"
+          description="Наполняющий досуг (книги, прогулки) и эскапизм (сериалы, игры) — с учётом баланса."
         />
         <FeatureCard
           icon={Music2}
           title="Фоновая музыка"
-          badge="Атмосфера"
-          badgeColor="muted"
-          accent="text-foreground/60"
-          description="Встроенный плеер фоновой музыки для работы. Плейлисты с lo-fi, ambient, nature sounds."
-          items={[
-            'Несколько тематических плейлистов',
-            'Регулировка громкости прямо в приложении',
-          ]}
+          tag="Атмосфера"
+          description="Встроенный плеер с тематическими плейлистами для работы и концентрации."
         />
       </div>
 
-      <Divider />
-
       {/* ── Типы задач ── */}
-      <SectionLabel>Типы задач подробно</SectionLabel>
-      <div className="rounded-xl border border-border/25 bg-card/40 p-6 mb-6 space-y-3">
-        {[
-          {
-            icon: CheckSquare,
-            name: 'Чекбокс',
-            hint: 'Нажать — выполнено',
-            color: 'text-violet-600 bg-violet-500/10 border-violet-400/20',
-            description: 'Самый простой тип. Задача либо выполнена, либо нет. Подходит для всего, что можно сделать за раз.',
-            example: 'Сделать зарядку · Выпить витамины · Прочитать 10 страниц',
-          },
-          {
-            icon: Hash,
-            name: 'Число',
-            hint: 'Ввести значение',
-            color: 'text-blue-600 bg-blue-500/10 border-blue-400/20',
-            description: 'Вводишь числовое значение. Прогресс считается относительно целевого значения, заданного в настройках.',
-            example: '10 000 шагов · 8 стаканов воды · 60 минут тренировки',
-          },
-          {
-            icon: Timer,
-            name: 'Таймер',
-            hint: 'Только в Фокусе',
-            color: 'text-amber-600 bg-amber-500/10 border-amber-400/20',
-            description: 'Запускаешь таймер, он считает время. Все сессии за день суммируются. Доступен только в категории «Фокус».',
-            example: '90 мин deep work · 45 мин программирование',
-          },
-          {
-            icon: Salad,
-            name: 'Питание',
-            hint: 'Только в Здоровье',
-            color: 'text-green-700 bg-green-500/10 border-green-400/20',
-            description: 'Прогресс автоматически берётся из журнала питания. Только одна такая задача в категории «Здоровье».',
-            example: 'Цель: 2000 ккал/день → заполняется из раздела питания',
-          },
-          {
-            icon: Star,
-            name: 'Список',
-            hint: 'Несколько подпунктов',
-            color: 'text-rose-600 bg-rose-500/10 border-rose-400/20',
-            description: 'Задача с несколькими чекбоксами внутри. Прогресс — процент выполненных подпунктов.',
-            example: 'Уборка: кухня, ванная, комната, пылесос',
-          },
-        ].map(({ icon: Icon, name, hint, color, description, example }) => (
-          <div key={name} className="flex gap-4 rounded-lg border border-border/20 bg-muted/5 p-4">
-            <div className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg border mt-0.5', color)}>
-              <Icon className="size-4" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-sm font-semibold text-foreground">{name}</span>
-                <span className="text-[11px] text-muted-foreground/60 bg-muted/40 px-2 py-0.5 rounded-full border border-border/20">{hint}</span>
-              </div>
-              <p className="text-xs leading-relaxed text-muted-foreground mb-2">{description}</p>
-              <p className="text-[11px] text-muted-foreground/70 italic">{example}</p>
-            </div>
-          </div>
-        ))}
+      <SectionTitle>Типы задач</SectionTitle>
+      <div className="rounded-xl border border-border/25 bg-muted/8 px-5 divide-y-0">
+        <TaskTypeRow
+          icon={CheckSquare}
+          name="Чекбокс"
+          hint="нажать — выполнено"
+          description="Самый простой тип. Задача либо выполнена, либо нет."
+          example="Сделать зарядку · Выпить витамины · Прочитать главу"
+        />
+        <TaskTypeRow
+          icon={Hash}
+          name="Число"
+          hint="ввести значение"
+          description="Прогресс считается относительно целевого значения из настроек."
+          example="10 000 шагов · 8 стаканов воды · 60 минут тренировки"
+        />
+        <TaskTypeRow
+          icon={Timer}
+          name="Таймер"
+          hint="только в категории Фокус"
+          description="Запускаешь таймер — он считает время. Все сессии за день суммируются."
+          example="90 мин deep work · 45 мин программирование"
+        />
+        <TaskTypeRow
+          icon={Salad}
+          name="Питание"
+          hint="только в категории Здоровье"
+          description="Прогресс берётся автоматически из журнала питания. Только одна такая задача."
+          example="Цель 2000 ккал — заполняется из раздела питания"
+        />
+        <TaskTypeRow
+          icon={Star}
+          name="Список"
+          hint="несколько подпунктов"
+          description="Задача с несколькими чекбоксами внутри. Прогресс — доля выполненных."
+          example="Уборка: кухня, ванная, комната, пылесос"
+        />
       </div>
-
-      <Divider />
 
       {/* ── Быстрый старт ── */}
-      <SectionLabel>Быстрый старт</SectionLabel>
-      <div className="rounded-xl border border-border/25 bg-card/40 p-6 mb-6">
-        <div className="space-y-2">
-          {[
-            { n: '01', title: 'Настрой оформление', desc: 'Выбери тему, цвет, шрифт и валюту в разделе «Оформление и данные».' },
-            { n: '02', title: 'Добавь ритуалы', desc: 'Перейди в «Утренние ритуалы» и «Вечерние ритуалы» — добавь 3–5 действий, которые хочешь выполнять каждый день.' },
-            { n: '03', title: 'Настрой задачи', desc: 'В каждой из 4 категорий задач добавь то, что важно именно тебе. Переименуй категории под свой стиль жизни.' },
-            { n: '04', title: 'Добавь счета', desc: 'В разделе «Счета» создай свои финансовые счета (карта, наличные). Укажи текущий баланс.' },
-            { n: '05', title: 'Начни вести дневник', desc: 'Каждое утро — 2–3 предложения о планах или мыслях. Каждый вечер — итог дня и оценка настроения.' },
-            { n: '06', title: 'Отслеживай прогресс', desc: 'Через неделю загляни в Статистику — увидишь свои паттерны, лучшие дни и области для роста.' },
-          ].map(({ n, title, desc }) => (
-            <div key={n} className="flex gap-3.5 py-2.5 border-b border-border/10 last:border-0">
-              <span className="font-mono text-[11px] font-bold text-muted-foreground/40 mt-0.5 w-5 shrink-0">{n}</span>
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-0.5">{title}</p>
-                <p className="text-xs leading-relaxed text-muted-foreground">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+      <SectionTitle>Быстрый старт</SectionTitle>
+      <div className="rounded-xl border border-border/25 bg-muted/8 px-5 py-2">
+        <StartStep n="01" title="Настрой оформление" desc="Тема, цвет, шрифт и валюта — раздел «Оформление и данные»." />
+        <StartStep n="02" title="Добавь ритуалы" desc="3–5 утренних и 2–3 вечерних действия в разделах ритуалов." />
+        <StartStep n="03" title="Настрой задачи" desc="В каждой из 4 категорий добавь свои задачи. Переименуй категории." />
+        <StartStep n="04" title="Создай счета" desc="Карта, наличные — добавь с текущим балансом в разделе «Счета»." />
+        <StartStep n="05" title="Веди дневник" desc="Утром — планы. Вечером — итог дня и оценка настроения." />
+        <StartStep n="06" title="Смотри статистику" desc="Через неделю загляни в Статистику — увидишь свои паттерны." />
       </div>
 
-      {/* ── Footer note ── */}
-      <div className="flex items-start gap-3 rounded-xl border border-border/20 bg-muted/10 px-5 py-4">
-        <BookOpen className="size-4 shrink-0 text-muted-foreground/50 mt-0.5" aria-hidden />
-        <p className="text-xs leading-relaxed text-muted-foreground/70">
-          AURA — инструмент для тех, кто хочет видеть всю свою жизнь в одном месте, но без лишнего шума телефона. Настрой под себя один раз — и просто пользуйся каждый день.
+      {/* ── Footer ── */}
+      <div className="flex items-start gap-3 pt-6 border-t border-border/20 mt-8">
+        <BookOpen className="size-4 shrink-0 text-muted-foreground/40 mt-0.5" aria-hidden />
+        <p className="text-xs leading-relaxed text-muted-foreground/60">
+          AURA — инструмент для тех, кто хочет видеть всю свою жизнь в одном месте без лишнего шума телефона. Настрой под себя один раз — и просто пользуйся каждый день.
         </p>
       </div>
 
