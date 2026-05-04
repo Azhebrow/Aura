@@ -65,6 +65,7 @@ class DB {
       
       // Выполняем миграции
       this.migrateTables();
+      this.removeShortTimerSessions();
       
       // Сканируем ambient файлы при инициализации
       this.scanAmbientFiles();
@@ -76,6 +77,9 @@ class DB {
       
       // Автоматически присваиваем группы пресетам без группы
       this.assignGroupsToPresetsWithoutGroup();
+      
+      // Если база уже была создана до появления новых цитат дневника, подливаем только их.
+      this.ensureDiaryEntryPresets();
       
       console.log('[DB] Инициализация завершена');
     } catch (e) {
@@ -754,6 +758,21 @@ class DB {
         )
       `);
 
+      // cfg_diary_entry_presets (цитаты / подсказки записи)
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS cfg_diary_entry_presets (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          description TEXT,
+          icon TEXT,
+          active INTEGER DEFAULT 1,
+          level INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
       // cfg_leisure_tasks (задачи досуга)
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS cfg_leisure_tasks (
@@ -1203,7 +1222,7 @@ class DB {
 
   scanAmbientFiles() {
     try {
-      const AmbientManager = require('../../utils/AmbientManager.js');
+      const AmbientManager = require('./AmbientManager.js');
       const files = AmbientManager.scanAmbientFiles();
       // Сохраняем список файлов в памяти
       this.availableAmbientFiles = files;
@@ -1225,6 +1244,46 @@ class DB {
     } catch (e) {
       console.error('[DB] Ошибка проверки пресетов:', e);
       return true; // Если ошибка, загружаем пресеты
+    }
+  }
+
+  ensureDiaryEntryPresets() {
+    try {
+      const result = this.db.prepare(`
+        SELECT COUNT(*) as count FROM cfg_diary_entry_presets
+      `).get();
+      if ((result?.count ?? 0) > 0) return;
+
+      const presetsModule = require('./presets.js');
+      const presets = presetsModule.PRESETS || (presetsModule.default && presetsModule.default.PRESETS) || presetsModule || {};
+      if (!presets.diaryEntryPresets || presets.diaryEntryPresets.length === 0) return;
+
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO cfg_diary_entry_presets
+        (id, title, prompt, description, icon, active, level)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      let inserted = 0;
+      for (const item of presets.diaryEntryPresets) {
+        try {
+          if (!item?.id) continue;
+          stmt.run(
+            item.id,
+            item.title || '',
+            item.prompt || '',
+            item.description || null,
+            item.icon || null,
+            item.active !== undefined ? item.active : 1,
+            item.level || 0
+          );
+          inserted++;
+        } catch (e) {
+          console.warn('[DB] Ошибка дозагрузки цитаты записи:', e.message);
+        }
+      }
+      console.log(`[DB] Дозагружены цитаты записи: ${inserted} из ${presets.diaryEntryPresets.length}`);
+    } catch (e) {
+      console.warn('[DB] Не удалось дозагрузить цитаты записи:', e.message);
     }
   }
 
@@ -1441,6 +1500,41 @@ class DB {
         console.log(`[DB] Загружено настроений: ${inserted} из ${presets.diaryMoods.length}`);
       } else {
         console.warn('[DB] Нет данных для настроений. presets.diaryMoods:', presets.diaryMoods);
+      }
+
+      // Цитаты / подсказки записи
+      if (presets.diaryEntryPresets && presets.diaryEntryPresets.length > 0) {
+        console.log(`[DB] Загрузка цитат записи: найдено ${presets.diaryEntryPresets.length} элементов`);
+        const stmt = this.db.prepare(`
+          INSERT OR REPLACE INTO cfg_diary_entry_presets
+          (id, title, prompt, description, icon, active, level)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        let inserted = 0;
+        presets.diaryEntryPresets.forEach((item, index) => {
+          try {
+            if (!item.id) {
+              console.error(`[DB] Цитата записи ${index} не имеет ID:`, item);
+              return;
+            }
+            stmt.run(
+              item.id,
+              item.title || '',
+              item.prompt || '',
+              item.description || null,
+              item.icon || null,
+              item.active !== undefined ? item.active : 1,
+              item.level || 0
+            );
+            inserted++;
+          } catch (e) {
+            console.error(`[DB] Ошибка вставки цитаты записи ${item.id || index}:`, e.message);
+            console.error(`[DB] Данные цитаты записи:`, JSON.stringify(item));
+          }
+        });
+        console.log(`[DB] Загружено цитат записи: ${inserted} из ${presets.diaryEntryPresets.length}`);
+      } else {
+        console.warn('[DB] Нет данных для цитат записи. presets.diaryEntryPresets:', presets.diaryEntryPresets);
       }
 
       // Счета
@@ -1773,7 +1867,7 @@ class DB {
       // Подсчитываем общее количество загруженных элементов
       let totalLoaded = 0;
       const categories = [
-        'ritualsMorning', 'ritualsEvening', 'vows', 'diaryCategories', 'diaryMoods',
+        'ritualsMorning', 'ritualsEvening', 'vows', 'diaryCategories', 'diaryMoods', 'diaryEntryPresets',
         'accounts', 'incomeCategories', 'expenseCategories', 'tasksRituals',
         'tasksTime', 'tasksBody', 'tasksDeps', 'leisureFilling', 'leisureEscape',
         'ambientMusic'
@@ -1794,6 +1888,7 @@ class DB {
         { name: 'cfg_vows', expected: (presets.vows && presets.vows.length) || 0 },
         { name: 'cfg_diary_categories', expected: (presets.diaryCategories && presets.diaryCategories.length) || 0 },
         { name: 'cfg_diary_moods', expected: (presets.diaryMoods && presets.diaryMoods.length) || 0 },
+        { name: 'cfg_diary_entry_presets', expected: (presets.diaryEntryPresets && presets.diaryEntryPresets.length) || 0 },
         { name: 'cfg_accounts', expected: (presets.accounts && presets.accounts.length) || 0 },
         { name: 'cfg_income_categories', expected: (presets.incomeCategories && presets.incomeCategories.length) || 0 },
         { name: 'cfg_expense_categories', expected: (presets.expenseCategories && presets.expenseCategories.length) || 0 },
@@ -1945,8 +2040,12 @@ class DB {
       `).get(tableName);
       
       if (!tableExists) {
-        // Если таблица не существует и это не cfg_leisure_tasks, просто возвращаем пустой массив
-        if (tableName !== 'cfg_leisure_tasks') {
+        // Если таблица не существует и это не cfg_leisure_tasks / diary-таблицы, просто возвращаем пустой массив
+        if (
+          tableName !== 'cfg_leisure_tasks' &&
+          tableName !== 'cfg_diary_moods' &&
+          tableName !== 'cfg_diary_entry_presets'
+        ) {
           return [];
         }
         console.warn(`[DB] Таблица ${tableName} не существует, создаем...`);
@@ -1977,6 +2076,20 @@ class DB {
               title TEXT,
               color TEXT,
               icon TEXT,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+        } else if (tableName === 'cfg_diary_entry_presets') {
+          this.db.exec(`
+            CREATE TABLE IF NOT EXISTS cfg_diary_entry_presets (
+              id TEXT PRIMARY KEY,
+              title TEXT NOT NULL,
+              prompt TEXT NOT NULL,
+              description TEXT,
+              icon TEXT,
+              active INTEGER DEFAULT 1,
+              level INTEGER DEFAULT 0,
               created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
               updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -3125,11 +3238,16 @@ class DB {
   }
 
   // Методы для работы с сессиями таймера
+  isTimerSessionVisible(session) {
+    const duration = Number(session?.duration) || 0;
+    return duration >= 60;
+  }
+
   getTimerSessions(date) {
     try {
       const stmt = this.db.prepare(`
         SELECT * FROM act_timer_sessions 
-        WHERE date = ?
+        WHERE date = ? AND duration >= 60
         ORDER BY created_at DESC
       `);
       return stmt.all(date);
@@ -3177,6 +3295,10 @@ class DB {
 
   addTimerSession(session) {
     try {
+      if (!this.isTimerSessionVisible(session)) {
+        console.log(`[DB] Сессия таймера ${session.id} проигнорирована: длительность меньше 60 секунд`);
+        return false;
+      }
       const stmt = this.db.prepare(`
         INSERT INTO act_timer_sessions 
         (id, date, task_id, duration, timer_type, target_duration, created_at, updated_at)
@@ -3199,11 +3321,42 @@ class DB {
     }
   }
 
+  removeShortTimerSessions() {
+    try {
+      const rows = this.db.prepare(`
+        SELECT id, date FROM act_timer_sessions WHERE duration < 60
+      `).all();
+      if (rows.length === 0) return;
+
+      const dates = new Set(rows.map((row) => row.date).filter(Boolean));
+      this.db.prepare(`DELETE FROM act_timer_sessions WHERE duration < 60`).run();
+      console.log(`[DB] Удалено коротких сессий таймера: ${rows.length}`);
+      for (const date of dates) {
+        this.recalculateDerivedProgressForDate(date);
+      }
+    } catch (e) {
+      console.warn('[DB] Ошибка очистки коротких сессий таймера:', e.message);
+    }
+  }
+
   updateTimerSession(sessionId, data) {
     try {
       const prev = this.db.prepare(`
         SELECT date FROM act_timer_sessions WHERE id = ?
       `).get(sessionId);
+      if (Object.prototype.hasOwnProperty.call(data, 'duration') && !this.isTimerSessionVisible(data)) {
+        const stmt = this.db.prepare(`DELETE FROM act_timer_sessions WHERE id = ?`);
+        stmt.run(sessionId);
+        console.log(`[DB] Сессия таймера ${sessionId} удалена: длительность меньше 60 секунд`);
+        this.recalculateDerivedProgressForDate(prev?.date);
+
+        const tracker = getSettingsChangeTracker();
+        if (tracker && tracker.markChanged) {
+          tracker.markChanged();
+        }
+
+        return true;
+      }
       const fields = Object.keys(data);
       const setClause = fields.map(field => `${field} = ?`).join(', ');
       const values = fields.map(field => data[field]);
@@ -3260,7 +3413,7 @@ class DB {
     try {
       const stmt = this.db.prepare(`
         SELECT SUM(duration) as total FROM act_timer_sessions 
-        WHERE date = ? AND task_id = ?
+        WHERE date = ? AND task_id = ? AND duration >= 60
       `);
       const result = stmt.get(date, taskId);
       return result ? (result.total || 0) : 0;
@@ -3288,6 +3441,7 @@ class DB {
         'cfg_goal_tasks',
         'cfg_diary_categories',
         'cfg_diary_moods',
+        'cfg_diary_entry_presets',
         'cfg_leisure_tasks',
         'cfg_rituals_morning',
         'cfg_rituals_evening',
@@ -3445,6 +3599,7 @@ class DB {
         'cfg_goal_tasks',
         'cfg_diary_categories',
         'cfg_diary_moods',
+        'cfg_diary_entry_presets',
         'cfg_leisure_tasks',
         'cfg_rituals_morning',
         'cfg_rituals_evening',
@@ -3557,6 +3712,35 @@ class DB {
         { id: generateId('mood'), level: 1, icon: 'frown' },
         { id: generateId('mood'), level: 3, icon: 'meh' },
         { id: generateId('mood'), level: 5, icon: 'smile' }
+      ],
+      diaryEntryPresets: [
+        {
+          id: generateId('entry'),
+          title: 'Начни с одной строки',
+          prompt: 'Сделай первый честный абзац, а редактирование оставь на потом.',
+          description: 'Мягкий вход в пустой дневник.',
+          icon: 'book-text',
+          active: 1,
+          level: 0,
+        },
+        {
+          id: generateId('entry'),
+          title: 'Проверь курс',
+          prompt: 'Что сегодня важно не потерять из виду?',
+          description: 'Подходит для короткой вечерней фиксации.',
+          icon: 'compass',
+          active: 1,
+          level: 1,
+        },
+        {
+          id: generateId('entry'),
+          title: 'Спокойный вход',
+          prompt: 'Не ищи идеальную формулировку, просто назови факт.',
+          description: 'Для дней, когда нужен тихий старт.',
+          icon: 'sparkles',
+          active: 1,
+          level: 2,
+        }
       ],
       accounts: [
         { id: generateId('acc'), title: 'Основной', icon: 'building', color: '#3b82f6', balance: 50000, level: 0 }
@@ -4520,6 +4704,10 @@ class DB {
           nutrition_target_carbs: 0,
           tasks_hide_completion_percent: 0,
           category_percent_highlight_enabled: 1,
+          sidebar_widget_enabled_metrics: JSON.stringify(['day-progress', 'daily-points', 'focus-time', 'rituals', 'calories', 'transactions', 'balance', 'streak']),
+          sidebar_widget_order: JSON.stringify(['day-progress', 'daily-points', 'focus-time', 'rituals', 'calories', 'transactions', 'balance', 'streak']),
+          sidebar_widget_max_items: 8,
+          sidebar_widget_style_variant: 'balanced',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -4581,8 +4769,8 @@ class DB {
       
       const stmt = this.db.prepare(`
         INSERT OR REPLACE INTO app_settings 
-        (id, currency, points_start_date, points_open_hours, icon_theme, bottom_nav_show_labels, devtools_tab_enabled, page_transitions_enabled, app_scale, ambient_default_timer, ambient_default_stopwatch, ambient_default_break, shadow_level, gradient_intensity, background_animation_type, nutrition_initial_weight, nutrition_target_weight, nutrition_target_calories, nutrition_target_proteins, nutrition_target_fats, nutrition_target_carbs, task_categories_config, bottom_nav_pages_order, tasks_hide_completion_percent, category_percent_highlight_enabled, page_sections_visibility, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM app_settings WHERE id = ?), CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
+        (id, currency, points_start_date, points_open_hours, icon_theme, bottom_nav_show_labels, devtools_tab_enabled, page_transitions_enabled, app_scale, ambient_default_timer, ambient_default_stopwatch, ambient_default_break, shadow_level, gradient_intensity, background_animation_type, nutrition_initial_weight, nutrition_target_weight, nutrition_target_calories, nutrition_target_proteins, nutrition_target_fats, nutrition_target_carbs, task_categories_config, bottom_nav_pages_order, tasks_hide_completion_percent, category_percent_highlight_enabled, page_sections_visibility, sidebar_widget_enabled_metrics, sidebar_widget_order, sidebar_widget_max_items, sidebar_widget_style_variant, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM app_settings WHERE id = ?), CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
       `);
       
       const taskCategoriesConfig = settings.task_categories_config != null
@@ -4596,6 +4784,16 @@ class DB {
           ? settings.page_sections_visibility
           : JSON.stringify(settings.page_sections_visibility))
         : null;
+      const sidebarWidgetEnabledMetrics = settings.sidebar_widget_enabled_metrics != null
+        ? (typeof settings.sidebar_widget_enabled_metrics === 'string'
+          ? settings.sidebar_widget_enabled_metrics
+          : JSON.stringify(settings.sidebar_widget_enabled_metrics))
+        : JSON.stringify(['day-progress', 'daily-points', 'focus-time', 'rituals', 'calories', 'transactions', 'balance', 'streak']);
+      const sidebarWidgetOrder = settings.sidebar_widget_order != null
+        ? (typeof settings.sidebar_widget_order === 'string'
+          ? settings.sidebar_widget_order
+          : JSON.stringify(settings.sidebar_widget_order))
+        : JSON.stringify(['day-progress', 'daily-points', 'focus-time', 'rituals', 'calories', 'transactions', 'balance', 'streak']);
 
       stmt.run(
         settings.id,
@@ -4624,6 +4822,10 @@ class DB {
         settings.tasks_hide_completion_percent !== undefined && settings.tasks_hide_completion_percent !== null ? settings.tasks_hide_completion_percent : 0,
         settings.category_percent_highlight_enabled !== undefined && settings.category_percent_highlight_enabled !== null ? settings.category_percent_highlight_enabled : 1,
         pageSectionsVisibility,
+        sidebarWidgetEnabledMetrics,
+        sidebarWidgetOrder,
+        settings.sidebar_widget_max_items !== undefined && settings.sidebar_widget_max_items !== null ? settings.sidebar_widget_max_items : 8,
+        settings.sidebar_widget_style_variant || 'balanced',
         settings.id
       );
       
@@ -4758,6 +4960,23 @@ class DB {
       if (!columnNames.includes('page_sections_visibility')) {
         console.log('[DB] Добавляем колонку page_sections_visibility в app_settings...');
         this.db.exec(`ALTER TABLE app_settings ADD COLUMN page_sections_visibility TEXT`);
+      }
+
+      if (!columnNames.includes('sidebar_widget_enabled_metrics')) {
+        console.log('[DB] Добавляем колонку sidebar_widget_enabled_metrics в app_settings...');
+        this.db.exec(`ALTER TABLE app_settings ADD COLUMN sidebar_widget_enabled_metrics TEXT`);
+      }
+      if (!columnNames.includes('sidebar_widget_order')) {
+        console.log('[DB] Добавляем колонку sidebar_widget_order в app_settings...');
+        this.db.exec(`ALTER TABLE app_settings ADD COLUMN sidebar_widget_order TEXT`);
+      }
+      if (!columnNames.includes('sidebar_widget_max_items')) {
+        console.log('[DB] Добавляем колонку sidebar_widget_max_items в app_settings...');
+        this.db.exec(`ALTER TABLE app_settings ADD COLUMN sidebar_widget_max_items INTEGER DEFAULT 8`);
+      }
+      if (!columnNames.includes('sidebar_widget_style_variant')) {
+        console.log('[DB] Добавляем колонку sidebar_widget_style_variant в app_settings...');
+        this.db.exec(`ALTER TABLE app_settings ADD COLUMN sidebar_widget_style_variant TEXT DEFAULT 'balanced'`);
       }
 
       // Тип анимации фона (0 = выключена, 'glow', 'gradient-shift', 'flicker', 'particles')

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Activity,
   Ban,
@@ -42,12 +42,14 @@ import {
   MEGA_SHELL_CARD_CN,
   MEGA_SHELL_CONTENT_CN,
 } from '@/shared/ui/mega-section-layout';
-import { MobileSectionSwitcher } from '@/shared/ui/mobile-section-switcher';
+import { MobilePageShell, MobileSectionTabs, MobileSectionViewport } from '@/shared/ui/mobile';
 import { MegaPanelHeader } from '@/shared/ui/mega-panel-header';
-import { TASK_CATEGORY_DEFAULT_META } from '@/shared/config/domain-taxonomy';
+import { TASK_CATEGORY_IDS, type TaskCategoryId } from '@/shared/config/domain-taxonomy';
+import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
+import { LoadingShell } from '@/shared/ui/data-states';
 
-const HISTORY_CATEGORY_IDS = ['rituals', 'time', 'body', 'deps'] as const;
-type HistoryCategoryId = (typeof HISTORY_CATEGORY_IDS)[number];
+type HistoryCategoryId = TaskCategoryId;
+const HISTORY_CATEGORY_IDS = TASK_CATEGORY_IDS;
 
 const HISTORY_CATEGORY_ICONS: Record<HistoryCategoryId, LucideIcon> = {
   rituals: Sparkles,
@@ -63,33 +65,9 @@ const HISTORY_CATEGORY_PERCENT_KEYS: Record<HistoryCategoryId, string> = {
   deps: 'deps_percent',
 };
 
-const DEFAULT_CATEGORY_LABELS: Record<HistoryCategoryId, string> = {
-  rituals: TASK_CATEGORY_DEFAULT_META.rituals.title,
-  time: TASK_CATEGORY_DEFAULT_META.time.title,
-  body: TASK_CATEGORY_DEFAULT_META.body.title,
-  deps: TASK_CATEGORY_DEFAULT_META.deps.title,
-};
-
-function parseCategoryLabelsFromSettings(settings: unknown): Record<HistoryCategoryId, string> {
-  const out = { ...DEFAULT_CATEGORY_LABELS };
-  if (settings == null) return out;
-  try {
-    const p = typeof settings === 'string' ? JSON.parse(settings) : settings;
-    if (!p || typeof p !== 'object') return out;
-    HISTORY_CATEGORY_IDS.forEach((id) => {
-      const block = p[id] as { title?: string; label?: string } | undefined;
-      const t = block?.title ?? block?.label;
-      if (typeof t === 'string' && t.trim()) out[id] = t.trim();
-    });
-  } catch {
-    /* ignore */
-  }
-  return out;
-}
-
 export function RanksPage() {
   const { dateString } = useSelectedDate();
-  const { db, ready } = useAuraDb();
+  const { db } = useAuraDb();
   const dataTick = useAuraDataRefresh();
   const [mobilePanel, setMobilePanel] = useState<'rank' | 'history'>('rank');
   const isMiniApp = typeof document !== 'undefined' && document.documentElement.dataset.auraMiniapp === '1';
@@ -98,12 +76,12 @@ export function RanksPage() {
   const visibility = useMemo(() => {
     if (!db) return getPageSectionsFromSettings(null);
     return getPageSectionsFromSettings(db.getAppSettings());
-  }, [db, ready]);
+  }, [db]);
 
   const showRank = visibility.ranks.rank !== false;
   const showHistory = visibility.ranks.pointsHistory !== false;
 
-  const points = useCumulativePoints(db, ready, dateString);
+  const points = useCumulativePoints(db, Boolean(db), dateString);
   const current = getCurrentRank(points);
   const reachedTiers = useMemo(
     () => RANK_TIERS.filter((tier) => points >= tier.threshold),
@@ -136,7 +114,7 @@ export function RanksPage() {
     } catch {
       return [];
     }
-  }, [db, ready, dateString, dataTick]);
+  }, [db, dateString, dataTick]);
 
   const [rankAssetsReady, setRankAssetsReady] = useState(false);
 
@@ -189,7 +167,7 @@ export function RanksPage() {
   }
 
   const rankColumn = showRank ? (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <CurrentRankHero
         current={selectedRank}
         actualCurrent={current}
@@ -198,7 +176,6 @@ export function RanksPage() {
         pct={pct}
         needed={needed}
         dateString={dateString}
-        ready={ready}
         assetsReady={rankAssetsReady}
       />
       {!compactMiniRankOnly ? (
@@ -214,10 +191,10 @@ export function RanksPage() {
   ) : null;
 
   const historyColumn = showHistory ? (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <MegaPanelHeader title="История очков" />
       <div className={MEGA_PANEL_BODY_CN}>
-        <PointsHistoryTable db={db} ready={ready} history={history} />
+        <PointsHistoryTable db={db} history={history} />
       </div>
     </div>
   ) : null;
@@ -226,42 +203,48 @@ export function RanksPage() {
     return (
       <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
         <Card className={MEGA_SHELL_CARD_CN}>
-          <CardContent className={cn(MEGA_SHELL_CONTENT_CN, 'p-0')}>{rankColumn}</CardContent>
+          <CardContent className={cn(MEGA_SHELL_CONTENT_CN, 'p-0')}>
+            <MobilePageShell
+              sections={[{ id: 'rank', label: 'Ранг', Icon: Sparkle, content: rankColumn }]}
+              value="rank"
+              onChange={() => {}}
+            />
+          </CardContent>
         </Card>
       </PageFrame>
     );
   }
 
   const both = showRank && showHistory;
+  const mobileSections = [
+    showRank ? { id: 'rank' as const, label: 'Ранг', Icon: Sparkle, content: rankColumn } : null,
+    showHistory ? { id: 'history' as const, label: 'История', Icon: Calendar, content: historyColumn } : null,
+  ].filter(Boolean) as Array<{ id: 'rank' | 'history'; label: string; Icon: typeof Sparkle; content: ReactNode }>;
+  const activeMobileSection =
+    mobileSections.find((section) => section.id === mobilePanel) ?? mobileSections[0];
   return (
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
       <Card className={MEGA_SHELL_CARD_CN}>
         <CardContent className={MEGA_SHELL_CONTENT_CN}>
+          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-background xl:hidden">
+            <MobileSectionViewport>
+              {activeMobileSection?.content}
+            </MobileSectionViewport>
+            <MobileSectionTabs
+              sections={mobileSections.map(({ id, label, Icon }) => ({ id, label, Icon }))}
+              value={activeMobileSection?.id ?? mobilePanel}
+              onChange={(v) => setMobilePanel(v as 'rank' | 'history')}
+            />
+          </div>
           {both ? (
-            <>
-              <div className="hidden h-full min-h-0 flex-1 overflow-hidden aura-content-fade-in xl:grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] xl:divide-x xl:divide-border/60">
-                {rankColumn}
-                {historyColumn}
-              </div>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden xl:hidden">
-                <div className="min-h-0 flex-1 overflow-y-auto">
-                  {mobilePanel === 'rank' ? rankColumn : null}
-                  {mobilePanel === 'history' ? historyColumn : null}
-                </div>
-                <MobileSectionSwitcher
-                  sections={[
-                    { id: 'rank', label: 'Ранг', icon: Sparkle },
-                    { id: 'history', label: 'История', icon: Calendar },
-                  ]}
-                  value={mobilePanel}
-                  onChange={(v) => setMobilePanel(v as 'rank' | 'history')}
-                />
-              </div>
-            </>
+            <div className="hidden h-full min-h-0 flex-1 overflow-hidden aura-content-fade-in xl:grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] xl:divide-x xl:divide-border/60">
+              {rankColumn}
+              {historyColumn}
+            </div>
           ) : showRank ? (
-            rankColumn
+            <div className="hidden min-h-0 flex-1 lg:flex">{rankColumn}</div>
           ) : (
-            historyColumn
+            <div className="hidden min-h-0 flex-1 lg:flex">{historyColumn}</div>
           )}
         </CardContent>
       </Card>
@@ -277,7 +260,6 @@ function CurrentRankHero({
   pct,
   needed,
   dateString,
-  ready,
   assetsReady,
 }: {
   current: RankTier;
@@ -287,7 +269,6 @@ function CurrentRankHero({
   pct: number;
   needed: number;
   dateString: string;
-  ready: boolean;
   assetsReady: boolean;
 }) {
   const aura = rankAuraHsl(current.id);
@@ -303,7 +284,7 @@ function CurrentRankHero({
     >
       <div aria-hidden className="ranks-hero-aura-flow pointer-events-none absolute inset-0 hidden sm:block" />
       <div className="relative z-[1] mx-auto flex max-w-3xl flex-col gap-3 xl:max-w-none xl:flex-row xl:items-stretch xl:gap-6">
-        <div className="relative mx-auto flex aspect-square w-full max-w-[min(96px,28vw)] shrink-0 items-center justify-center sm:max-w-[min(132px,34vw)] xl:mx-0 xl:max-w-[min(220px,28%)]">
+        <div className="relative mx-auto flex aspect-square w-full max-w-[min(126px,34vw)] shrink-0 items-center justify-center sm:max-w-[min(132px,34vw)] xl:mx-0 xl:max-w-[min(220px,28%)]">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-[-22%] rounded-full opacity-[0.65] blur-2xl motion-safe:transition-opacity motion-safe:duration-aura-glide motion-safe:ease-aura"
@@ -323,7 +304,7 @@ function CurrentRankHero({
           )}
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-3 sm:gap-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-3 sm:gap-4 xl:justify-center">
           <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Текущий ранг</p>
           <h2 className="font-heading text-balance text-lg font-semibold tracking-tight text-foreground sm:text-2xl xl:text-3xl">
             {current.name}
@@ -337,53 +318,47 @@ function CurrentRankHero({
             {current.description}
           </div>
 
-          {!ready ? (
-            <p className="text-muted-foreground text-sm">Загрузка…</p>
-          ) : (
-            <>
-              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-                <div className="rounded-lg border border-border/70 bg-card/60 px-3 py-2.5 sm:px-4 sm:py-3">
-                  <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Накоплено очков</p>
-                  <p className="mt-1 font-mono text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">
-                    {formatRankPoints(points)}
-                  </p>
-                  <p className="text-muted-foreground mt-1 font-mono text-xs tabular-nums">на {dateString}</p>
-                </div>
-                <div className="rounded-lg border border-border/70 bg-card/40 px-3 py-2.5 sm:px-4 sm:py-3">
-                  {next ? (
-                    <>
-                      <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">До «{next.name}»</p>
-                      <p className="mt-1 text-base font-semibold tabular-nums text-foreground sm:text-lg">
-                        ещё <span className="text-primary">{formatRankPoints(needed)}</span>
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs">порог: {formatRankPoints(next.threshold)}</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Вершина</p>
-                      <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">Максимальный ранг</p>
-                      <p className="text-muted-foreground mt-1 text-xs">Вы прошли весь путь лестницы.</p>
-                    </>
-                  )}
-                </div>
-              </div>
-
+          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <div className="rounded-lg border border-border/70 bg-card/60 px-3 py-2.5 sm:px-4 sm:py-3">
+              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Накоплено очков</p>
+              <p className="mt-1 font-mono text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">
+                {formatRankPoints(points)}
+              </p>
+              <p className="text-muted-foreground mt-1 font-mono text-xs tabular-nums">на {dateString}</p>
+            </div>
+            <div className="rounded-lg border border-border/70 bg-card/40 px-3 py-2.5 sm:px-4 sm:py-3">
               {next ? (
-                <div className="space-y-2">
-                  <div className="flex items-end justify-between gap-2 text-xs">
-                    <span className="text-muted-foreground">Прогресс к следующему рангу</span>
-                    <span className="font-mono font-semibold tabular-nums text-foreground">{Math.round(pct)}%</span>
-                  </div>
-                  <Progress value={pct} className="h-2" />
-                </div>
-              ) : null}
-              {hasLocalPointsFallback ? (
-                <p className="text-muted-foreground text-xs">
-                  Локальный режим: очки берутся из сохранённых дневных данных без Electron.
-                </p>
-              ) : null}
-            </>
-          )}
+                <>
+                  <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">До «{next.name}»</p>
+                  <p className="mt-1 text-base font-semibold tabular-nums text-foreground sm:text-lg">
+                    ещё <span className="text-primary">{formatRankPoints(needed)}</span>
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-xs">порог: {formatRankPoints(next.threshold)}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Вершина</p>
+                  <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">Максимальный ранг</p>
+                  <p className="text-muted-foreground mt-1 text-xs">Вы прошли весь путь лестницы.</p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {next ? (
+            <div className="space-y-2">
+              <div className="flex items-end justify-between gap-2 text-xs">
+                <span className="text-muted-foreground">Прогресс к следующему рангу</span>
+                <span className="font-mono font-semibold tabular-nums text-foreground">{Math.round(pct)}%</span>
+              </div>
+              <Progress value={pct} className="h-2" />
+            </div>
+          ) : null}
+          {hasLocalPointsFallback ? (
+            <p className="text-muted-foreground text-xs">
+              Локальный режим: очки берутся из сохранённых дневных данных без Electron.
+            </p>
+          ) : null}
         </div>
       </div>
     </div>
@@ -443,10 +418,10 @@ function RankLadder({
       <div
         ref={stripRef}
         className={cn(
-          'h-full min-h-0 flex-1 overflow-hidden p-3 sm:p-4',
+          'h-full min-h-0 flex-1 overflow-hidden p-4',
           'grid gap-2',
-          'grid-cols-5',
-          'auto-rows-[1fr]'
+          'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+          'auto-rows-fr'
         )}
       >
         {RANK_TIERS.map((tier) => (
@@ -526,7 +501,7 @@ function RankRibbonCard({
       )}
       style={cardStyle}
     >
-      <div className="hidden sm:flex flex-col items-center">
+      <div className="flex flex-col items-center">
         <div className="relative size-10 shrink-0 sm:size-12">
           {assetsReady ? (
             <RankImage
@@ -543,7 +518,7 @@ function RankRibbonCard({
       </div>
       <span
         className={cn(
-          'line-clamp-2 w-full text-[11px] font-semibold leading-tight tracking-wide',
+          'line-clamp-2 w-full text-xs font-semibold leading-tight tracking-wide',
           isCurrent ? 'text-foreground' : 'text-foreground/90'
         )}
       >
@@ -597,7 +572,7 @@ function RankImage({
         onLoad={() => setLoaded(true)}
         onError={() => setLoaded(true)}
         className={cn(
-          'relative z-[1] transition-opacity duration-250 ease-out',
+          'relative z-[1] transition-opacity duration-aura-base ease-aura',
           loaded ? 'ranks-media-in opacity-100' : 'opacity-0',
           className
         )}
@@ -614,16 +589,14 @@ function formatHistoryDateShort(dateStr: string): string {
 
 function PointsHistoryTable({
   db,
-  ready,
   history,
 }: {
   db: AuraDatabase | null;
-  ready: boolean;
   history: AuraRow[];
 }) {
   const categoryLabels = useMemo(
-    () => parseCategoryLabelsFromSettings(db?.getAppSettings()?.task_categories_config),
-    [db, ready]
+    () => Object.fromEntries(TASK_CATEGORY_IDS.map((k) => [k, loadTaskCategoryConfig(db)[k].title])) as Record<TaskCategoryId, string>,
+    [db]
   );
 
   const completionsByDate = useMemo(() => {
@@ -656,10 +629,10 @@ function PointsHistoryTable({
     } catch {
       return (): LucideIcon => Lock;
     }
-  }, [db, ready]);
+  }, [db]);
 
-  if (!ready) {
-    return <p className="text-muted-foreground text-sm">Загрузка…</p>;
+  if (!db) {
+    return <LoadingShell />;
   }
   if (history.length === 0) {
     return <p className="text-muted-foreground text-sm">Нет данных по очкам.</p>;
@@ -753,7 +726,7 @@ function PointsHistoryTable({
                 <td
                   className={cn(
                     'whitespace-nowrap px-2 py-2 text-right text-xs font-medium tabular-nums sm:px-3',
-                    daily >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'
+                    daily >= 0 ? 'text-semantic-success' : 'text-semantic-negative'
                   )}
                 >
                   {daily >= 0 ? '+' : ''}

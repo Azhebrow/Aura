@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Pause, Play, RotateCcw, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActAffixValueField } from '@/features/act/ActModal';
@@ -12,6 +12,7 @@ const RING_R = 46;
 const RING_CX = 60;
 const RING_CY = 60;
 const RING_LEN = 2 * Math.PI * RING_R;
+type TimerDialMode = 'time' | 'percent' | 'bar' | 'hidden';
 
 type Props = {
   dayLocked: boolean;
@@ -42,18 +43,53 @@ function TimerRing({
   isRunning,
   timerType,
   displayTime,
+  dialMode,
+  progressPct,
+  progressHint,
+  canCycleDial,
+  onCycleDial,
+  accent,
   taskInRing,
+  remainingTimeText,
 }: {
   showProgressRing: boolean;
   dashOffset: number;
   isRunning: boolean;
   timerType: 'timer' | 'stopwatch';
   displayTime: string;
+  dialMode: TimerDialMode;
+  progressPct: number;
+  progressHint: string;
+  canCycleDial: boolean;
+  onCycleDial: () => void;
+  accent: string;
   /** Иконка задачи вместо подписи «Таймер / Секундомер» внутри кольца. */
   taskInRing: { icon: string | null; accent: string } | null;
+  remainingTimeText: string;
 }) {
+  const visibleDialMode = timerType === 'timer' ? dialMode : 'time';
+  const displayValue =
+      visibleDialMode === 'percent'
+      ? `${Math.round(progressPct)}%`
+      : visibleDialMode === 'hidden'
+        ? ''
+        : displayTime;
+
   return (
-    <div className="relative z-[1] aspect-square w-full">
+    <button
+      type="button"
+      className={cn(
+        'relative z-[1] aspect-square w-full rounded-full text-center',
+        'focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
+        canCycleDial ? 'cursor-pointer' : 'cursor-default'
+      )}
+      onClick={canCycleDial ? onCycleDial : undefined}
+      aria-label={
+        canCycleDial
+          ? `Переключить отображение таймера. Сейчас: ${visibleDialMode === 'time' ? 'время' : visibleDialMode === 'percent' ? `${Math.round(progressPct)}%` : visibleDialMode === 'bar' ? 'прогресс-бар' : 'скрыто'}`
+          : undefined
+      }
+    >
       <svg className="size-full -rotate-90" viewBox="0 0 120 120" fill="none" aria-hidden>
         <circle cx={RING_CX} cy={RING_CY} r={RING_R} className="stroke-border/70" strokeWidth="4" fill="none" />
         {showProgressRing ? (
@@ -71,32 +107,107 @@ function TimerRing({
         ) : null}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-3 text-center">
-        {taskInRing ? (
-          <div className="relative flex size-9 shrink-0 items-center justify-center sm:size-10" aria-hidden>
-            <ColoredAuraIcon name={taskInRing.icon} tint={taskInRing.accent} size={26} className="relative z-[1]" />
-          </div>
-        ) : isRunning ? (
-          <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
-            <span className="bg-foreground/45 size-1 shrink-0 rounded-full" />
-            Идёт
-          </span>
+        {visibleDialMode === 'hidden' ? (
+          <span className="sr-only">Скрыто</span>
         ) : (
-          <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
-            {timerType === 'stopwatch' ? 'Секундомер' : 'Таймер'}
-          </span>
+          <>
+            {taskInRing && visibleDialMode === 'time' ? (
+              <div className="relative flex size-9 shrink-0 items-center justify-center sm:size-10" aria-hidden>
+                <ColoredAuraIcon name={taskInRing.icon} tint={taskInRing.accent} size={26} className="relative z-[1]" />
+              </div>
+            ) : visibleDialMode === 'time' ? (
+              isRunning ? (
+                <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
+                  <span className="bg-foreground/45 size-1 shrink-0 rounded-full" />
+                  Идёт
+                </span>
+              ) : (
+                <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+                  {timerType === 'stopwatch' ? 'Секундомер' : 'Таймер'}
+                </span>
+              )
+            ) : null}
+            {visibleDialMode === 'time' ? (
+              <time
+                className={cn(
+                  'font-semibold tabular-nums tracking-tight text-foreground',
+                  taskInRing ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl'
+                )}
+              >
+                {displayValue}
+              </time>
+            ) : visibleDialMode === 'percent' ? (
+              <span
+                className={cn(
+                  'max-w-[8.5rem] text-balance font-mono text-3xl font-semibold tabular-nums tracking-tight text-foreground sm:text-4xl'
+                )}
+              >
+                {displayValue}
+              </span>
+            ) : visibleDialMode === 'bar' ? (
+              <div className="flex w-full max-w-[8.75rem] flex-col items-center gap-2">
+                <div
+                  className="h-3 w-full overflow-hidden rounded-full ring-1 ring-border/60"
+                  style={{ backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--muted))` }}
+                >
+                  <div
+                    className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-aura-glide motion-safe:ease-aura"
+                    style={{
+                      width: `${Math.max(8, progressPct)}%`,
+                      background: `linear-gradient(90deg, ${accent} 0%, color-mix(in srgb, ${accent} 85%, white 15%) 100%)`,
+                      boxShadow: `0 0 10px color-mix(in srgb, ${accent} 25%, transparent)`,
+                    }}
+                  />
+                </div>
+                <span className="text-[11px] font-medium leading-tight text-muted-foreground">
+                  {progressHint}
+                </span>
+              </div>
+            ) : (
+              <div className="flex w-full max-w-[7rem] flex-col items-center gap-2">
+                <div className="h-2 w-full overflow-hidden rounded-full ring-1 ring-border/55" style={{ backgroundColor: 'color-mix(in srgb, var(--muted) 84%, transparent)' }}>
+                  <div
+                    className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-aura-glide motion-safe:ease-aura"
+                    style={{
+                      width: `${Math.max(10, progressPct)}%`,
+                      background: `linear-gradient(90deg, color-mix(in srgb, ${accent} 78%, var(--foreground) 22%) 0%, ${accent} 100%)`,
+                      boxShadow: `0 0 6px color-mix(in srgb, ${accent} 18%, transparent)`,
+                    }}
+                  />
+                </div>
+                <span className="text-[11px] font-semibold tracking-[0.24em] text-muted-foreground/80">клик для режима</span>
+              </div>
+            )}
+            {visibleDialMode === 'percent' || visibleDialMode === 'bar' ? (
+              <span className="max-w-[8.5rem] text-balance text-[11px] font-medium leading-tight text-muted-foreground">
+                {visibleDialMode === 'percent' ? progressHint : remainingTimeText}
+              </span>
+            ) : null}
+            {taskInRing && isRunning && visibleDialMode === 'time' ? <span className="sr-only">Идёт</span> : null}
+            {visibleDialMode === 'percent' || visibleDialMode === 'bar' ? <span className="sr-only">{remainingTimeText}</span> : null}
+          </>
         )}
-        <time
-          className={cn(
-            'font-semibold tabular-nums tracking-tight text-foreground',
-            taskInRing ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl'
-          )}
-        >
-          {displayTime}
-        </time>
-        {taskInRing && isRunning ? <span className="sr-only">Идёт</span> : null}
       </div>
-    </div>
+    </button>
   );
+}
+
+function formatRemainingText(remainingSec: number): string {
+  const safeRemainingSec = Math.max(0, Math.floor(remainingSec));
+  const mins = Math.ceil(safeRemainingSec / 60);
+  if (safeRemainingSec <= 0) return 'Цель закрыта';
+  if (safeRemainingSec < 60) return 'Осталось меньше минуты';
+  return `Осталось ~${mins} мин`;
+}
+
+function getStoicProgressMessage(progressPct: number, isRunning: boolean, hasElapsed: boolean): string {
+  if (progressPct >= 95) return 'Почти закончил';
+  if (progressPct >= 80) return 'Финиш рядом';
+  if (progressPct >= 55) return 'Ты уже в потоке';
+  if (progressPct >= 30) return 'Ты держишь курс';
+  if (progressPct > 5) return 'Ты набираешь ход';
+  if (hasElapsed && !isRunning) return 'Пауза тоже часть движения';
+  return 'Ты только начал';
 }
 
 export function TimerSessionHero({
@@ -120,8 +231,16 @@ export function TimerSessionHero({
   embedded = false,
   embeddedFillHeight = false,
 }: Props) {
+  const [dialMode, setDialMode] = useState<TimerDialMode>('time');
   const ringPct = Math.min(100, Math.max(0, sessionPct));
   const showProgressRing = timerType === 'timer' && targetDurationSec > 0;
+  const canCycleDial = timerType === 'timer' && targetDurationSec > 0 && (isRunning || elapsedTimeSec > 0);
+  const remainingSec = Math.max(0, targetDurationSec - elapsedTimeSec);
+  const progressHint = useMemo(
+    () => getStoicProgressMessage(ringPct, isRunning, elapsedTimeSec > 0),
+    [elapsedTimeSec, isRunning, ringPct]
+  );
+  const remainingTimeText = useMemo(() => formatRemainingText(remainingSec), [remainingSec]);
   const dashOffset = RING_LEN * (1 - ringPct / 100);
   const canStart = !dayLocked && !!selectedTask;
   const selectedMin = Math.round(targetDurationSec / 60);
@@ -133,6 +252,22 @@ export function TimerSessionHero({
           accent,
         }
       : null;
+
+  useEffect(() => {
+    if (!canCycleDial && dialMode !== 'time') {
+      setDialMode('time');
+    }
+  }, [canCycleDial, dialMode]);
+
+  const cycleDialMode = () => {
+    if (!canCycleDial) return;
+    setDialMode((current) => {
+      if (current === 'time') return 'percent';
+      if (current === 'percent') return 'bar';
+      if (current === 'bar') return 'hidden';
+      return 'time';
+    });
+  };
 
   if (embedded) {
     const taskColorStyle = { ['--task-color' as string]: accent } as CSSProperties;
@@ -182,7 +317,14 @@ export function TimerSessionHero({
                     isRunning={isRunning}
                     timerType={timerType}
                     displayTime={displayTime}
+                    dialMode={dialMode}
+                    progressPct={ringPct}
+                    progressHint={progressHint}
+                    canCycleDial={canCycleDial}
+                    onCycleDial={cycleDialMode}
+                    accent={accent}
                     taskInRing={taskInRing}
+                    remainingTimeText={remainingTimeText}
                   />
                 </div>
               </div>
@@ -318,7 +460,14 @@ export function TimerSessionHero({
                 isRunning={isRunning}
                 timerType={timerType}
                 displayTime={displayTime}
+                dialMode={dialMode}
+                progressPct={ringPct}
+                progressHint={progressHint}
+                canCycleDial={canCycleDial}
+                onCycleDial={cycleDialMode}
+                accent={accent}
                 taskInRing={taskInRing}
+                remainingTimeText={remainingTimeText}
               />
             </div>
           </div>

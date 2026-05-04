@@ -15,7 +15,7 @@ export function ProgressDots({ filled, total, size = 'xs' }: ProgressDotsProps) 
         <div
           key={i}
           className={cn(
-            'rounded-full transition-colors',
+            'rounded-full aura-tx-colors',
             i < filled ? 'bg-foreground/70' : 'bg-muted/50',
             size === 'xs' ? 'size-1.5' : 'size-2'
           )}

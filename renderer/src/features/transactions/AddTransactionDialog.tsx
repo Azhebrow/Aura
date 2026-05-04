@@ -20,10 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
 import { currencySymbol, formatAmount } from '@/shared/lib/money';
+import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
 import type { AuraRow } from '@/types/aura';
 import {
@@ -68,7 +68,7 @@ export function AddTransactionDialog({
   onSaved,
   initialTransaction,
 }: Props) {
-  const { db, ready } = useAuraDb();
+  const { db } = useAuraDb();
   const dataTick = useAuraDataRefresh({ types: ['transaction'] });
   const [type, setType] = useState<TxType>('expense');
   const [amount, setAmount] = useState('');
@@ -82,16 +82,17 @@ export function AddTransactionDialog({
   const isEditMode = Boolean(initialTransaction?.id);
 
   const categories = useMemo(() => {
-    if (!db || !ready) return [];
+    if (!db) return [];
     if (type === 'transfer') return [];
     const table = type === 'income' ? 'cfg_income_categories' : 'cfg_expense_categories';
     return sortByUsage(db.getAll(table));
-  }, [db, ready, type, dataTick]);
+  }, [db, type, dataTick]);
 
   const accounts = useMemo(() => {
-    if (!db || !ready) return [];
+    if (!db) return [];
     return db.getAll('cfg_accounts');
-  }, [db, ready, dataTick]);
+  // openSeq forces re-eval on dialog open so accountLabel re-reads fresh getById data
+  }, [db, dataTick, openSeq]);
   useEffect(() => {
     if (!open) return;
     setOpenSeq((s) => s + 1);
@@ -270,7 +271,8 @@ export function AddTransactionDialog({
 
   const accountLabel = (a: AuraRow) => {
     const label = String(a.title ?? a.name ?? a.id);
-    const balance = Number(a.balance ?? 0);
+    const fresh = db ? db.getById('cfg_accounts', String(a.id)) : null;
+    const balance = Number(fresh?.balance ?? a.balance ?? 0);
     return `${label} (${formatAmount(balance, currencyCode)})`;
   };
 
@@ -286,7 +288,7 @@ export function AddTransactionDialog({
           <ActModalFooter
             onCancel={() => onOpenChange(false)}
             onSubmit={() => void submit()}
-            submitDisabled={busy || !ready}
+            submitDisabled={busy || !db}
             submitLabel={isEditMode ? 'Обновить' : 'Сохранить'}
           />
         }

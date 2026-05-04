@@ -1,5 +1,6 @@
 import type { AuraDatabase } from '@/types/aura';
-import { callDbBatched, fetchBootstrap, invalidateBootstrapCache } from '@/shared/bridge/mini-app-client';
+import { callDbBatched, fetchBootstrap, invalidateBootstrapCache } from './mini-app-client';
+import { AURA_DATA_CHANGED } from '@/shared/lib/aura-data-events';
 
 type DbCallResponse = {
   ok: boolean;
@@ -11,6 +12,28 @@ type DbMethodsResponse = {
   ok: boolean;
   methods?: string[];
 };
+
+const SAFE_EMPTY_ARRAY_METHODS = new Set([
+  'getAll',
+  'getRitualsMorning',
+  'getRitualsEvening',
+  'getTimerSessions',
+  'getNutritionEntries',
+  'getAllGoals',
+  'getStagesByGoal',
+  'getTasksByStage',
+  'getGoalTasksProgressByDate',
+]);
+
+const SAFE_NULL_METHODS = new Set(['getDiaryEntry', 'getAppSettings']);
+const SAFE_ZERO_METHODS = new Set(['getCategoryProgress']);
+const SAFE_EMPTY_OBJECT_METHODS = new Set(['getCategoryProgresses']);
+
+function getApiBase() {
+  if (typeof window === 'undefined') return '';
+  if (window.location.protocol === 'file:') return 'http://127.0.0.1:8787';
+  return '';
+}
 
 const readCache = new Map<string, unknown>();
 const MOBILE_READ_CACHE_TTL_MS = 5000;
@@ -83,6 +106,14 @@ function getMethodStat(method: string): BridgeMethodStat {
     };
   }
   return bridgeAuditState.byMethod[method];
+}
+
+function clearReadCache() {
+  readCache.clear();
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener(AURA_DATA_CHANGED, clearReadCache);
 }
 
 function finalizeCurrentPageSnapshot() {
@@ -165,6 +196,9 @@ function getBridgeAuditSnapshot() {
 }
 
 function getCacheTtlMs(method: string, args: unknown[]) {
+  if (method === 'getTransactions' || method === 'getAllTransactions' || method === 'getTransactionsBetween') {
+    return 0;
+  }
   const base = isMobileRuntime() ? MOBILE_READ_CACHE_TTL_MS : DESKTOP_READ_CACHE_TTL_MS;
   if (method === 'getTaskProgress') {
     return isMobileRuntime() ? 7000 : 3600;
@@ -208,7 +242,7 @@ function callDbSync(method: string, args: unknown[]): unknown {
   }
 
   const xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/db/call', false);
+  xhr.open('POST', `${getApiBase()}/api/db/call`, false);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.send(JSON.stringify({ method, args }));
 
@@ -223,7 +257,7 @@ function callDbSync(method: string, args: unknown[]): unknown {
     }
 
     if (isMutationMethod) {
-      readCache.clear();
+      clearReadCache();
       invalidateBootstrapCache();
     } else {
       readCache.set(cacheKey, { value: payload.result, ts: Date.now() });
@@ -244,7 +278,7 @@ function callDbSync(method: string, args: unknown[]): unknown {
 
 function getAvailableMethodsSync(): Set<string> {
   const xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/db/methods', false);
+  xhr.open('GET', `${getApiBase()}/api/db/methods`, false);
   xhr.send();
 
   if (xhr.status < 200 || xhr.status >= 300) {
@@ -262,7 +296,13 @@ function createWebDbProxy(availableMethods: Set<string>): AuraDatabase {
     {
       get(_target, prop) {
         if (typeof prop !== 'string') return undefined;
-        if (!availableMethods.has(prop)) return undefined;
+        if (!availableMethods.has(prop)) {
+          if (SAFE_EMPTY_ARRAY_METHODS.has(prop)) return () => [];
+          if (SAFE_NULL_METHODS.has(prop)) return () => null;
+          if (SAFE_ZERO_METHODS.has(prop)) return () => 0;
+          if (SAFE_EMPTY_OBJECT_METHODS.has(prop)) return () => ({});
+          return undefined;
+        }
         return (...args: unknown[]) => callDbSync(prop, args);
       },
     }
@@ -274,6 +314,7 @@ export function initWebDbBridge() {
   if (typeof window.getDB === 'function') return;
 
   const availableMethods = getAvailableMethodsSync();
+  availableMethods.add('getAll');
   const proxyDb = createWebDbProxy(availableMethods);
   const bridgeApi = {
     snapshot: getBridgeAuditSnapshot,

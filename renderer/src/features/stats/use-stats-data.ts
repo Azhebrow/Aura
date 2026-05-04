@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import type { AuraDatabase } from '@/types/aura';
 import { aggregateData } from '@/shared/stats/stats-data-aggregator';
-import { getStatsCache } from '@/shared/stats/stats-cache';
 import type { StatsAggregatedRow, StatsControlsState, StatsDayRow, StatsMeta } from '@/shared/stats/types';
 import type { StatsFormattedTable } from '@/shared/stats/stats-table-format';
 import { formatForTable } from '@/shared/stats/stats-table-format';
 import { buildStatsMeta } from './build-stats-meta';
-import { getRankDailyPointsData, getStatsData } from './stats-data-service';
-import { AURA_DATA_CHANGED, prefixesForAuraDataType } from './stats-data-events';
+import { buildTimePeriodSummary, getRankDailyPointsData, getStatsData } from './stats-data-service';
+import { AURA_DATA_CHANGED } from '@/shared/lib/aura-data-events';
+import type { StatsTimeSummary } from '@/shared/stats/types';
 
 export type StatsPipelineResult = {
   dayRows: StatsDayRow[];
@@ -16,12 +16,13 @@ export type StatsPipelineResult = {
   meta: StatsMeta;
   table: StatsFormattedTable;
   allSeriesKeys: string[];
+  currencyCode: string | undefined;
+  timeSummary: StatsTimeSummary | null;
 };
-
-type CachedPayload = { dayRows: StatsDayRow[] };
 
 export function useStatsData(db: AuraDatabase | null, ready: boolean, controls: StatsControlsState) {
   const [refreshToken, setRefreshToken] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<StatsPipelineResult | null>(null);
 
   const reload = useCallback(() => {
@@ -30,27 +31,12 @@ export function useStatsData(db: AuraDatabase | null, ready: boolean, controls: 
 
   useEffect(() => {
     const onTaskCategories = () => {
-      getStatsCache().invalidateByPrefix('tasks_');
       reload();
     };
 
     const onAuraData = (ev: Event) => {
       const detail = (ev as CustomEvent<{ type?: string }>).detail;
-      const type = detail?.type;
-      const cache = getStatsCache();
-      if (!type) {
-        cache.invalidate();
-      } else {
-        const prefixes = prefixesForAuraDataType(type);
-        // Для новых/косвенных типов изменений не держим устаревший кэш:
-        // если явной карты нет — инвалидируем весь кэш статистики.
-        if (!prefixes.length) {
-          cache.invalidate();
-        }
-        for (const p of prefixes) {
-          cache.invalidateByPrefix(p);
-        }
-      }
+      void detail?.type;
       reload();
     };
 
@@ -62,58 +48,58 @@ export function useStatsData(db: AuraDatabase | null, ready: boolean, controls: 
     };
   }, [reload]);
 
+  useLayoutEffect(() => {
+    if (!db || !ready) return;
+    setLoading(true);
+  }, [db, ready, controls, refreshToken]);
+
   useEffect(() => {
     if (!db || !ready) {
       setResult(null);
+      setLoading(false);
       return;
     }
+    let cancelled = false;
+    const raf = window.requestAnimationFrame(() => {
+      if (cancelled) return;
+      const dayRows = getStatsData(db, controls.mode, controls.startDate, controls.endDate, controls.groupBy);
 
-    const cache = getStatsCache();
-    const cacheKey = cache.generateKey(
-      controls.mode,
-      controls.viewType,
-      controls.groupBy,
-      controls.period,
-      controls.aggregation,
-      controls.startDate,
-      controls.endDate
-    );
+      const aggregated = aggregateData(dayRows, controls.aggregation, controls.startDate, controls.endDate, controls.mode);
 
-    let dayRows: StatsDayRow[];
-    const cached = cache.get<CachedPayload>(cacheKey);
-    if (cached && Array.isArray(cached.dayRows)) {
-      dayRows = cached.dayRows;
-    } else {
-      dayRows = getStatsData(db, controls.mode, controls.startDate, controls.endDate, controls.groupBy);
-      cache.set(cacheKey, { dayRows });
-    }
-
-    const aggregated = aggregateData(dayRows, controls.aggregation, controls.startDate, controls.endDate);
-
-    let rankDailyAggregated: StatsAggregatedRow[] | null = null;
-    if (controls.mode === 'rank') {
-      const dailyRows = getRankDailyPointsData(db, controls.startDate, controls.endDate);
-      rankDailyAggregated = aggregateData(dailyRows, controls.aggregation, controls.startDate, controls.endDate);
-    }
-
-    const allKeys = new Set<string>();
-    for (const r of aggregated) {
-      for (const k of Object.keys(r.values || {})) {
-        allKeys.add(k);
+      let rankDailyAggregated: StatsAggregatedRow[] | null = null;
+      if (controls.mode === 'rank') {
+        const dailyRows = getRankDailyPointsData(db, controls.startDate, controls.endDate);
+        rankDailyAggregated = aggregateData(dailyRows, controls.aggregation, controls.startDate, controls.endDate, 'finance');
       }
-    }
 
-    const meta = buildStatsMeta(db, controls.mode, controls.groupBy, allKeys);
-    const table = formatForTable(aggregated, controls.mode, controls.groupBy, controls.aggregation, db);
+      const allKeys = new Set<string>();
+      for (const r of aggregated) {
+        for (const k of Object.keys(r.values || {})) allKeys.add(k);
+      }
 
-    setResult({
-      dayRows,
-      aggregated,
-      rankDailyAggregated,
-      meta,
-      table,
-      allSeriesKeys: table.columns,
+      const meta = buildStatsMeta(db, controls.mode, controls.groupBy, allKeys);
+      const table = formatForTable(aggregated, controls.mode, controls.groupBy, controls.aggregation, db);
+      const settings = db.getAppSettings();
+      const currencyCode = settings && typeof settings === 'object' && typeof settings.currency === 'string' ? settings.currency : undefined;
+      const timeSummary = controls.mode === 'time' || controls.mode === 'leisure' ? buildTimePeriodSummary(db, controls.startDate, controls.endDate) : null;
+
+      setResult({
+        dayRows,
+        aggregated,
+        rankDailyAggregated,
+        meta,
+        table,
+        allSeriesKeys: table.columns,
+        currencyCode,
+        timeSummary,
+      });
+      setLoading(false);
     });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(raf);
+    };
   }, [db, ready, controls, refreshToken]);
 
   return {
@@ -123,6 +109,9 @@ export function useStatsData(db: AuraDatabase | null, ready: boolean, controls: 
     meta: result?.meta ?? { icons: {}, colors: {} },
     table: result?.table ?? { labels: [], rows: [], columns: [] },
     allSeriesKeys: result?.allSeriesKeys ?? [],
+    currencyCode: result?.currencyCode,
+    timeSummary: result?.timeSummary ?? null,
+    loading,
     reload,
   };
 }

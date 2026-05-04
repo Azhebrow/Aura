@@ -112,9 +112,7 @@ export function rankAuraHsl(tierId: number): string {
 }
 
 export function rankImageSrc(imageNumber: number): string {
-  const base = import.meta.env.BASE_URL;
-  const prefix = base.endsWith('/') ? base : `${base}/`;
-  return `${prefix}ranks/${imageNumber}.png`;
+  return `${getAppBaseUrl()}ranks/${imageNumber}.png`;
 }
 
 export function formatRankPoints(n: number): string {
@@ -147,3 +145,4 @@ export function rankProgress(points: number, current: RankTier, next: RankTier |
   const needed = Math.max(0, hi - points);
   return { pct, needed };
 }
+import { getAppBaseUrl } from '@/shared/lib/base-url';

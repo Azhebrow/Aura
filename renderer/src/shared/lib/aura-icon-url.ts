@@ -1,10 +1,9 @@
 import { resolveAuraIconFileBase } from '@/shared/lib/aura-icon-name';
+import { getAppBaseUrl } from '@/shared/lib/base-url';
 
 /** URL SVG из `public/icons` (как в `AuraPublicIcon`). */
 export function getAuraPublicIconUrl(fileBase: string): string {
-  const base = import.meta.env.BASE_URL ?? './';
-  const prefix = base.endsWith('/') ? base : `${base}/`;
-  return `${prefix}icons/${encodeURIComponent(fileBase)}.svg`;
+  return `${getAppBaseUrl()}icons/${encodeURIComponent(fileBase)}.svg`;
 }
 
 export function getAuraPublicIconUrlFromName(name: string | null | undefined): string | null {

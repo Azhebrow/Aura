@@ -1,6 +1,5 @@
 import type { AuraDatabase } from '@/types/aura';
 
-/** Значение в ячейке дня: число, объект БЖУ или null (настроение). */
 export type StatsCellValue = number | Record<string, number> | null;
 
 export type StatsMode =
@@ -14,11 +13,8 @@ export type StatsMode =
   | 'nutrition'
   | 'correlation';
 
-export type StatsViewType = 'table' | 'chart';
-
 export type StatsAggregation = 'day' | 'week' | 'month' | 'year';
 
-/** В UI — «Элементы»; в сервисе совпадает с legacy `!== 'categories'`. */
 export type StatsGroupBy = 'categories' | 'elements';
 
 export type StatsDayRow = {
@@ -33,6 +29,20 @@ export type StatsAggregatedRow = {
   dateRange: { startDate: string; endDate: string } | null;
 };
 
+export type StatsTimeSummaryItem = {
+  key: string;
+  actualHours: number;
+  targetHours: number;
+  icon?: string;
+  color?: string;
+};
+
+export type StatsTimeSummary = {
+  items: StatsTimeSummaryItem[];
+  totalActualHours: number;
+  totalTargetHours: number;
+};
+
 export type StatsMeta = {
   icons: Record<string, string>;
   colors: Record<string, string>;
@@ -44,13 +54,11 @@ export type StatsMeta = {
 
 export type StatsControlsState = {
   mode: StatsMode;
-  viewType: StatsViewType;
   groupBy: StatsGroupBy;
   aggregation: StatsAggregation;
   period: number;
   startDate: string;
   endDate: string;
-  /** null — все серии; иначе список видимых ключей (как в legacy `visibleKeys`). */
   selectedSeriesKeys: string[] | null;
 };
 

@@ -17,7 +17,7 @@ export function useTabSlideAnimation(
   const { duration = 300 } = options;
   const prevIndexRef = useRef(currentIndex);
   const directionRef = useRef<TabSlideDirection>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Определяем направление переключения

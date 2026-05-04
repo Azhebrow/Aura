@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { AlertTriangle, FolderOpen, ListPlus, Palette, Pencil, Settings, Trash2, XIcon } from 'lucide-react';
+import { AlertTriangle, FolderOpen, ListPlus, Music2, Palette, Pencil, Settings, Trash2, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddListButton } from '@/components/ui/add-list-button';
 import {
@@ -42,7 +42,6 @@ import {
   CFG_INCOME_COLOR_PRESETS,
   CFG_LEISURE_ESCAPE_COLOR_PRESETS,
   CFG_LEISURE_FILLING_COLOR_PRESETS,
-  normalizeHexColor,
   parseHexColor,
   type CfgColorPreset,
 } from '@/features/settings/cfg-color-presets';
@@ -56,6 +55,9 @@ import { cn } from '@/lib/utils';
 import { useSettingsTabActions } from '@/features/settings/settings-tab-actions-context';
 import { calculateProductNutrition } from '@/shared/lib/nutrition-calc';
 import { ActAffixValueField, ActModalFooter } from '@/features/act/ActModal';
+import { LoadingShell } from '@/shared/ui/data-states';
+
+const COLOR_PICKER_DEFAULT = '#64748b';
 
 /** Единый ритм правой колонки CFG-модалки (высота как у `h-9`). */
 const CFG_INPUT_CN =
@@ -291,8 +293,15 @@ function rowTitle(row: AuraRow, keys?: string[]): string {
 }
 
 function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | undefined {
-  void spec;
-  void row;
+  if (spec.table === 'cfg_diary_entry_presets') {
+    const prompt = typeof row.prompt === 'string' ? row.prompt.trim().replace(/\s+/g, ' ') : '';
+    const description = typeof row.description === 'string' ? row.description.trim().replace(/\s+/g, ' ') : '';
+    const parts: string[] = [];
+    if (prompt) parts.push(prompt.length > 96 ? `${prompt.slice(0, 96).trimEnd()}…` : prompt);
+    if (description) parts.push(description.length > 72 ? `${description.slice(0, 72).trimEnd()}…` : description);
+    if (Number(row.active ?? 1) === 0) parts.push('Неактивная');
+    if (parts.length > 0) return <span className="text-muted-foreground">{parts.join(' · ')}</span>;
+  }
   return undefined;
 }
 
@@ -398,10 +407,6 @@ function formValueFromRow(def: CfgFieldDef, row: AuraRow, sectionId: string): st
     const s = String(raw);
     return s === '' || s === 'ordinary' ? '__ordinary__' : s;
   }
-  if (def.key === 'color') {
-    const restricted = normalizeRestrictedSectionColor(sectionId, raw);
-    if (restricted) return restricted;
-  }
   return String(raw);
 }
 
@@ -505,6 +510,7 @@ function encodePresetIngredientDrafts(items: PresetIngredientDraft[], productsBy
 }
 
 const AMBIENT_MUSIC_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac']);
+const AMBIENT_MUSIC_DEFAULT_ICON = 'music-2';
 
 function getNodeRequire() {
   if (typeof globalThis !== 'undefined' && typeof (globalThis as { require?: unknown }).require === 'function') {
@@ -556,6 +562,10 @@ function readAmbientMusicFileNames(folderPath: string): string[] {
   }
 }
 
+function ambientMusicImportKey(fileName: string): string {
+  return fileName.trim().toLowerCase();
+}
+
 /** Акцент иконки в списке CFG: задачи — всегда цвет категории; остальное — из БД или запасной токен. */
 function rowListAccent(spec: CfgSectionSpec, row: AuraRow): string {
   if (spec.table === 'cfg_rituals_morning') return 'var(--rituals-morning)';
@@ -571,11 +581,12 @@ function rowListAccent(spec: CfgSectionSpec, row: AuraRow): string {
 
   if (spec.table === 'cfg_nutrition_products') {
     const g = String(row.group ?? 'proteins');
-    if (g === 'proteins') return '#22c55e';
-    if (g === 'fats') return '#eab308';
-    if (g === 'carbs') return '#3b82f6';
+    if (g === 'proteins') return 'var(--nutrition-proteins)';
+    if (g === 'fats') return 'var(--nutrition-fats)';
+    if (g === 'carbs') return 'var(--nutrition-carbs)';
   }
   if (spec.table === 'cfg_nutrition_presets') return 'var(--primary)';
+  if (spec.table === 'cfg_diary_entry_presets') return 'var(--primary)';
 
   if (
     spec.table === 'cfg_income_categories' ||
@@ -623,17 +634,13 @@ function buildPayloadFromForm(
       out[f.key] = coerceField(f, form[f.key]);
     }
   }
-  if (typeof out.color === 'string') {
-    const restricted = normalizeRestrictedSectionColor(spec.sectionId, out.color);
-    if (restricted) out.color = restricted;
-  }
   return cleanupRow(spec.table, out);
 }
 
 type Props = { spec: CfgSectionSpec };
 
 export function CfgSectionCard({ spec }: Props) {
-  const { db, ready } = useAuraDb();
+  const { db } = useAuraDb();
   const setTabActions = useSettingsTabActions();
   const [rows, setRows] = useState<AuraRow[]>([]);
   const [open, setOpen] = useState(false);
@@ -642,7 +649,6 @@ export function CfgSectionCard({ spec }: Props) {
   const [form, setForm] = useState<Record<string, string>>({});
   const currentTaskType = String(form.task_type ?? '');
   const restrictedColorPresets = useMemo(() => sectionColorPresets(spec.sectionId), [spec.sectionId]);
-  const isRestrictedColorSelection = restrictedColorPresets != null;
   const baseVisibleFields = useMemo(
     () =>
       spec.fields.filter(
@@ -668,7 +674,7 @@ export function CfgSectionCard({ spec }: Props) {
   const [listError, setListError] = useState<string | null>(null);
   const [dialogSub, setDialogSub] = useState<DialogSub>('form');
   const [cfgIconField, setCfgIconField] = useState<string | null>(null);
-  const [colorDraft, setColorDraft] = useState('#64748b');
+  const [colorDraft, setColorDraft] = useState(COLOR_PICKER_DEFAULT);
   /** Доп. поля типа задачи свёрнуты по умолчанию — меньше шума при открытии формы. */
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [taskListItems, setTaskListItems] = useState<TaskListCfgItem[]>([]);
@@ -679,6 +685,7 @@ export function CfgSectionCard({ spec }: Props) {
   const [presetIngredients, setPresetIngredients] = useState<PresetIngredientDraft[]>([]);
   const [ambientMusicFolderPath, setAmbientMusicFolderPath] = useState<string | null>(null);
   const [ambientMusicFiles, setAmbientMusicFiles] = useState<string[]>([]);
+  const [ambientMusicImporting, setAmbientMusicImporting] = useState(false);
   const taskCategoryKey = sectionTaskCategoryKey(spec.sectionId);
   const visibleHomeAccountsCount = useMemo(
     () =>
@@ -722,6 +729,7 @@ export function CfgSectionCard({ spec }: Props) {
   }, [db, spec.filter, spec.sortBy, spec.table]);
 
   const canReorder = spec.sortBy === 'level' && spec.fields.some((f) => f.key === 'level');
+  const hideRowReorder = spec.sectionId.startsWith('finance-') || spec.sectionId.startsWith('nutrition-');
 
   const refreshAmbientMusicFiles = useCallback(() => {
     if (spec.table !== 'cfg_ambient_music') return;
@@ -729,6 +737,58 @@ export function CfgSectionCard({ spec }: Props) {
     setAmbientMusicFolderPath(folderPath);
     setAmbientMusicFiles(folderPath ? readAmbientMusicFileNames(folderPath) : []);
   }, [spec.table]);
+
+  const importAmbientMusicFiles = useCallback(() => {
+    if (!db || spec.table !== 'cfg_ambient_music') return;
+    if (ambientMusicImporting) return;
+
+    const folderPath = resolveAmbientMusicFolderPath();
+    setAmbientMusicFolderPath(folderPath);
+    if (!folderPath) {
+      window.alert('Папка музыки не найдена.');
+      return;
+    }
+
+    const files = readAmbientMusicFileNames(folderPath);
+    setAmbientMusicFiles(files);
+    if (files.length === 0) {
+      window.alert('В папке музыки не найдено поддерживаемых файлов.');
+      return;
+    }
+
+    const existing = new Set(
+      db
+        .getAll('cfg_ambient_music')
+        .map((row) => ambientMusicImportKey(String(row.file_name ?? '')))
+        .filter(Boolean)
+    );
+    const missing = files.filter((fileName) => !existing.has(ambientMusicImportKey(fileName)));
+    if (missing.length === 0) {
+      window.alert('Все файлы музыки уже добавлены.');
+      return;
+    }
+
+    setAmbientMusicImporting(true);
+    try {
+      let added = 0;
+      for (const fileName of missing) {
+        const ok = db.create('cfg_ambient_music', {
+          name: fileName,
+          icon: AMBIENT_MUSIC_DEFAULT_ICON,
+          file_name: fileName,
+        });
+        if (ok) added += 1;
+      }
+      reload();
+      refreshAmbientMusicFiles();
+      window.alert(`Добавлено ${added} ${added === 1 ? 'файл' : 'файлов'} музыки.`);
+    } catch (e) {
+      console.error('[CfgSectionCard] ambient music import', e);
+      window.alert(e instanceof Error ? e.message : 'Не удалось загрузить файлы музыки.');
+    } finally {
+      setAmbientMusicImporting(false);
+    }
+  }, [ambientMusicImporting, db, refreshAmbientMusicFiles, reload, spec.table]);
 
   const moveRow = useCallback(
     (currentRows: AuraRow[], fromIndex: number, toIndex: number) => {
@@ -757,14 +817,12 @@ export function CfgSectionCard({ spec }: Props) {
   );
 
   useEffect(() => {
-    if (!ready) return;
     reload();
-  }, [ready, reload]);
+  }, [reload]);
 
   useEffect(() => {
-    if (!ready) return;
     refreshAmbientMusicFiles();
-  }, [ready, refreshAmbientMusicFiles]);
+  }, [refreshAmbientMusicFiles]);
 
   const openCategoryEditor = useCallback(() => {
     if (!db || !taskCategoryKey) return;
@@ -864,7 +922,7 @@ export function CfgSectionCard({ spec }: Props) {
             variant="ghost"
             className="text-muted-foreground h-8 px-2 text-xs font-normal"
             onClick={openCategoryEditor}
-            disabled={!ready || !db}
+            disabled={!db}
           >
             <Palette className="mr-1 size-3.5" aria-hidden />
             Вид блока
@@ -873,7 +931,7 @@ export function CfgSectionCard({ spec }: Props) {
       </div>
     );
     return () => setTabActions(null);
-  }, [setTabActions, ready, db, taskCategoryKey, openCategoryEditor]);
+  }, [setTabActions, db, taskCategoryKey, openCategoryEditor]);
 
   const openEdit = (row: AuraRow) => {
     refreshAmbientMusicFiles();
@@ -941,6 +999,7 @@ export function CfgSectionCard({ spec }: Props) {
           updated_at: new Date().toISOString(),
         });
       }
+      window.dispatchEvent(new Event('settings-saved'));
       setCfgIconField(null);
       setOpen(false);
       reload();
@@ -957,6 +1016,7 @@ export function CfgSectionCard({ spec }: Props) {
     if (!window.confirm(`Удалить «${rowTitle(row, spec.rowTitleKeys)}»?`)) return;
     try {
       db.delete(spec.table, id);
+      window.dispatchEvent(new Event('settings-saved'));
       reload();
     } catch (e) {
       console.error('[CfgSectionCard] delete', e);
@@ -1078,7 +1138,7 @@ export function CfgSectionCard({ spec }: Props) {
       const raw = form[f.key] || '';
       const parsed = parseHexColor(raw);
       const paint = normalizeCssColorForPaint(raw) ?? parsed;
-      const pickerSeed = paint ?? '#64748b';
+      const pickerSeed = paint ?? COLOR_PICKER_DEFAULT;
       const emptyPattern =
         'linear-gradient(135deg,var(--muted)_25%,transparent_25%,transparent_50%,var(--muted)_50%,var(--muted)_75%,transparent_75%,transparent)';
       return (
@@ -1153,8 +1213,8 @@ export function CfgSectionCard({ spec }: Props) {
             {listError}
           </p>
         ) : null}
-        {!ready ? (
-          <p className="text-muted-foreground text-sm">Загрузка…</p>
+        {!db ? (
+          <LoadingShell />
         ) : rows.length === 0 ? (
           <EmptyState
             title="Пока нет записей."
@@ -1184,15 +1244,16 @@ export function CfgSectionCard({ spec }: Props) {
                             title={rowTitle(r, spec.rowTitleKeys)}
                             description={rowMetaSummary(spec, r)}
                             actionsAlwaysVisible
+                            showDisabledMoveButtons
                             onMoveUp={
-                              canReorder && idx > 0
+                              !hideRowReorder && canReorder && idx > 0
                                 ? () => {
                                     moveRow(inGroup, idx, idx - 1);
                                   }
                                 : undefined
                             }
                             onMoveDown={
-                              canReorder && idx < inGroup.length - 1
+                              !hideRowReorder && canReorder && idx < inGroup.length - 1
                                 ? () => {
                                     moveRow(inGroup, idx, idx + 1);
                                   }
@@ -1234,15 +1295,16 @@ export function CfgSectionCard({ spec }: Props) {
                             title={rowTitle(r, spec.rowTitleKeys)}
                             description={rowMetaSummary(spec, r)}
                             actionsAlwaysVisible
+                            showDisabledMoveButtons
                             onMoveUp={
-                              canReorder && idx > 0
+                              !hideRowReorder && canReorder && idx > 0
                                 ? () => {
                                     moveRow(other, idx, idx - 1);
                                   }
                                 : undefined
                             }
                             onMoveDown={
-                              canReorder && idx < other.length - 1
+                              !hideRowReorder && canReorder && idx < other.length - 1
                                 ? () => {
                                     moveRow(other, idx, idx + 1);
                                   }
@@ -1286,15 +1348,16 @@ export function CfgSectionCard({ spec }: Props) {
                     }
                     description={rowMetaSummary(spec, r)}
                     actionsAlwaysVisible
+                    showDisabledMoveButtons
                     onMoveUp={
-                      canReorder && idx > 0
+                      !hideRowReorder && canReorder && idx > 0
                         ? () => {
                             moveRow(rows, idx, idx - 1);
                           }
                         : undefined
                     }
                     onMoveDown={
-                      canReorder && idx < rows.length - 1
+                      !hideRowReorder && canReorder && idx < rows.length - 1
                         ? () => {
                             moveRow(rows, idx, idx + 1);
                           }
@@ -1309,7 +1372,19 @@ export function CfgSectionCard({ spec }: Props) {
           </ul>
         )}
         <div className="flex flex-wrap items-center gap-2">
-          <AddListButton onClick={openCreate} disabled={!ready || !db} />
+          <AddListButton onClick={openCreate} disabled={!db} />
+          {spec.table === 'cfg_ambient_music' ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 gap-2"
+              onClick={() => void importAmbientMusicFiles()}
+              disabled={!db || ambientMusicImporting}
+            >
+              <Music2 className="size-4" />
+              Загрузить музыку из папки
+            </Button>
+          ) : null}
           {spec.table === 'cfg_ambient_music' ? (
             <Button
               type="button"
@@ -1325,7 +1400,7 @@ export function CfgSectionCard({ spec }: Props) {
                 if (!electron?.shell) return;
                 await electron.shell.openPath(folderPath);
               }}
-              disabled={!ready}
+              disabled={!db}
             >
               <FolderOpen className="size-4" />
               Открыть папку с музыкой
@@ -1385,7 +1460,7 @@ export function CfgSectionCard({ spec }: Props) {
                   submitLabel="Применить цвет"
                   onCancel={() => setDialogSub('form')}
                   onSubmit={() => {
-                    const picked = isRestrictedColorSelection ? colorDraft : normalizeHexColor(colorDraft);
+                    const picked = (normalizeCssColorForPaint(colorDraft) ?? colorDraft.trim()) || COLOR_PICKER_DEFAULT;
                     setForm((prev) => ({ ...prev, [dialogSub.field]: picked }));
                     setDialogSub('form');
                   }}
@@ -1407,7 +1482,7 @@ export function CfgSectionCard({ spec }: Props) {
                       const isHomeVisible = spec.table === 'cfg_accounts' && f.key === 'home_visible';
                       const checked = form[f.key] === '1';
                       const currentRowVisible = mode === 'edit' && editId ? (String(rows.find((r) => String(r.id) === editId)?.home_visible ?? '1') !== '0') : false;
-                      const maxedOut = isHomeVisible && !checked && visibleHomeAccountsCount >= 3 && !currentRowVisible;
+                      const maxedOut = isHomeVisible && !checked && visibleHomeAccountsCount >= 2 && !currentRowVisible;
                       return (
                         <CfgModalGridRow key={f.key} label={f.label} htmlFor={fid}>
                           <div className="border-input bg-background flex min-h-9 w-full items-center justify-center rounded-md border px-3 shadow-xs">
@@ -1463,7 +1538,7 @@ export function CfgSectionCard({ spec }: Props) {
                               const isHomeVisible = spec.table === 'cfg_accounts' && f.key === 'home_visible';
                               const checked = form[f.key] === '1';
                               const currentRowVisible = mode === 'edit' && editId ? (String(rows.find((r) => String(r.id) === editId)?.home_visible ?? '1') !== '0') : false;
-                              const maxedOut = isHomeVisible && !checked && visibleHomeAccountsCount >= 3 && !currentRowVisible;
+                              const maxedOut = isHomeVisible && !checked && visibleHomeAccountsCount >= 2 && !currentRowVisible;
                               return (
                                 <CfgModalGridRow key={f.key} label={f.label} htmlFor={fid}>
                                   <div className="border-input bg-background flex min-h-9 w-full items-center justify-center rounded-md border px-3 shadow-xs">
@@ -1484,10 +1559,10 @@ export function CfgSectionCard({ spec }: Props) {
                                       {isHomeVisible ? (
                                         <p className="text-muted-foreground text-[11px] leading-snug">
                                           {maxedOut
-                                            ? 'Максимум 3 счета уже выбрано для главной.'
+                                            ? 'Максимум 2 счета уже выбрано для главной.'
                                             : checked
                                               ? `Показывается на главной. После выключения останется ${Math.max(0, visibleHomeAccountsCount - 1)}.`
-                                              : `Сейчас видно ${visibleHomeAccountsCount} из 3.`}
+                                              : `Сейчас видно ${visibleHomeAccountsCount} из 2.`}
                                         </p>
                                       ) : null}
                                     </div>
@@ -1786,10 +1861,9 @@ export function CfgSectionCard({ spec }: Props) {
                 value={colorDraft}
                 onChange={setColorDraft}
                 presets={restrictedColorPresets ?? undefined}
-                allowCustom={!isRestrictedColorSelection}
                 onPresetPick={(picked) => {
-                  const n = isRestrictedColorSelection ? picked : normalizeHexColor(picked);
-                  setForm((prev) => ({ ...prev, [dialogSub.field]: n }));
+                  const next = normalizeCssColorForPaint(picked) ?? picked;
+                  setForm((prev) => ({ ...prev, [dialogSub.field]: next }));
                   setDialogSub('form');
                 }}
               />

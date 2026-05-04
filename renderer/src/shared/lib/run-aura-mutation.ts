@@ -1,4 +1,4 @@
-import { dispatchAuraDataChanged } from '@/features/stats/stats-data-events';
+import { dispatchAuraDataChanged } from '@/shared/lib/aura-data-events';
 import { invalidateBootstrapCache } from '@/shared/bridge/mini-app-client';
 
 /**

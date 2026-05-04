@@ -64,14 +64,14 @@ export function UniversalRadioGroup<T extends string>({
             role="radio"
             aria-checked={selected}
             size="sm"
-            variant={selected ? 'default' : 'ghost'}
+            variant={selected ? 'outline' : 'ghost'}
             disabled={disabled}
             className={cn(
-              'gap-1.5 px-2 text-xs',
-              !(fullWidth && orientation === 'horizontal') && 'h-8',
+              'min-h-9 gap-1.5 px-2.5 text-xs active:!scale-100 active:!translate-y-0',
+              !(fullWidth && orientation === 'horizontal') && 'h-9',
               fullWidth &&
                 orientation === 'horizontal' &&
-                'h-full min-h-0 min-w-0 flex-1 basis-0 justify-center gap-0 rounded-sm px-1.5',
+                'h-full min-h-0 min-w-0 flex-1 basis-0 justify-center gap-0 rounded-md px-2',
               fullWidth && orientation === 'vertical' && 'w-full min-w-0 justify-start',
               selected ? selectedOptionClassName : unselectedOptionClassName,
               optionClassName

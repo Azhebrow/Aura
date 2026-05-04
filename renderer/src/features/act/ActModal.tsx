@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { XIcon, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,14 @@ export function ActModal({
   size = 'md',
 }: ActModalProps) {
   const Icon = icon;
+  const handleKeyDownCapture = useCallback((event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== 'Enter' || event.defaultPrevented || event.nativeEvent.isComposing) return;
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    if (target.closest("textarea,[contenteditable='true']")) return;
+    if (target.closest("button,a,[role='button'],[data-enter-keep-default='true']")) return;
+    event.preventDefault();
+  }, []);
   return (
     <UniversalModalContent
       size={size}
@@ -40,6 +48,7 @@ export function ActModal({
     >
       <form
         className="flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+        onKeyDownCapture={handleKeyDownCapture}
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit?.();
@@ -238,6 +247,10 @@ export function ActAffixValueField({
     // flushSync ensures parent state is updated synchronously before any
     // concurrent click handler (e.g. Save button) reads the state.
     flushSync(() => { onCommit(committed); });
+    window.setTimeout(() => {
+      committedByKeyRef.current = false;
+      document.querySelector<HTMLElement>('[data-modal-default-action="true"]')?.focus();
+    }, 0);
   };
 
   const cancel = () => {
@@ -306,7 +319,7 @@ export function ActAffixValueField({
           onCommit(committed);
           window.setTimeout(() => {
             committedByKeyRef.current = false;
-            document.querySelector<HTMLElement>('[data-modal-confirm="true"]')?.focus();
+            document.querySelector<HTMLElement>('[data-modal-default-action="true"]')?.focus();
           }, 0);
         }
         if (e.key === 'Escape') {
@@ -346,6 +359,7 @@ export function ActModalFooter({
         {cancelLabel}
       </Button>
       <Button
+        data-modal-default-action="true"
         data-modal-confirm="true"
         type="button"
         variant={submitVariant}

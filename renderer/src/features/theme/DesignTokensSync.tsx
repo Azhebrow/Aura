@@ -11,7 +11,7 @@ import { useAuraDb } from '@/shared/hooks/use-aura-db';
  * как legacy `TaskCategoriesConfigService._applyColorsToCSS`.
  */
 export function DesignTokensSync() {
-  const { db, ready } = useAuraDb();
+  const { db } = useAuraDb();
 
   useEffect(() => {
     applyFinanceSemanticCssVars();
@@ -32,9 +32,8 @@ export function DesignTokensSync() {
   };
 
   useEffect(() => {
-    if (!ready) return;
     apply();
-  }, [db, ready]);
+  }, [db]);
 
   useEffect(() => {
     const onDbReady = () => apply();

@@ -1,31 +1,21 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useLayoutEffect } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import { useSettingsTabActions } from '@/features/settings/settings-tab-actions-context';
-import type { AuraRow } from '@/types/aura';
+import { LoadingShell } from '@/shared/ui/data-states';
+import { useAsyncData } from '@/shared/hooks/use-async-data';
 
 /**
  * Настроения дневника: только просмотр. Редактирование и удаление отключены —
  * строки задаются данными приложения / миграциями.
  */
 export function CfgDiaryMoodsCard() {
-  const { db, ready } = useAuraDb();
   const setTabActions = useSettingsTabActions();
-  const [rows, setRows] = useState<AuraRow[]>([]);
-
-  const reload = useCallback(() => {
-    if (!db) {
-      setRows([]);
-      return;
-    }
-    setRows(db.getAll('cfg_diary_moods').sort((a, b) => (Number(a.level) || 0) - (Number(b.level) || 0)));
-  }, [db]);
-
-  useEffect(() => {
-    if (!ready) return;
-    reload();
-  }, [ready, reload]);
+  const { data: rows, status } = useAsyncData(
+    (db) => db.getAll('cfg_diary_moods').sort((a, b) => (Number(a.level) || 0) - (Number(b.level) || 0)),
+    [],
+    { events: ['cfg'] }
+  );
 
   useLayoutEffect(() => {
     setTabActions(null);
@@ -39,9 +29,9 @@ export function CfgDiaryMoodsCard() {
           Шкала настроений для дневника: порядок и иконки задаются в данных приложения. Здесь только просмотр.
         </p>
       </div>
-      {!ready ? (
-        <p className="text-muted-foreground text-sm">Загрузка…</p>
-      ) : rows.length === 0 ? (
+      {status === 'loading' ? (
+        <LoadingShell />
+      ) : (rows ?? []).length === 0 ? (
         <EmptyState
           title="Пока нет строк в cfg_diary_moods."
           hint="Проверьте сиды/миграции: список настроений формируется системными данными."
@@ -49,7 +39,7 @@ export function CfgDiaryMoodsCard() {
         />
       ) : (
         <div className="flex flex-col gap-1.5">
-          {rows.map((r) => (
+          {(rows ?? []).map((r) => (
             <div
               key={String(r.id)}
               className="border-border flex flex-wrap items-center gap-2 rounded-lg border px-2.5 py-2 text-xs"

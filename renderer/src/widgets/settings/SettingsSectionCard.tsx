@@ -24,10 +24,10 @@ export function SettingsSectionCard({
     <div className="space-y-1">
       <PageSectionCard
         cardClassName={cn(
-          'border-border/70 transition-shadow duration-aura-base ease-aura hover:shadow-sm motion-reduce:transition-none',
+          'border-border/70 shadow-none transition-colors duration-aura-base ease-aura motion-reduce:transition-none',
           cardClassName
         )}
-        contentClassName={cn('gap-3', contentClassName)}
+        contentClassName={cn('gap-2.5', contentClassName)}
         {...props}
       />
       {footnote ? (

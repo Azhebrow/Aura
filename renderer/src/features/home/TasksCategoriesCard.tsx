@@ -18,23 +18,25 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
-import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
+import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
 import { useDayLocked } from '@/shared/hooks/use-day-locked';
 import { useShell } from '@/app/navigation/shell-context';
 import { IconWithBadge } from '@/components/ui/icon-with-badge';
 import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
-import { loadTaskCategoryConfig } from '@/shared/stats/task-categories-settings';
-import { TASK_CATEGORY_DEFAULT_META } from '@/shared/config/domain-taxonomy';
+import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
+import { TASK_CATEGORY_DEFAULT_META, TASK_CATEGORY_IDS, type TaskCategoryId } from '@/shared/config/domain-taxonomy';
 import { getCategoryProgresses } from '@/shared/bridge/get-category-progresses';
+import { STORAGE_KEYS } from '@/shared/config/storage-keys';
+import { LoadingShell } from '@/shared/ui/data-states';
+import { useAsyncData } from '@/shared/hooks/use-async-data';
+import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { cn } from '@/lib/utils';
 import type { AuraRow, AuraTaskProgress } from '@/types/aura';
 
-const RITUALS_KIND_STORAGE = 'aura-rituals-kind';
-
-const CATEGORY_IDS = ['rituals', 'time', 'body', 'deps'] as const;
-type CategoryId = (typeof CATEGORY_IDS)[number];
+const CATEGORY_IDS = TASK_CATEGORY_IDS;
+type CategoryId = TaskCategoryId;
 
 const DEFAULT_LABELS: Record<CategoryId, string> = {
   rituals: TASK_CATEGORY_DEFAULT_META.rituals.title,
@@ -89,7 +91,7 @@ function TaskControlSlot({
   return (
     <div
       className={cn(
-        'box-border flex min-h-8 w-full shrink-0 items-center overflow-hidden text-foreground lg:h-full',
+        'box-border flex min-h-11 w-full shrink-0 items-center overflow-hidden text-foreground lg:h-full lg:min-h-8',
         className
       )}
     >
@@ -123,6 +125,7 @@ function TaskRowFrame({
   pct,
   doneTitle,
   satisfied,
+  disabled,
   control,
   onOpenDetail,
 }: {
@@ -133,6 +136,7 @@ function TaskRowFrame({
   doneTitle?: boolean;
   /** Прогресс закрыт — лёгкий фон строки и акцент у процента */
   satisfied?: boolean;
+  disabled?: boolean;
   control: ReactNode;
   onOpenDetail?: () => void;
 }) {
@@ -275,17 +279,17 @@ function TaskRowFrame({
     );
   }
 
-  const iconInvertFull = segClip.iconW > 0 && segClip.iconPx >= segClip.iconW - 0.75;
-
   return (
     <li
       className={cn(
-          'group/task relative isolate flex items-center overflow-hidden border rounded-lg transition-[background-color,border-color] duration-aura-base ease-aura',
+          'group/task relative isolate flex min-h-11 items-center overflow-hidden border rounded-lg transition-[background-color,border-color,opacity] duration-aura-base ease-aura lg:min-h-8',
           'lg:flex lg:items-stretch lg:rounded-xl lg:block',
           'border-border/40 bg-muted/35',
-          satisfied ? 'border-foreground/15' : 'hover:border-border/70'
+          satisfied ? 'border-foreground/15' : 'hover:border-border/70',
+          disabled && 'opacity-45'
       )}
     >
+      {disabled ? <div className="absolute inset-0 z-20 bg-background/35 backdrop-blur-[1px]" aria-hidden /> : null}
       <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
         <div
           className={cn(
@@ -308,12 +312,14 @@ function TaskRowFrame({
             iconName={icon}
             tint={accent}
             size="md"
+            surfaceClassName="bg-transparent ring-0 shadow-none"
           />
         </div>
         <button
           type="button"
           className="relative min-w-0 flex-1 text-left pointer-events-auto"
           onClick={onOpenDetail}
+          disabled={disabled}
         >
           <span className="block truncate text-base font-semibold sm:text-sm">{title}</span>
         </button>
@@ -324,7 +330,8 @@ function TaskRowFrame({
         ref={rowRef}
         className={cn(
           'relative z-10 hidden lg:flex min-w-0 flex-1 items-center gap-x-2 px-2.5 py-1.5 pointer-events-none',
-          'lg:gap-x-2.5 lg:px-3 lg:py-2 lg:transition-opacity lg:duration-aura-fast lg:ease-aura lg:group-hover/task:pointer-events-none lg:group-hover/task:opacity-0'
+          'lg:gap-x-2.5 lg:px-3 lg:py-2 lg:transition-opacity lg:duration-aura-fast lg:ease-aura lg:group-hover/task:pointer-events-none lg:group-hover/task:opacity-0',
+          disabled && 'pointer-events-none opacity-70'
         )}
       >
         <div ref={iconSegRef} className="shrink-0">
@@ -333,6 +340,7 @@ function TaskRowFrame({
               iconName={icon}
               tint={accent}
               size="md"
+              surfaceClassName="bg-transparent ring-0 shadow-none"
             />
             <div
               className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -344,8 +352,7 @@ function TaskRowFrame({
                   iconName={icon}
                   tint="#ffffff"
                   size="md"
-                  surfaceClassName={cn(iconInvertFull && 'ring-0 shadow-none')}
-                  surfaceStyle={iconInvertFull ? { backgroundColor: accent } : undefined}
+                  surfaceClassName="bg-transparent ring-0 shadow-none"
                 />
               </div>
             </div>
@@ -353,8 +360,9 @@ function TaskRowFrame({
         </div>
         <button
           type="button"
-          className="relative min-w-0 flex-1 rounded-lg px-2 text-left aura-tx-colors hover:bg-muted/30 pointer-events-auto"
+          className="relative min-w-0 flex-1 rounded-lg px-2 text-left aura-tx-colors hover:bg-muted/30 pointer-events-auto disabled:hover:bg-transparent"
           onClick={onOpenDetail}
+          disabled={disabled}
         >
           <div ref={titleSegRef} className="min-w-0">
             <SegmentedDualText clipPct={segClip.titlePct} className="w-full min-w-0">
@@ -364,9 +372,10 @@ function TaskRowFrame({
         </button>
         <button
           type="button"
-          className="relative min-w-max shrink-0 items-center justify-end flex rounded-lg px-2 aura-tx-colors hover:bg-muted/30 pointer-events-auto"
+          className="relative min-w-max shrink-0 items-center justify-end flex rounded-lg px-2 aura-tx-colors hover:bg-muted/30 pointer-events-auto disabled:hover:bg-transparent"
           onClick={onOpenDetail}
           ref={pctSegRef}
+          disabled={disabled}
         >
           <SegmentedDualText clipPct={segClip.pctPct} className="tabular-nums">
             {`${uiPct}%`}
@@ -377,12 +386,15 @@ function TaskRowFrame({
       {/* Контрол управления */}
       <div
         className={cn(
-          'relative z-20 flex items-center justify-center basis-1/2 shrink-0',
+          'relative z-20 flex items-center justify-center basis-1/2 shrink-0 pointer-events-none',
           'lg:min-w-[3rem] lg:border-l lg:border-border/40 lg:bg-background/92 lg:pr-0',
-          'lg:absolute lg:inset-0 lg:z-30 lg:min-h-0 lg:min-w-[auto] lg:basis-auto lg:items-stretch lg:justify-stretch lg:bg-popover lg:text-popover-foreground lg:pr-0 lg:opacity-0 lg:pointer-events-none lg:shadow-sm lg:ring-1 lg:ring-border/60 lg:transition-opacity lg:duration-aura-fast lg:ease-aura lg:group-hover/task:opacity-100 lg:group-hover/task:pointer-events-auto'
+          'lg:absolute lg:inset-0 lg:z-30 lg:min-h-0 lg:min-w-[auto] lg:basis-auto lg:items-stretch lg:justify-stretch lg:bg-popover lg:text-popover-foreground lg:pr-0 lg:opacity-0 lg:shadow-sm lg:ring-1 lg:ring-border/60 lg:transition-opacity lg:duration-aura-fast lg:ease-aura lg:group-hover/task:opacity-100',
+          disabled && 'lg:opacity-0'
         )}
       >
-        {control}
+        <div className="pointer-events-auto flex h-full w-full">
+          {control}
+        </div>
       </div>
     </li>
   );
@@ -390,15 +402,17 @@ function TaskRowFrame({
 
 export function TasksCategoriesCard() {
   const { dateString } = useSelectedDate();
-  const { db, ready } = useAuraDb();
+  const { db } = useAuraDb();
   const preferBootstrap = typeof window !== 'undefined' && Boolean(window.__auraMiniApi);
-  const dayLocked = useDayLocked(db, ready, dateString);
+  const dayLocked = useDayLocked(db, Boolean(db), dateString);
   const { setActivePageId } = useShell();
   const dataTick = useAuraDataRefresh({ types: ['task-progress', 'timer', 'ritual', 'nutrition'] });
-  const [values, setValues] = useState<Record<string, number>>({});
   const [sheetTask, setSheetTask] = useState<AuraRow | null>(null);
+  const [localReloadTick, setLocalReloadTick] = useState(0);
   const [progress, setProgress] = useState<AuraTaskProgress | null>(null);
-  const [homeBootstrap, setHomeBootstrap] = useState<{
+  const [optimisticProgressById, setOptimisticProgressById] = useState<Record<string, AuraTaskProgress>>({});
+  const bootstrapParams = useMemo(() => ({ date: dateString }), [dateString]);
+  const { data: homeBootstrap } = useBootstrapData<{
     cfgTasks?: AuraRow[];
     cfgRitualsMorning?: AuraRow[];
     cfgRitualsEvening?: AuraRow[];
@@ -406,16 +420,27 @@ export function TasksCategoriesCard() {
     ritualsEveningRows?: AuraRow[];
     taskProgressById?: Record<string, AuraTaskProgress | null>;
     timerTotalsByTaskId?: Record<string, number>;
-  } | null>(null);
+    categoryProgresses?: Record<string, number>;
+  }>(
+    'home',
+    bootstrapParams,
+    [dataTick, localReloadTick],
+    {
+      keepStaleOnError: true,
+      dedupeKey: `home:${dateString}:${dataTick}:${localReloadTick}`,
+      cacheMs: 0,
+    }
+  );
   const [numberDrafts, setNumberDrafts] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const numberSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const nutritionEntries = useMemo(() => {
-    if (!db || !ready) return [] as AuraRow[];
-    return db.getNutritionEntries(dateString);
-  }, [db, ready, dateString, dataTick]);
-  const nutritionTotals = useMemo(() => sumNutritionDay(nutritionEntries), [nutritionEntries]);
-  const nutritionTargets = useMemo(() => readNutritionTargets(db?.getAppSettings() as Record<string, unknown> | null), [db, ready, dataTick]);
+  const { data: nutritionEntries } = useAsyncData(
+    (database) => database.getNutritionEntries(dateString),
+    [dateString],
+    { events: ['nutrition'] }
+  );
+  const nutritionTotals = useMemo(() => sumNutritionDay(nutritionEntries ?? []), [nutritionEntries]);
+  const nutritionTargets = useMemo(() => readNutritionTargets(db?.getAppSettings() as Record<string, unknown> | null), [db, dataTick]);
   const nutritionProgressPct = useMemo(() => {
     const target = Number(nutritionTargets.calories) || 0;
     if (target <= 0) return nutritionTotals.calories > 0 ? 100 : 0;
@@ -427,7 +452,7 @@ export function TasksCategoriesCard() {
     if (preferBootstrap) return [] as AuraRow[];
     if (!db) return [] as AuraRow[];
     return db.getAll('cfg_tasks');
-  }, [db, homeBootstrap?.cfgTasks, preferBootstrap, ready]);
+  }, [db, homeBootstrap?.cfgTasks, preferBootstrap]);
 
   const activeRitualIds = useMemo(() => {
     if (!db) return { morning: new Set<string>(), evening: new Set<string>() };
@@ -449,7 +474,7 @@ export function TasksCategoriesCard() {
         .filter(Boolean)
     );
     return { morning, evening };
-  }, [db, homeBootstrap?.cfgRitualsEvening, homeBootstrap?.cfgRitualsMorning, preferBootstrap, ready]);
+  }, [db, homeBootstrap?.cfgRitualsEvening, homeBootstrap?.cfgRitualsMorning, preferBootstrap]);
 
   const categoryUi = useMemo(() => {
     const cfg = loadTaskCategoryConfig(db);
@@ -472,47 +497,18 @@ export function TasksCategoriesCard() {
     };
   }, []);
 
-  const reload = useCallback(() => {
-    if (!db) {
-      setValues({});
-      return;
+  const values = useMemo(() => {
+    if (!db) return {} as Record<string, number>;
+    const categoryProgresses = homeBootstrap?.categoryProgresses;
+    if (categoryProgresses) {
+      const next: Record<string, number> = {};
+      for (const categoryId of CATEGORY_IDS) {
+        next[categoryId] = Number(categoryProgresses[categoryId] ?? 0);
+      }
+      return next;
     }
-    const api = window.__auraMiniApi;
-    if (api) {
-      void api
-        .fetchBootstrap('home', { date: dateString })
-        .then((data) => {
-          setHomeBootstrap((data ?? null) as typeof homeBootstrap);
-          const categoryProgresses =
-            data && typeof data === 'object' && 'categoryProgresses' in data
-              ? (data as { categoryProgresses?: Record<string, number> }).categoryProgresses
-              : null;
-          if (categoryProgresses) {
-            const next: Record<string, number> = {};
-            for (const categoryId of CATEGORY_IDS) {
-              next[categoryId] = Number(categoryProgresses[categoryId] ?? 0);
-            }
-            setValues(next);
-            return;
-          }
-          const fallback = getCategoryProgresses(db, dateString, CATEGORY_IDS);
-          setValues(fallback);
-        })
-        .catch(() => {
-          setHomeBootstrap(null);
-          const fallback = getCategoryProgresses(db, dateString, CATEGORY_IDS);
-          setValues(fallback);
-        });
-      return;
-    }
-    const fallback = getCategoryProgresses(db, dateString, CATEGORY_IDS);
-    setValues(fallback);
-  }, [db, dateString]);
-
-  useEffect(() => {
-    if (!ready) return;
-    reload();
-  }, [ready, reload, dataTick]);
+    return getCategoryProgresses(db, dateString, CATEGORY_IDS);
+  }, [db, dateString, homeBootstrap?.categoryProgresses, dataTick, localReloadTick]);
 
   const tasksByCat = useMemo(() => {
     if (!db) return {} as Record<string, AuraRow[]>;
@@ -545,6 +541,14 @@ export function TasksCategoriesCard() {
     }
     return map;
   }, [db, dateString, homeBootstrap?.taskProgressById, preferBootstrap, tasksByCat]);
+
+  const effectiveTaskProgressById = useMemo(() => {
+    const merged = new Map(taskProgressById);
+    for (const [taskId, value] of Object.entries(optimisticProgressById)) {
+      merged.set(taskId, value);
+    }
+    return merged;
+  }, [taskProgressById, optimisticProgressById]);
 
   const timerTotalsByTaskId = useMemo(() => {
     const map = new Map<string, number>();
@@ -606,15 +610,32 @@ export function TasksCategoriesCard() {
     if (!db) return;
     setSheetTask(task);
     const id = String(task.id ?? '');
-    setProgress(id ? (taskProgressById.get(id) ?? null) : null);
+    setProgress(id ? (effectiveTaskProgressById.get(id) ?? null) : null);
   };
 
   const persist = (taskId: string, data: Record<string, unknown>) => {
     setSaveError(null);
     if (!db) return;
     try {
-      runAuraMutation('task-progress', () => db.saveTaskProgress(taskId, dateString, data));
-      reload();
+      setOptimisticProgressById((prev) => {
+        const fallback = (effectiveTaskProgressById.get(taskId) ?? {
+          value: null,
+          completed: 0,
+          current_value: null,
+          selected_list_item: null,
+          completion_percent: 0,
+        }) as AuraTaskProgress;
+        const current = prev[taskId] ?? fallback;
+        const next: AuraTaskProgress = { ...current, ...data };
+        if (data.completed !== undefined) {
+          next.completion_percent = Number(next.completed) === 1 ? 100 : 0;
+        }
+        return { ...prev, [taskId]: next };
+      });
+      runAuraMutation('task-progress', () => {
+        db.saveTaskProgress(taskId, dateString, data);
+      });
+      setLocalReloadTick((v) => v + 1);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
     }
@@ -635,7 +656,7 @@ export function TasksCategoriesCard() {
     const rt = String(ritualType);
     const kind = rt === 'sunset' ? 'evening' : 'morning';
     try {
-      sessionStorage.setItem(RITUALS_KIND_STORAGE, kind);
+      sessionStorage.setItem(STORAGE_KEYS.RITUALS_KIND, kind);
     } catch {
       /* ignore */
     }
@@ -648,7 +669,7 @@ export function TasksCategoriesCard() {
     const title = String(t.title ?? t.id);
     const taskType = String(t.task_type ?? '');
     let pct = 0;
-    const prog = taskProgressById.get(id) ?? null;
+    const prog = effectiveTaskProgressById.get(id) ?? null;
     pct = prog ? Math.min(100, Math.max(0, Number(prog.completion_percent) || 0)) : 0;
     if (taskType === 'timer') {
       const totalSeconds = timerTotalsByTaskId.get(id) ?? 0;
@@ -706,6 +727,7 @@ export function TasksCategoriesCard() {
           pct={pct}
           doneTitle={done}
           satisfied={satisfied}
+          disabled={disabled}
           onOpenDetail={() => openTask(t)}
           control={
             <TaskControlSlot
@@ -766,6 +788,7 @@ export function TasksCategoriesCard() {
           title={title}
           pct={pct}
           satisfied={satisfied}
+          disabled={disabled}
           onOpenDetail={() => openTask(t)}
           control={
             <TaskControlSlot
@@ -832,6 +855,7 @@ export function TasksCategoriesCard() {
           title={title}
           pct={pct}
           satisfied={satisfied}
+          disabled={disabled}
           onOpenDetail={() => openTask(t)}
           control={
             items.length === 0 ? (
@@ -899,6 +923,7 @@ export function TasksCategoriesCard() {
           title={title}
           pct={pct}
           satisfied={satisfied}
+          disabled={disabled}
           onOpenDetail={() => openTask(t)}
           control={
             <TaskControlSlot
@@ -939,6 +964,7 @@ export function TasksCategoriesCard() {
           title={title}
           pct={pct}
           satisfied={satisfied}
+          disabled={disabled}
           onOpenDetail={() => openTask(t)}
           control={
             <TaskControlSlot className={cn('p-0', disabled && 'pointer-events-none opacity-50')}>
@@ -979,6 +1005,7 @@ export function TasksCategoriesCard() {
           title={title}
           pct={pct}
           satisfied={satisfied}
+          disabled={disabled}
           onOpenDetail={() => openTask(t)}
           control={
             <TaskControlSlot
@@ -1017,6 +1044,7 @@ export function TasksCategoriesCard() {
         title={title}
         pct={pct}
         satisfied={satisfied}
+        disabled={disabled}
         onOpenDetail={() => openTask(t)}
         control={
           <TaskControlSlot className="justify-center">
@@ -1031,10 +1059,10 @@ export function TasksCategoriesCard() {
     <>
       <div className="flex min-h-0 flex-1 flex-col">
         {saveError ? <p className="text-destructive mb-2 text-xs">{saveError}</p> : null}
-        {!ready ? (
-          <p className="text-muted-foreground text-sm">Загрузка…</p>
+        {!db ? (
+          <LoadingShell />
         ) : (
-          <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 rounded-none border-0 bg-transparent p-0 lg:grid-cols-4">
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 rounded-none border-0 bg-transparent p-0 lg:grid-cols-4 lg:gap-0">
             {CATEGORY_IDS.map((catId, idx) => {
               const n = values[catId] ?? 0;
               const tasks = tasksByCat[catId] ?? [];
@@ -1046,11 +1074,11 @@ export function TasksCategoriesCard() {
                 <section
                   key={catId}
                   className={cn(
-                    'flex min-h-0 flex-col overflow-hidden rounded-none border-0 bg-transparent px-0 py-0 max-h-52 sm:max-h-none',
-                    idx !== 3 && 'border-r border-border/40'
+                    'flex min-h-[13rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-card/80 px-0 py-0 shadow-sm lg:min-h-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none',
+                    idx !== 3 && 'lg:border-r lg:border-border/40'
                   )}
                 >
-                  <div className="flex flex-col gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
+                  <div className="flex flex-col gap-2 px-3.5 py-3 sm:px-4 sm:py-3">
                     <div
                       className="flex items-center justify-between gap-2 px-0 py-0"
                       style={{ '--accent-color': accent } as React.CSSProperties}
@@ -1082,8 +1110,8 @@ export function TasksCategoriesCard() {
                           'h-1.5 w-full rounded-full bg-transparent',
                           '[&_[data-slot=progress-indicator]]:bg-[var(--accent-color)]',
                           '[&_[data-slot=progress-indicator]]:transition-transform',
-                          '[&_[data-slot=progress-indicator]]:duration-[400ms]',
-                          '[&_[data-slot=progress-indicator]]:[transition-timing-function:cubic-bezier(0.4,0,0.2,1)]'
+                          '[&_[data-slot=progress-indicator]]:duration-aura-task-fill',
+                          '[&_[data-slot=progress-indicator]]:ease-aura'
                         )}
                       />
                     </div>
@@ -1091,7 +1119,7 @@ export function TasksCategoriesCard() {
                   {tasks.length === 0 ? (
                     <p className="text-muted-foreground/50 px-3 text-center text-xs sm:px-4">—</p>
                   ) : (
-                    <ul className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-y-contain mt-1 pb-2.5 pt-0 px-0 sm:gap-2 sm:pb-3 sm:px-4 lg:px-3">
+                    <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain mt-1 px-2 pb-3 pt-0 text-sm sm:gap-2 sm:px-4 sm:pb-3 lg:px-3">
                       {tasks.map((t) => renderTaskLine(t, catId))}
                     </ul>
                   )}

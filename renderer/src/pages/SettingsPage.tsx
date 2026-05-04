@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppSettingsTechnicalCard } from '@/features/app-settings/AppSettingsTechnicalCard';
 import { AppearanceSettingsCard } from '@/features/settings/AppearanceSettingsCard';
 import { CfgSectionCard } from '@/features/settings/CfgSectionCard';
+import { SettingsInfoBlock } from '@/features/settings/SettingsInfoBlock';
+import { SETTINGS_INFO } from '@/features/settings/settings-info-config';
 import { NutritionTargetsSettingsCard } from '@/features/settings/NutritionTargetsSettingsCard';
 import { getCfgSectionSpec } from '@/features/settings/cfg-section-specs';
 import { SETTINGS_NAV_GROUPS, flattenSettingsNav } from '@/features/settings/settings-nav-model';
 import { SettingsTabActionsProvider } from '@/features/settings/settings-tab-actions-context';
-import { SettingsInfoBlock } from '@/features/settings/SettingsInfoBlock';
-import { SETTINGS_INFO } from '@/features/settings/settings-info-config';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -54,7 +54,7 @@ function parseTaskNavMeta(raw: unknown): Partial<Record<TaskSettingsId, TaskNavM
 }
 
 export function SettingsPage() {
-  const [active, setActive] = useState('appearance');
+  const [active, setActive] = useState('interface-data');
   const { db, ready } = useAuraDb();
   const [taskMeta, setTaskMeta] = useState<Partial<Record<TaskSettingsId, TaskNavMeta>>>({});
 
@@ -86,13 +86,19 @@ export function SettingsPage() {
   const infoEntry = SETTINGS_INFO[active];
 
   const panel = (() => {
-    if (active === 'appearance') return <AppearanceSettingsCard />;
-    if (active === 'app-snapshot') return <AppSettingsTechnicalCard />;
+    if (active === 'interface-data') {
+      return (
+        <div className="flex flex-col gap-4 sm:gap-5">
+          <AppearanceSettingsCard />
+          <NutritionTargetsSettingsCard />
+          <AppSettingsTechnicalCard />
+        </div>
+      );
+    }
     if (active === 'diary-categories') {
       const s = getCfgSectionSpec('diary-categories');
       return s ? <CfgSectionCard spec={s} /> : null;
     }
-    if (active === 'nutrition-targets') return <NutritionTargetsSettingsCard />;
     if (active === 'nutrition-products') {
       const s = getCfgSectionSpec('nutrition-products');
       return s ? <CfgSectionCard spec={s} /> : null;

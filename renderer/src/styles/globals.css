@@ -40,6 +40,13 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --color-chart-9: var(--chart-9);
+  --color-chart-10: var(--chart-10);
+  --color-chart-11: var(--chart-11);
+  --color-chart-12: var(--chart-12);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -61,6 +68,29 @@
   --duration-aura-base: var(--aura-motion-duration-base);
   --duration-aura-slow: var(--aura-motion-duration-slow);
   --duration-aura-glide: var(--aura-motion-duration-glide);
+  --duration-aura-task-fill: var(--aura-motion-duration-task-fill);
+  /* ─── Semantic colors as Tailwind utilities ─── */
+  --color-semantic-success: var(--semantic-success);
+  --color-semantic-negative: var(--semantic-negative);
+  --color-semantic-warning: var(--semantic-warning);
+  --color-semantic-info: var(--semantic-info);
+  /* ─── Nutrition macro colors as Tailwind utilities ─── */
+  --color-nutrition-proteins: var(--nutrition-proteins);
+  --color-nutrition-fats: var(--nutrition-fats);
+  --color-nutrition-carbs: var(--nutrition-carbs);
+  /* ─── Universal spacing scale as Tailwind utilities ─── */
+  --spacing-aura-xs:  var(--aura-space-xs);
+  --spacing-aura-sm:  var(--aura-space-sm);
+  --spacing-aura-md:  var(--aura-space-md);
+  --spacing-aura-lg:  var(--aura-space-lg);
+  --spacing-aura-xl:  var(--aura-space-xl);
+  --spacing-aura-2xl: var(--aura-space-2xl);
+  /* ─── Component radius as Tailwind utilities ─── */
+  --radius-aura-control: var(--aura-radius-control);
+  --radius-aura-card:    var(--aura-radius-card);
+  --radius-aura-dialog:  var(--aura-radius-dialog);
+  --radius-aura-chip:    var(--aura-radius-chip);
+  --radius-aura-icon:    var(--aura-radius-icon);
 }
 
 :root {
@@ -73,71 +103,84 @@
   --radius: 0.625rem; /* 10px */
 
   /* ─── Light theme base colors ─── */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --background: oklch(0.992 0.006 260);
+  --foreground: oklch(0.16 0.01 255);
+  --card: oklch(0.985 0.008 260);
+  --card-foreground: oklch(0.16 0.01 255);
+  --popover: oklch(0.985 0.008 260);
+  --popover-foreground: oklch(0.16 0.01 255);
   --primary: oklch(0.56 0.16 272);
   --primary-foreground: oklch(0.985 0.01 275);
-  --secondary: oklch(0.96 0.02 272);
-  --secondary-foreground: oklch(0.28 0.05 272);
-  --muted: oklch(0.955 0.012 262);
-  --muted-foreground: oklch(0.5 0.035 262);
-  --accent: oklch(0.94 0.028 248);
-  --accent-foreground: oklch(0.28 0.06 252);
+  --secondary: oklch(0.942 0.016 262);
+  --secondary-foreground: oklch(0.255 0.03 255);
+  --muted: oklch(0.932 0.012 262);
+  --muted-foreground: oklch(0.46 0.02 255);
+  --accent: oklch(0.915 0.02 252);
+  --accent-foreground: oklch(0.24 0.03 252);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.97 0.01 17);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.62 0.13 270);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  --border: oklch(0.88 0.012 255);
+  --input: oklch(0.88 0.012 255);
+  --ring: oklch(0.58 0.12 270);
+  --chart-1: hsl(214, 70%, 56%);
+  --chart-2: hsl(145, 58%, 44%);
+  --chart-3: hsl(356, 68%, 54%);
+  --chart-4: hsl(38, 82%, 54%);
+  --chart-5: hsl(278, 54%, 56%);
+  --chart-6: hsl(188, 64%, 48%);
+  --chart-7: hsl(24, 72%, 52%);
+  --chart-8: hsl(160, 52%, 42%);
+  --chart-9: hsl(232, 58%, 56%);
+  --chart-10: hsl(330, 54%, 52%);
+  --chart-11: hsl(84, 52%, 44%);
+  --chart-12: hsl(215, 14%, 48%);
+  --sidebar: oklch(0.982 0.01 260);
+  --sidebar-foreground: oklch(0.16 0.01 255);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: oklch(0.95 0.02 252);
-  --sidebar-accent-foreground: oklch(0.3 0.05 252);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  --surface: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.935 0.02 248);
+  --sidebar-accent-foreground: oklch(0.26 0.03 248);
+  --sidebar-border: oklch(0.882 0.012 255);
+  --sidebar-ring: oklch(0.66 0.04 255);
+  --surface: oklch(0.974 0.01 260);
   --surface-foreground: var(--foreground);
   --code: var(--surface);
   --code-foreground: var(--surface-foreground);
-  --code-highlight: oklch(0.96 0 0);
-  --code-number: oklch(0.56 0 0);
-  --selection: oklch(0.145 0 0);
+  --code-highlight: oklch(0.956 0.01 260);
+  --code-number: oklch(0.5 0.01 260);
+  --selection: oklch(0.18 0.02 260);
   --selection-foreground: oklch(1 0 0);
 
   /* ─── Semantic category colors (sync'd from DB via DesignTokensSync) ─── */
-  --task-rituals: hsl(24, 58%, 52%);
-  --task-time: hsl(165, 50%, 46%);
-  --task-body: hsl(258, 48%, 56%);
+  --task-rituals: hsl(24, 72%, 52%);
+  --task-time: hsl(160, 48%, 42%);
+  --task-body: hsl(258, 50%, 54%);
   --task-deps: hsl(352, 58%, 52%);
-  --rituals-morning: hsl(38, 78%, 54%);
-  --rituals-evening: hsl(226, 52%, 58%);
-  --rituals-vows: hsl(278, 48%, 56%);
-  --ambient-music: hsl(204, 62%, 56%);
-  --finance-income: hsl(148, 50%, 46%);
-  --finance-expense: hsl(356, 62%, 56%);
-  --finance-transfer: hsl(214, 56%, 54%);
-  --leisure-filling: hsl(42, 58%, 55%);
-  --leisure-escape: hsl(232, 48%, 56%);
-  --semantic-negative: hsl(356, 58%, 48%);
-  --semantic-success: hsl(145, 58%, 40%);
-  --semantic-warning: hsl(45, 84%, 52%);
-  --semantic-info: hsl(218, 42%, 54%);
+  --rituals-morning: hsl(38, 78%, 52%);
+  --rituals-evening: hsl(226, 56%, 54%);
+  --rituals-vows: hsl(278, 50%, 54%);
+  --ambient-music: hsl(204, 64%, 52%);
+  --finance-income: hsl(145, 54%, 40%);
+  --finance-expense: hsl(356, 64%, 52%);
+  --finance-transfer: hsl(214, 66%, 52%);
+  --leisure-filling: hsl(24, 64%, 48%);
+  --leisure-escape: hsl(216, 56%, 52%);
+  --semantic-negative: hsl(356, 68%, 44%);
+  --semantic-success: hsl(145, 56%, 38%);
+  --semantic-warning: hsl(45, 84%, 50%);
+  --semantic-info: hsl(218, 52%, 50%);
+
+  /* ─── Nutrition macro colors ─── */
+  --nutrition-proteins: hsl(142, 58%, 42%);
+  --nutrition-fats: hsl(35, 76%, 50%);
+  --nutrition-carbs: hsl(217, 72%, 54%);
 
   /* ─── Motion tokens ─── */
   --aura-motion-duration-fast: 150ms;
   --aura-motion-duration-base: 200ms;
   --aura-motion-duration-slow: 300ms;
   --aura-motion-duration-glide: 500ms;
+  --aura-motion-duration-task-fill: 400ms; /* progress bar fill — intentionally longer */
   --aura-motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   /* ─── UI scale ─── */
@@ -153,7 +196,7 @@
   --ranks-aura-glow-opacity: 0.3;
   --ranks-aura-band-opacity: 0.16;
 
-  /* ─── Mobile ─── */
+  /* ─── Mobile (legacy, use via media query context) ─── */
   --mobile-control-h: 2.25rem;
   --mobile-density-gap: 0.625rem;
   --mobile-font-sm: 0.8125rem;
@@ -174,6 +217,33 @@
   /* Focus ring */
   --focus-ring-width: 2px;
   --focus-ring-color: oklch(from var(--ring) l c h / 0.55);
+
+  /* ─── Universal spacing scale ─── */
+  --aura-space-xs:  0.25rem;   /* 4px  — icon gap, tight badge padding */
+  --aura-space-sm:  0.5rem;    /* 8px  — inline gap, dense list padding */
+  --aura-space-md:  0.75rem;   /* 12px — standard control padding */
+  --aura-space-lg:  1rem;      /* 16px — section inner padding */
+  --aura-space-xl:  1.5rem;    /* 24px — card outer padding */
+  --aura-space-2xl: 2rem;      /* 32px — page-level gaps */
+
+  /* ─── Component radius tokens ─── */
+  --aura-radius-control: var(--radius-md);
+  --aura-radius-card:    var(--radius-xl);
+  --aura-radius-dialog:  var(--radius-2xl);
+  --aura-radius-chip:    var(--radius-3xl);
+  --aura-radius-icon:    var(--radius-sm);
+
+  /* ─── Interaction tokens ─── */
+  --aura-hover-bg:         color-mix(in oklch, var(--muted) 50%, transparent);
+  --aura-active-bg:        color-mix(in oklch, var(--muted) 80%, transparent);
+  --aura-disabled-opacity: 0.45;
+
+  /* ─── Z-index scale ─── */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 100;
+  --z-dialog:  200;
+  --z-toast:   300;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -200,9 +270,9 @@ html[data-theme='light'] {
   --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.06);
   --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.05);
   --shadow-md: 0 2px 8px oklch(0 0 0 / 0.12), 0 1px 3px oklch(0 0 0 / 0.07);
-  /* Leisure colors: deeper/richer on light backgrounds */
-  --leisure-filling: hsl(42, 72%, 38%);
-  --leisure-escape: hsl(232, 58%, 42%);
+  /* Leisure colors: keep the same family, only shift lightness across themes */
+  --leisure-filling: hsl(24, 70%, 50%);
+  --leisure-escape: hsl(216, 60%, 54%);
 }
 
 /* ─── Dark theme ─── */
@@ -226,16 +296,23 @@ html[data-theme='light'] {
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.68 0.1 270);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
+  --chart-1: hsl(214, 70%, 56%);
+  --chart-2: hsl(145, 58%, 44%);
+  --chart-3: hsl(356, 68%, 54%);
+  --chart-4: hsl(38, 82%, 54%);
+  --chart-5: hsl(278, 54%, 56%);
+  --chart-6: hsl(188, 64%, 48%);
+  --chart-7: hsl(24, 72%, 52%);
+  --chart-8: hsl(160, 52%, 42%);
+  --chart-9: hsl(232, 58%, 56%);
+  --chart-10: hsl(330, 54%, 52%);
+  --chart-11: hsl(84, 52%, 44%);
+  --chart-12: hsl(215, 14%, 48%);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent: oklch(0.269 0.01 214);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.439 0 0);
@@ -253,9 +330,9 @@ html[data-theme='light'] {
   --ranks-aura-flow-strong-mix: 21%;
   --ranks-aura-glow-opacity: 0.36;
   --ranks-aura-band-opacity: 0.2;
-  /* Leisure colors: brighter/more luminous on dark backgrounds */
-  --leisure-filling: hsl(42, 62%, 64%);
-  --leisure-escape: hsl(232, 55%, 66%);
+  /* Leisure colors: keep the same family, only shift lightness across themes */
+  --leisure-filling: hsl(24, 72%, 58%);
+  --leisure-escape: hsl(216, 64%, 62%);
   --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.25);
   --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.35), 0 1px 2px oklch(0 0 0 / 0.2);
   --shadow-md: 0 2px 8px oklch(0 0 0 / 0.4), 0 1px 3px oklch(0 0 0 / 0.25);
@@ -296,9 +373,9 @@ html[data-theme='light'] {
   --ranks-aura-flow-strong-mix: 17%;
   --ranks-aura-glow-opacity: 0.32;
   --ranks-aura-band-opacity: 0.18;
-  /* Leisure colors: dim theme (between dark and light) */
-  --leisure-filling: hsl(42, 66%, 58%);
-  --leisure-escape: hsl(232, 52%, 60%);
+  /* Leisure colors: keep the same family, only shift lightness across themes */
+  --leisure-filling: hsl(24, 68%, 54%);
+  --leisure-escape: hsl(216, 58%, 58%);
   --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.18);
   --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.25), 0 1px 2px oklch(0 0 0 / 0.14);
   --shadow-md: 0 2px 8px oklch(0 0 0 / 0.3), 0 1px 3px oklch(0 0 0 / 0.18);
@@ -429,6 +506,73 @@ html[data-page-transitions='off'] *::after {
     transition-property: color, background-color, border-color, opacity, transform;
     transition-duration: var(--aura-motion-duration-fast);
     transition-timing-function: var(--aura-motion-ease);
+  }
+
+  /* Shadow transition */
+  .aura-tx-shadow {
+    transition-property: box-shadow;
+    transition-duration: var(--aura-motion-duration-base);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+
+  /* Scale transition (press feedback) */
+  .aura-tx-scale {
+    transition-property: transform;
+    transition-duration: var(--aura-motion-duration-fast);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+
+  /* ─── Interaction utilities ─── */
+  .aura-hover {
+    @apply hover:bg-[var(--aura-hover-bg)];
+    transition-property: color, background-color, border-color, opacity, transform;
+    transition-duration: var(--aura-motion-duration-fast);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+  .aura-interactive {
+    @apply hover:bg-[var(--aura-hover-bg)] active:bg-[var(--aura-active-bg)] active:scale-[0.98];
+    transition-property: color, background-color, border-color, opacity, transform;
+    transition-duration: var(--aura-motion-duration-fast);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+  .aura-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
+  }
+  .aura-disabled {
+    @apply opacity-[var(--aura-disabled-opacity)] pointer-events-none select-none;
+  }
+  .aura-control {
+    @apply hover:bg-[var(--aura-hover-bg)] active:bg-[var(--aura-active-bg)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
+    transition-property: color, background-color, border-color, opacity, transform;
+    transition-duration: var(--aura-motion-duration-fast);
+    transition-timing-function: var(--aura-motion-ease);
+  }
+
+  /* ─── Universal enter animations ─── */
+  .aura-enter-fade {
+    animation: aura-fade-in var(--aura-motion-duration-base) var(--aura-motion-ease) both;
+  }
+  .aura-enter-slide-up {
+    animation: aura-slide-up var(--aura-motion-duration-slow) var(--aura-motion-ease) both;
+  }
+  .aura-enter-scale {
+    animation: aura-scale-in var(--aura-motion-duration-base) var(--aura-motion-ease) both;
+  }
+
+  /* ─── Universal exit animations (Radix data-state hook) ─── */
+  [data-state='closed'].aura-exit-fade {
+    animation: aura-fade-out var(--aura-motion-duration-fast) var(--aura-motion-ease) both;
+  }
+  [data-state='closed'].aura-exit-slide-down {
+    animation: aura-slide-down var(--aura-motion-duration-base) var(--aura-motion-ease) both;
+  }
+  [data-state='closed'].aura-exit-scale {
+    animation: aura-scale-out var(--aura-motion-duration-fast) var(--aura-motion-ease) both;
+  }
+
+  /* ─── Skeleton placeholder ─── */
+  .aura-skeleton {
+    @apply bg-muted/40 animate-pulse;
   }
 }
 
@@ -630,55 +774,20 @@ html.dark[data-icon-theme='gradient'] .aura-colored-icon {
    ════════════════════════════════════════════════ */
 
 @keyframes content-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .aura-content-fade-in {
   animation: content-fade-in var(--aura-motion-duration-slow) var(--aura-motion-ease) both;
 }
 
-/* ════════════════════════════════════════════════
-   STARTUP SCREEN
-   ════════════════════════════════════════════════ */
-
-@keyframes star-pulse {
-  0%, 100% { opacity: 0; transform: scale(0.6); }
-  50%       { opacity: 1; transform: scale(1); }
+@media (max-width: 767px) {
+  .aura-content-fade-in {
+    animation: none;
+  }
 }
 
-@keyframes logo-appear {
-  from { opacity: 0; transform: scale(0.8); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-.aura-startup-star {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: var(--star-size, 2px);
-  height: var(--star-size, 2px);
-  border-radius: 50%;
-  transform: translate(
-    calc(var(--sx, 0) * 40vmin + var(--sx, 0) * 10vw),
-    calc(var(--sy, 0) * 40vmin + var(--sy, 0) * 10vh)
-  );
-  animation: star-pulse var(--star-dur, 2s) var(--aura-motion-ease) var(--star-delay, 0s) infinite;
-}
-
-.aura-startup-star[data-tone='primary'] { background: var(--primary); }
-.aura-startup-star[data-tone='muted']   { background: var(--muted-foreground); opacity: 0.6; }
-.aura-startup-star[data-tone='accent']  { background: var(--accent-foreground); opacity: 0.7; }
-
-.aura-startup-logo-wrap {
-  display: flex;
-  animation: logo-appear 600ms var(--aura-motion-ease) 100ms both;
-}
-
-.aura-startup-logo {
-  width: 2rem;
-  height: 2rem;
-}
 
 /* ════════════════════════════════════════════════
    SKELETON / LOADING STATES
@@ -699,4 +808,52 @@ html.dark[data-icon-theme='gradient'] .aura-colored-icon {
   background-size: 200% 100%;
   animation: shimmer 1.8s ease-in-out infinite;
   border-radius: var(--radius-md);
+}
+
+/* ════════════════════════════════════════════════
+   LOADING SCREEN ANIMATIONS
+   Shared keyframes used by LoadingScreen component.
+   Timing is startup-specific — intentionally not
+   mapped to standard --aura-motion-duration-* tokens.
+   ════════════════════════════════════════════════ */
+
+@keyframes slideInLeftSmooth {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideInDownSmooth {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes fadeInSmooth {
+  from { opacity: 0; }
+  to   { opacity: 0.5; }
+}
+
+/* ─── Universal enter / exit keyframes ─── */
+@keyframes aura-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes aura-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes aura-slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes aura-slide-down {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(6px); }
+}
+@keyframes aura-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes aura-scale-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.96); }
 }

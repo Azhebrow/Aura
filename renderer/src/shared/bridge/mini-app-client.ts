@@ -38,6 +38,12 @@ const inflightBootstrap = new Map<string, Promise<unknown>>();
 const bootstrapCache = new Map<string, BootstrapCacheEntry>();
 let flushTimer: number | null = null;
 
+function getApiBase() {
+  if (typeof window === 'undefined') return '';
+  if (window.location.protocol === 'file:') return 'http://127.0.0.1:8787';
+  return '';
+}
+
 function stableKey(method: string, args: unknown[]) {
   return `${method}:${JSON.stringify(args ?? [])}`;
 }
@@ -54,7 +60,7 @@ async function flushBatch() {
   const operations: BatchOp[] = chunk.map((entry) => ({ method: entry.method, args: entry.args }));
   let payload: { ok: boolean; results?: BatchResult[]; error?: string };
   try {
-    const response = await fetch('/api/db/batch', {
+    const response = await fetch(`${getApiBase()}/api/db/batch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operations }),
@@ -131,7 +137,7 @@ export async function fetchBootstrap(
   }
 
   const promise = (async () => {
-    const response = await fetch(`/api/bootstrap/${screen}`, {
+    const response = await fetch(`${getApiBase()}/api/bootstrap/${screen}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body ?? {}),

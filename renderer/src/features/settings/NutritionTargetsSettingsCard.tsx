@@ -1,35 +1,25 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Target } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { ActAffixValueField } from '@/features/act/ActModal';
-import { useAuraDb } from '@/shared/hooks/use-aura-db';
+import { useAsyncData } from '@/shared/hooks/use-async-data';
 import { readNutritionTargets } from '@/shared/lib/nutrition-aggregate';
-import { SettingsFormTable, SettingsField } from '@/features/settings/settings-form-primitives';
 import { SettingsSectionCard } from '@/widgets/settings/SettingsSectionCard';
 import type { AuraRow } from '@/types/aura';
 
 export function NutritionTargetsSettingsCard() {
-  const { db, ready } = useAuraDb();
+  const { data: current, status } = useAsyncData((db) => db.getAppSettings(), [], { events: ['cfg'] });
   const [calories, setCalories] = useState('');
   const [proteins, setProteins] = useState('');
   const [fats, setFats] = useState('');
   const [carbs, setCarbs] = useState('');
-  const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  const load = useCallback(() => {
-    if (!db) return;
-    const cur = (db.getAppSettings() ?? {}) as AuraRow;
-    const t = readNutritionTargets(cur);
-    setCalories(t.calories > 0 ? String(Math.round(t.calories)) : '');
-    setProteins(t.proteins > 0 ? String(Math.round(t.proteins)) : '');
-    setFats(t.fats > 0 ? String(Math.round(t.fats)) : '');
-    setCarbs(t.carbs > 0 ? String(Math.round(t.carbs)) : '');
-  }, [db]);
-
-  useEffect(() => {
-    if (!ready) return;
-    load();
-  }, [ready, load]);
+  if (status === 'ready' && current) {
+    const t = readNutritionTargets(current);
+    if (!calories && t.calories > 0) setCalories(String(Math.round(t.calories)));
+    if (!proteins && t.proteins > 0) setProteins(String(Math.round(t.proteins)));
+    if (!fats && t.fats > 0) setFats(String(Math.round(t.fats)));
+    if (!carbs && t.carbs > 0) setCarbs(String(Math.round(t.carbs)));
+  }
 
   const parseNum = (s: string) => {
     const t = s.replace(',', '.').trim();
@@ -38,82 +28,90 @@ export function NutritionTargetsSettingsCard() {
     return Number.isFinite(n) ? n : 0;
   };
 
-  const save = () => {
+  const persist = (patch: Partial<{ calories: string; proteins: string; fats: string; carbs: string }>) => {
+    const db = window.getDB?.();
     if (!db) return;
     const cur = (db.getAppSettings() ?? {}) as AuraRow;
     const id = String(cur.id ?? 'app_settings_1');
+    window.dispatchEvent(new Event('settings-saved'));
     db.saveAppSettings({
       ...cur,
       id,
-      nutrition_target_calories: parseNum(calories),
-      nutrition_target_proteins: parseNum(proteins),
-      nutrition_target_fats: parseNum(fats),
-      nutrition_target_carbs: parseNum(carbs),
+      nutrition_target_calories: parseNum(patch.calories ?? calories),
+      nutrition_target_proteins: parseNum(patch.proteins ?? proteins),
+      nutrition_target_fats: parseNum(patch.fats ?? fats),
+      nutrition_target_carbs: parseNum(patch.carbs ?? carbs),
       updated_at: new Date().toISOString(),
     });
-    setSavedAt(Date.now());
   };
 
   return (
     <SettingsSectionCard
-      title="Цели на день"
+      title="Цели КБЖУ"
       leadingIcon={Target}
-      description="Пороги для полос в дневнике. Ноль — цель не задана, показывается только сумма за день."
-      footnote="Хранится в app_settings; те же значения используются на вкладке «Питание»."
+      contentClassName="gap-2"
     >
-      <SettingsFormTable>
-        <SettingsField id="nt-cal" label="Ккал" hint="Суточная цель по калориям.">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border border-border/70 bg-muted/15 px-3 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Ккал</p>
           <ActAffixValueField
             id="nt-cal"
             ariaLabel="Калории"
             suffix="ккал"
             value={calories}
-            onCommit={setCalories}
+            onCommit={(next) => {
+              setCalories(next);
+              persist({ calories: next });
+            }}
             placeholder="0"
             inputKind="number"
           />
-        </SettingsField>
-        <SettingsField id="nt-p" label="Белки" hint="Граммы в день.">
+        </div>
+        <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border border-border/70 bg-muted/15 px-3 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Белки</p>
           <ActAffixValueField
             id="nt-p"
             ariaLabel="Белки"
             suffix="г"
             value={proteins}
-            onCommit={setProteins}
+            onCommit={(next) => {
+              setProteins(next);
+              persist({ proteins: next });
+            }}
             placeholder="0"
             inputKind="number"
           />
-        </SettingsField>
-        <SettingsField id="nt-f" label="Жиры" hint="Граммы в день.">
+        </div>
+        <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border border-border/70 bg-muted/15 px-3 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Жиры</p>
           <ActAffixValueField
             id="nt-f"
             ariaLabel="Жиры"
             suffix="г"
             value={fats}
-            onCommit={setFats}
+            onCommit={(next) => {
+              setFats(next);
+              persist({ fats: next });
+            }}
             placeholder="0"
             inputKind="number"
           />
-        </SettingsField>
-        <SettingsField id="nt-c" label="Углеводы" hint="Граммы в день.">
+        </div>
+        <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border border-border/70 bg-muted/15 px-3 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Углеводы</p>
           <ActAffixValueField
             id="nt-c"
             ariaLabel="Углеводы"
             suffix="г"
             value={carbs}
-            onCommit={setCarbs}
+            onCommit={(next) => {
+              setCarbs(next);
+              persist({ carbs: next });
+            }}
             placeholder="0"
             inputKind="number"
           />
-        </SettingsField>
-      </SettingsFormTable>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button type="button" size="sm" onClick={save} disabled={!ready || !db}>
-          Сохранить
-        </Button>
-        {savedAt != null ? (
-          <span className="text-muted-foreground text-xs tabular-nums">Сохранено</span>
-        ) : null}
+        </div>
       </div>
     </SettingsSectionCard>
   );

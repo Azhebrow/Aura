@@ -39,7 +39,30 @@ function loadTasksForTab(db: AuraDatabase, tab: TimerTaskTab, dateString: string
 
 export type TimerTaskRow = TimerTaskSelection & { currentSeconds: number };
 
-export function useTimerTasks(db: AuraDatabase | null, ready: boolean, dateString: string, tab: TimerTaskTab) {
+function sameTasks(a: TimerTaskRow[], b: TimerTaskRow[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.title !== y.title ||
+      x.cfg_target_hours !== y.cfg_target_hours ||
+      x.color !== y.color ||
+      x.icon !== y.icon ||
+      x.currentSeconds !== y.currentSeconds
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function sameTaskGroups(a: TimerTasksByGroup, b: TimerTasksByGroup): boolean {
+  return sameTasks(a.tasks, b.tasks) && sameTasks(a.escape, b.escape) && sameTasks(a.filling, b.filling);
+}
+
+export function useTimerTasks(db: AuraDatabase | null, dateString: string, tab: TimerTaskTab, refreshKey?: number) {
   const [tasks, setTasks] = useState<TimerTaskRow[]>([]);
 
   const reload = useCallback(() => {
@@ -47,13 +70,13 @@ export function useTimerTasks(db: AuraDatabase | null, ready: boolean, dateStrin
       setTasks([]);
       return;
     }
-    setTasks(loadTasksForTab(db, tab, dateString));
+    const next = loadTasksForTab(db, tab, dateString);
+    setTasks((prev) => (sameTasks(prev, next) ? prev : next));
   }, [db, dateString, tab]);
 
   useEffect(() => {
-    if (!ready) return;
     reload();
-  }, [ready, reload]);
+  }, [reload, refreshKey]);
 
   return { tasks, reload };
 }
@@ -61,7 +84,7 @@ export function useTimerTasks(db: AuraDatabase | null, ready: boolean, dateStrin
 export type TimerTasksByGroup = Record<TimerTaskTab, TimerTaskRow[]>;
 
 /** Все таймер-задачи: фокус, эскапизм, наполнение — без вкладок. */
-export function useTimerTasksAll(db: AuraDatabase | null, ready: boolean, dateString: string) {
+export function useTimerTasksAll(db: AuraDatabase | null, dateString: string, refreshKey?: number) {
   const [byGroup, setByGroup] = useState<TimerTasksByGroup>({ tasks: [], escape: [], filling: [] });
 
   const reload = useCallback(() => {
@@ -69,17 +92,17 @@ export function useTimerTasksAll(db: AuraDatabase | null, ready: boolean, dateSt
       setByGroup({ tasks: [], escape: [], filling: [] });
       return;
     }
-    setByGroup({
+    const next = {
       tasks: loadTasksForTab(db, 'tasks', dateString),
       escape: loadTasksForTab(db, 'escape', dateString),
       filling: loadTasksForTab(db, 'filling', dateString),
-    });
+    };
+    setByGroup((prev) => (sameTaskGroups(prev, next) ? prev : next));
   }, [db, dateString]);
 
   useEffect(() => {
-    if (!ready) return;
     reload();
-  }, [ready, reload]);
+  }, [reload, refreshKey]);
 
   return { byGroup, reload };
 }

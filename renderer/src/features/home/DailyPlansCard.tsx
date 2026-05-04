@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AddListButton } from '@/components/ui/add-list-button';
 import { ListItem } from '@/components/ui/list-item';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
-import type { AuraRow } from '@/types/aura';
 import { cn } from '@/lib/utils';
 import { ClipboardList } from 'lucide-react';
 import { ActField, ActFormTable, ActModal, ActModalFooter, ActTableBox } from '@/features/act/ActModal';
-import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
+import { LoadingShell } from '@/shared/ui/data-states';
+import { useAsyncData } from '@/shared/hooks/use-async-data';
+import { useFormMutation } from '@/shared/hooks/use-form-mutation';
 
 type DailyPlansCardProps = {
   cardClassName?: string;
@@ -18,71 +19,76 @@ type DailyPlansCardProps = {
 
 export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCardProps = {}) {
   const { dateString } = useSelectedDate();
-  const { db, ready } = useAuraDb();
-  const [rows, setRows] = useState<AuraRow[]>([]);
+  const { db } = useAuraDb();
+  const { data: rows, status } = useAsyncData(
+    (db) => db.getDailyPlans(dateString),
+    [dateString],
+    { events: ['task-progress'] }
+  );
   const [title, setTitle] = useState('');
   const [addOpen, setAddOpen] = useState(false);
-
-  const reload = useCallback(() => {
-    if (!db) {
-      setRows([]);
-      return;
-    }
-    setRows(db.getDailyPlans(dateString));
-  }, [db, dateString]);
-
-  useEffect(() => {
-    if (!ready) return;
-    reload();
-  }, [ready, reload]);
+  const rowsList = useMemo(() => rows ?? [], [rows]);
+  const { submit: submitMutation } = useFormMutation(
+    (action: { kind: 'toggle' | 'add' | 'delete'; payload?: unknown }) => {
+      if (!db) return;
+      if (action.kind === 'toggle') {
+        const { id, completed } = action.payload as { id: string; completed: boolean };
+        db.update('act_daily_plans', id, {
+          completed: completed ? 1 : 0,
+          updated_at: new Date().toISOString(),
+        });
+        return;
+      }
+      if (action.kind === 'add') {
+        const { dateString: ds, title: t } = action.payload as { dateString: string; title: string };
+        const id = `plan_${ds.replace(/-/g, '')}_${Date.now()}`;
+        const now = new Date().toISOString();
+        db.addDailyPlan({
+          id,
+          date: ds,
+          title: t,
+          completed: 0,
+          created_at: now,
+          updated_at: now,
+        });
+        return;
+      }
+      if (action.kind === 'delete') {
+        const { id } = action.payload as { id: string };
+        db.delete('act_daily_plans', id);
+      }
+    },
+    { eventType: 'task-progress' }
+  );
 
   const toggle = (id: string, completed: boolean) => {
-    if (!db) return;
-    runAuraMutation('task-progress', () => {
-      db.update('act_daily_plans', id, {
-        completed: completed ? 1 : 0,
-        updated_at: new Date().toISOString(),
-      });
-    });
-    reload();
+    submitMutation({ kind: 'toggle', payload: { id, completed } });
   };
 
   const add = () => {
     const t = title.trim();
-    if (!t || !db) return;
-    const id = `plan_${dateString.replace(/-/g, '')}_${Date.now()}`;
-    const now = new Date().toISOString();
-    runAuraMutation('task-progress', () => {
-      db.addDailyPlan({
-        id,
-        date: dateString,
-        title: t,
-        completed: 0,
-        created_at: now,
-        updated_at: now,
-      });
-    });
+    if (!t) return;
+    submitMutation({ kind: 'add', payload: { dateString, title: t } });
     setTitle('');
     setAddOpen(false);
-    reload();
   };
 
   return (
     <>
       <div className={cn('flex min-h-0 flex-1 flex-col', cardClassName)}>
         <div className={cn('flex min-h-0 flex-1 flex-col gap-1', contentClassName)}>
-          {!ready ? (
-            <p className="text-muted-foreground text-sm">Загрузка…</p>
-          ) : rows.length === 0 ? null : (
+          {status === 'loading' ? (
+            <LoadingShell />
+          ) : rowsList.length === 0 ? null : (
             <ul className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-y-contain pr-0.5">
-              {rows.map((p) => {
+              {rowsList.map((p) => {
                 const id = String(p.id);
                 const done = p.completed === 1 || p.completed === true;
                 const label = String(p.title ?? '');
                 
-                const idx = rows.findIndex(r => String(r.id) === id);
+                const idx = rowsList.findIndex(r => String(r.id) === id);
                 const isFirst = idx === 0;
-                const isLast = idx === rows.length - 1;
+                const isLast = idx === rowsList.length - 1;
 
                 return (
                   <li key={id}>
@@ -93,24 +99,12 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                       onCheckedChange={(c) => toggle(id, c)}
                       onMoveUp={!isFirst ? () => {
                         // Логика перемещения вверх
-                        const temp = rows[idx];
-                        const newRows = [...rows];
-                        newRows[idx] = newRows[idx - 1];
-                        newRows[idx - 1] = temp;
-                        setRows(newRows);
                       } : undefined}
                       onMoveDown={!isLast ? () => {
-                        // Логика перемещения вниз
-                        const temp = rows[idx];
-                        const newRows = [...rows];
-                        newRows[idx] = newRows[idx + 1];
-                        newRows[idx + 1] = temp;
-                        setRows(newRows);
                       } : undefined}
                       onDelete={() => {
                         if (!db) return;
-                        runAuraMutation('task-progress', () => db.delete('act_daily_plans', id));
-                        reload();
+                        submitMutation({ kind: 'delete', payload: { id } });
                       }}
                       isDone={done}
                     />
@@ -119,7 +113,7 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
               })}
             </ul>
           )}
-          <AddListButton onClick={() => setAddOpen(true)} disabled={!ready || !db} className="mt-auto" />
+          <AddListButton onClick={() => setAddOpen(true)} disabled={status === 'loading'} className="mt-auto" />
         </div>
       </div>
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -145,9 +139,6 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                   placeholder="Новый пункт…"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') add();
-                  }}
                 />
               </ActField>
             </ActFormTable>

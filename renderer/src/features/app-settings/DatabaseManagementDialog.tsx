@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   BookOpen,
+  BookText,
   Calendar,
   CheckCircle2,
   Clock3,
@@ -77,6 +78,7 @@ const TABLE_META: Record<string, TableMeta> = {
   cfg_ambient_music: { label: 'Фоновая музыка', icon: Music },
   cfg_diary_categories: { label: 'Категории дневника', icon: BookOpen },
   cfg_diary_moods: { label: 'Настроения', icon: FileText },
+  cfg_diary_entry_presets: { label: 'Цитаты записи', icon: BookText },
   cfg_expense_categories: { label: 'Категории расходов', icon: Wallet },
   cfg_goal_stages: { label: 'Этапы целей', icon: Flag },
   cfg_goal_tasks: { label: 'Задачи целей', icon: CheckCircle2 },
@@ -242,6 +244,11 @@ export function DatabaseManagementDialog({
       setLoading(false);
     }
   }, [runtimeDb]);
+
+  useEffect(() => {
+    if (!open) return;
+    void loadStats();
+  }, [open, loadStats]);
 
   const runAction = useCallback(
     async (name: string, action: () => Promise<void>) => {
@@ -457,9 +464,6 @@ export function DatabaseManagementDialog({
       open={open}
       onOpenChange={(next) => {
         onOpenChange(next);
-        if (next) {
-          void loadStats();
-        }
       }}
     >
       <DialogContent className="max-h-[86vh] max-w-[min(980px,94vw)] gap-2 p-0">

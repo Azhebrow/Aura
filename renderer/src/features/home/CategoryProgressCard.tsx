@@ -3,33 +3,33 @@ import { Activity, Ban, Clock, Sparkles, type LucideIcon } from 'lucide-react';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
-import { TASK_CATEGORY_DEFAULT_META } from '@/shared/config/domain-taxonomy';
+import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
+import { TASK_CATEGORY_IDS, TASK_CATEGORY_DEFAULT_META, type TaskCategoryId } from '@/shared/config/domain-taxonomy';
 import { getCategoryProgresses } from '@/shared/bridge/get-category-progresses';
+import { LoadingShell } from '@/shared/ui/data-states';
 import { cn } from '@/lib/utils';
 
-const CATEGORIES = ['rituals', 'time', 'body', 'deps'] as const;
-const LABELS: Record<(typeof CATEGORIES)[number], string> = {
+const CATEGORIES = TASK_CATEGORY_IDS;
+const LABELS: Record<TaskCategoryId, string> = {
   rituals: TASK_CATEGORY_DEFAULT_META.rituals.title,
   time: TASK_CATEGORY_DEFAULT_META.time.title,
   body: TASK_CATEGORY_DEFAULT_META.body.title,
   deps: TASK_CATEGORY_DEFAULT_META.deps.title,
 };
-const CATEGORY_COLORS: Record<(typeof CATEGORIES)[number], string> = {
+const CATEGORY_COLORS: Record<TaskCategoryId, string> = {
   rituals: '--task-rituals',
   time: '--task-time',
   body: '--task-body',
   deps: '--task-deps',
 };
-const CATEGORY_ICONS: Record<(typeof CATEGORIES)[number], LucideIcon> = {
+const CATEGORY_ICONS: Record<TaskCategoryId, LucideIcon> = {
   rituals: Sparkles,
   time: Clock,
   body: Activity,
   deps: Ban,
 };
 
-/**
- * Радар диаграмма: сегодняшние процеты по категориям (Chart.js radar).
- */
+/** Радар диаграмма: сегодняшние проценты по категориям. */
 type CategoryProgressCardProps = {
   cardClassName?: string;
   contentClassName?: string;
@@ -37,43 +37,29 @@ type CategoryProgressCardProps = {
 
 export function CategoryProgressCard({ cardClassName, contentClassName }: CategoryProgressCardProps = {}) {
   const { dateString } = useSelectedDate();
-  const { db, ready } = useAuraDb();
+  const { db } = useAuraDb();
   const dataTick = useAuraDataRefresh({
     types: ['task-progress', 'timer', 'ritual', 'nutrition', 'diary', 'mood'],
     includeTaskCategoriesConfig: true,
   });
-  const [bootstrapProgresses, setBootstrapProgresses] = useState<Record<string, number> | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const api = window.__auraMiniApi;
-    if (!api) {
-      setBootstrapProgresses(null);
-      return;
+  const bootstrapParams = useMemo(() => ({ date: dateString }), [dateString]);
+  const { data: homeBootstrap } = useBootstrapData<{ categoryProgresses?: Record<string, number> }>(
+    'home',
+    bootstrapParams,
+    [dataTick],
+    {
+      keepStaleOnError: true,
+      cacheMs: 0,
+      dedupeKey: `home:category-progress:${dateString}:${dataTick}`,
     }
-    api
-      .fetchBootstrap('home', { date: dateString })
-      .then((data) => {
-        if (cancelled) return;
-        const categoryProgresses =
-          data && typeof data === 'object' && 'categoryProgresses' in data
-            ? (data as { categoryProgresses?: Record<string, number> }).categoryProgresses
-            : null;
-        setBootstrapProgresses(categoryProgresses ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setBootstrapProgresses(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [dateString, dataTick]);
+  );
+  const bootstrapProgresses = homeBootstrap?.categoryProgresses ?? null;
 
   const todayData = useMemo(() => {
     if (!db) return null;
     const bulk = bootstrapProgresses ?? getCategoryProgresses(db, dateString, CATEGORIES);
     return CATEGORIES.map((cat) => bulk[cat] ?? 0);
-  }, [bootstrapProgresses, db, dateString, ready, dataTick]);
+  }, [bootstrapProgresses, db, dateString, dataTick]);
 
   const [displayData, setDisplayData] = useState<number[] | null>(null);
   const hasHydratedRef = useRef(false);
@@ -177,8 +163,8 @@ export function CategoryProgressCard({ cardClassName, contentClassName }: Catego
   return (
     <div className={cn('flex min-h-0 min-w-0 flex-1 flex-col', cardClassName)}>
       <div className={cn('flex min-h-0 min-w-0 flex-1', contentClassName)}>
-        {!ready || !todayData || !displayData ? (
-          <p className="text-muted-foreground text-sm">Загрузка…</p>
+        {!db || !todayData || !displayData ? (
+          <LoadingShell />
         ) : (
           <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-card p-1.5 sm:p-2">
             <div className="relative aspect-square h-full min-h-0 max-h-full max-w-full">

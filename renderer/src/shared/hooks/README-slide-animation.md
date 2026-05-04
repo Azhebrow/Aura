@@ -117,30 +117,22 @@ const containerClass = cn(
 <div className={containerClass}>{content}</div>
 ```
 
-### Вариант 3: Использование AnimatedMobileSectionSwitcher (для мобильного переключателя)
+### Вариант 3: Использование MobilePageShell (для мобильных секций)
 
 ```typescript
-import { AnimatedMobileSectionSwitcher } from '@/shared/ui/animated-mobile-section-switcher';
+import { MobilePageShell } from '@/shared/ui/mobile';
 
-<AnimatedMobileSectionSwitcher
+<MobilePageShell
   sections={[
-    { id: 'section1', label: 'Раздел 1' },
-    { id: 'section2', label: 'Раздел 2' },
+    { id: 'section1', label: 'Раздел 1', Icon: List, content: <Section1 /> },
+    { id: 'section2', label: 'Раздел 2', Icon: Grid, content: <Section2 /> },
   ]}
   value={selectedSection}
   onChange={setSelectedSection}
-  animatedChild={
-    selectedSection === 'section1' ? <Section1 /> : <Section2 />
-  }
 />
 ```
 
 ## Примеры в коде
-
-### StatsOverviewPage
-Анимация при переключении между Chart и Table:
-- Используется `useRadioGroupSlideAnimation(controls.viewType, ['table', 'chart'])`
-- Применяется к контейнерам с таблицей и графиками
 
 ### DiaryEditorPage
 Анимация при переключении между Nutrition и Entries:

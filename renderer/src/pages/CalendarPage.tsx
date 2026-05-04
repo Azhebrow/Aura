@@ -16,6 +16,8 @@ import {
 } from '@/shared/ui/mega-section-layout';
 import { cn } from '@/lib/utils';
 import { MegaPanelHeader } from '@/shared/ui/mega-panel-header';
+import { STORAGE_KEYS } from '@/shared/config/storage-keys';
+import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
 
 type DataType = 'completion' | 'points' | 'rituals' | 'mood' | 'income' | 'expense' | 'finance' | 'calories';
 type DayStatus = 'future' | 'open' | 'locked';
@@ -29,7 +31,6 @@ type LegacyPointsApi = {
   isFutureDay: (date: string) => boolean;
 };
 
-const DATA_TYPE_STORAGE = 'calendar_data_type';
 const DOW_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const DATA_TYPES: { value: DataType; label: string }[] = [
   { value: 'completion', label: 'Прогресс' },
@@ -92,13 +93,14 @@ function monthCells(year: number, monthIndex: number): { d: Date; inMonth: boole
 
 export function CalendarPage() {
   const { dateString, setDateString, todayString } = useSelectedDate();
-  const { db, ready } = useAuraDb();
+  const { db } = useAuraDb();
+  const dataTick = useAuraDataRefresh();
   const todayD = parseYmd(todayString);
   const selectedDate = parseYmd(dateString) ?? todayD ?? new Date();
   const [view, setView] = useState(() => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
   const [dataType, setDataType] = useState<DataType>(() => {
     if (typeof localStorage === 'undefined') return 'completion';
-    const raw = localStorage.getItem(DATA_TYPE_STORAGE);
+    const raw = localStorage.getItem(STORAGE_KEYS.CALENDAR_DATA_TYPE);
     return DATA_TYPES.some((o) => o.value === raw) ? (raw as DataType) : 'completion';
   });
 
@@ -109,16 +111,17 @@ export function CalendarPage() {
 
   useEffect(() => {
     if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(DATA_TYPE_STORAGE, dataType);
+    localStorage.setItem(STORAGE_KEYS.CALENDAR_DATA_TYPE, dataType);
   }, [dataType]);
 
-  const pointsApi = usePointsService(db, ready) as LegacyPointsApi | null;
+  const pointsApi = usePointsService(db, Boolean(db)) as LegacyPointsApi | null;
 
   const monthData = useMemo(() => {
     if (!pointsApi) return null;
     if (!['income', 'expense', 'mood', 'points', 'finance', 'calories'].includes(dataType)) return null;
     return pointsApi.getMonthRange(view.getFullYear(), view.getMonth() + 1, dataType);
-  }, [pointsApi, dataType, view]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pointsApi, dataType, view, dataTick]);
 
   const flat = useMemo(() => monthCells(view.getFullYear(), view.getMonth()), [view]);
   const weeks = useMemo(() => {
@@ -210,8 +213,8 @@ export function CalendarPage() {
               </Button>
             }
           />
-          <div className="border-border/70 bg-muted/10 flex items-start justify-between gap-2 border-b px-2.5 py-2 sm:px-4 sm:py-2.5">
-            <div className="inline-flex items-center gap-1 rounded-lg border border-border/75 bg-background/85 px-1 py-1">
+          <div className="border-border/70 bg-muted/10 flex items-start justify-between gap-2 border-b px-4 py-3 sm:px-4 sm:py-2.5">
+            <div className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-border/75 bg-background/85 px-1 py-1">
               <Button type="button" variant="ghost" size="icon-sm" aria-label="Предыдущий месяц" onClick={() => setView((v) => new Date(v.getFullYear(), v.getMonth() - 1, 1))}>
                 <ChevronLeft className="size-4" />
               </Button>
@@ -242,7 +245,7 @@ export function CalendarPage() {
             </Select>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 sm:px-3.5 sm:py-3.5">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-3.5 sm:py-3.5">
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-muted-foreground uppercase">
               {DOW_LABELS.map((l) => (
                 <div key={l} className="rounded-md border border-border/55 bg-muted/20 py-1">
@@ -261,8 +264,8 @@ export function CalendarPage() {
                     const future = status === 'future';
                     const openDay = status === 'open';
                     const dd = getDayData(d);
-                    const StatusIcon = status === 'future' ? Calendar : status === 'open' ? Pencil : Lock;
-                    const statusTone = status === 'future' ? 'calendar-status-future' : status === 'open' ? 'calendar-status-open' : 'calendar-status-locked';
+                    const StatusIcon = status === 'future' ? Calendar : openDay ? Pencil : Lock;
+                    const statusTone = status === 'future' ? 'calendar-status-future' : openDay ? 'calendar-status-open' : 'calendar-status-locked';
                     const statusSurface = status === 'future' ? 'calendar-cell-future' : openDay ? 'calendar-cell-open' : '';
                     const fill = relativeFillByYmd.get(ymd) ?? 0;
                     return (
@@ -313,7 +316,7 @@ export function CalendarPage() {
             </div>
           </div>
 
-          <footer className="border-t border-border/70 bg-muted/10 px-3 py-3 sm:px-4">
+          <footer className="border-t border-border/70 bg-muted/10 px-4 py-3 sm:px-4">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {daySummary.map((row) => {
                 const Ic = TYPE_ICON[row.type];
@@ -333,10 +336,6 @@ export function CalendarPage() {
                 Открыт
               </span>
               <span className="inline-flex items-center gap-1 rounded-md border border-border/55 bg-background/70 px-1.5 py-1">
-                <Lock className="size-3" />
-                Закрыт
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-md border border-border/55 bg-background/70 px-1.5 py-1">
                 <Calendar className="size-3" />
                 Будущее
               </span>
@@ -347,4 +346,3 @@ export function CalendarPage() {
     </PageFrame>
   );
 }
-

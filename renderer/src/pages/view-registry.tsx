@@ -1,12 +1,10 @@
 import type { PageId } from '@/shared/config/nav-model';
-import { NAV_PAGE_DEFINITIONS } from '@/shared/config/nav-model';
-import { HomeOverviewPage } from '@/pages/HomeOverviewPage';
-import { PlaceholderPage } from '@/pages/PlaceholderPage';
-import { RanksPage } from '@/pages/RanksPage';
-import { RitualsPage } from '@/pages/RitualsPage';
-import { SettingsPage } from '@/pages/SettingsPage';
-import { StatsOverviewPage } from '@/pages/StatsOverviewPage';
-import { CalendarPage } from '@/pages/CalendarPage';
+import { HomeOverviewPage } from './HomeOverviewPage';
+import { RanksPage } from './RanksPage';
+import { RitualsPage } from './RitualsPage';
+import { SettingsPage } from './SettingsPage';
+import { StatsOverviewPage } from './StatsOverviewPage';
+import { CalendarPage } from './CalendarPage';
 import { DiaryEditorPage } from '@/features/diary/DiaryEditorPage';
 import { TimerStatusPage } from '@/features/timer/TimerStatusPage';
 
@@ -25,13 +23,13 @@ export function ActivePageView({ pageId }: { pageId: PageId }) {
       return <SettingsPage />;
     case 'rituals':
       return <RitualsPage />;
-    case 'ranks':
-      return <RanksPage />;
     case 'stats':
       return <StatsOverviewPage />;
+    case 'ranks':
+      return <RanksPage />;
     case 'calendar':
       return <CalendarPage />;
     default:
-      return <PlaceholderPage page={NAV_PAGE_DEFINITIONS[pageId]} />;
+      return null;
   }
 }

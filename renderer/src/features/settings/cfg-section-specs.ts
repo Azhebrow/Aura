@@ -253,6 +253,31 @@ const DIARY_MOOD_FIELDS: CfgFieldDef[] = [
   { key: 'icon', label: 'Иконка', kind: 'text', hint: 'Имя файла в public/icons.' },
 ];
 
+const DIARY_ENTRY_PRESET_FIELDS: CfgFieldDef[] = [
+  {
+    key: 'title',
+    label: 'Название',
+    kind: 'text',
+    hint: 'Короткая подпись для списка и поиска в настройках.',
+  },
+  {
+    key: 'prompt',
+    label: 'Цитата / подсказка',
+    kind: 'textarea',
+    hint: 'Показывается в пустом поле записи вместо «Запись…».',
+    placeholder: 'Например: Начни с одной честной строки.',
+  },
+  {
+    key: 'description',
+    label: 'Описание',
+    kind: 'textarea',
+    hint: 'Дополнительная заметка или пояснение к фразе.',
+  },
+  { key: 'icon', label: 'Иконка', kind: 'text', hint: 'Имя файла в public/icons.' },
+  { key: 'active', label: 'Активная', kind: 'checkbox', hint: 'Неактивные фразы не попадают в ротацию.' },
+  { key: 'level', label: 'Порядок', kind: 'number', min: 0, hint: 'Меньшее число — выше в ротации.' },
+];
+
 const NUTRITION_PRODUCT_FIELDS: CfgFieldDef[] = [
   {
     key: 'title',
@@ -481,6 +506,16 @@ export const CFG_SECTION_SPECS: Record<string, CfgSectionSpec> = {
     fields: DIARY_MOOD_FIELDS,
     sortBy: 'level',
     createExtra: { level: 3 },
+  },
+  'diary-entry-presets': {
+    sectionId: 'diary-entry-presets',
+    table: 'cfg_diary_entry_presets',
+    title: 'Цитаты записи',
+    description: '',
+    fields: DIARY_ENTRY_PRESET_FIELDS,
+    rowTitleKeys: ['title', 'prompt', 'id'],
+    sortBy: 'level',
+    createExtra: { active: 1, level: 0, title: 'Новая цитата', prompt: 'Например: начни с одной честной строки.' },
   },
   'nutrition-products': {
     sectionId: 'nutrition-products',

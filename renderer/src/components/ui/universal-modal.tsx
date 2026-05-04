@@ -55,8 +55,8 @@ export function UniversalModalLayout({
 }: UniversalModalLayoutProps) {
   return (
     <div className={cn('flex min-h-0 w-full flex-1 flex-col overflow-hidden', className)}>
-      {header ? <div className={cn('border-border/80 shrink-0 border-b px-3 py-2.5 sm:px-5 sm:py-3', headerClassName)}>{header}</div> : null}
-      <div className={cn('min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-2.5 sm:px-5 sm:py-4', bodyClassName)}>
+      {header ? <div className={cn('border-border/80 shrink-0 border-b px-3 py-2 sm:px-4 sm:py-2.5', headerClassName)}>{header}</div> : null}
+      <div className={cn('min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-2 sm:px-4 sm:py-3', bodyClassName)}>
         {children}
       </div>
       {footer ? <div className="shrink-0">{footer}</div> : null}

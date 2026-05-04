@@ -1,4 +1,4 @@
-import type { StatsAggregatedRow, StatsAggregation, StatsCellValue, StatsDayRow } from './types';
+import type { StatsAggregatedRow, StatsAggregation, StatsCellValue, StatsDayRow, StatsMode } from './types';
 
 function getWeekStart(d: Date): Date {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -54,19 +54,14 @@ function getYearEnd(yearStart: Date): Date {
   return new Date(yearStart.getFullYear(), 11, 31);
 }
 
-function aggregateKeyValues(key: string, rawValues: (StatsCellValue | undefined)[]): StatsCellValue | undefined {
+function aggregateKeyValues(mode: StatsMode, key: string, rawValues: (StatsCellValue | undefined)[]): StatsCellValue | undefined {
   const values = rawValues.filter((v) => v !== null && v !== undefined) as StatsCellValue[];
   if (values.length === 0) return undefined;
 
   const firstValue = values[0];
   const isNutritionCategoryKey = ['Белки', 'Жиры', 'Углеводы', 'Калории'].includes(key);
 
-  if (
-    typeof firstValue === 'object' &&
-    firstValue !== null &&
-    !Array.isArray(firstValue) &&
-    !isNutritionCategoryKey
-  ) {
+  if (typeof firstValue === 'object' && firstValue !== null && !Array.isArray(firstValue) && !isNutritionCategoryKey) {
     type NutritionTotals = { calories: number; proteins: number; fats: number; carbs: number };
     return values.reduce(
       (acc: NutritionTotals, v) => {
@@ -88,11 +83,9 @@ function aggregateKeyValues(key: string, rawValues: (StatsCellValue | undefined)
   const nums = values.filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
   if (nums.length === 0) return undefined;
 
-  const isPercentage = nums.every((v) => v >= 0 && v <= 100);
-  const isMood = key === 'Настроение';
-  if (isPercentage || isMood) {
-    return nums.reduce((s, v) => s + v, 0) / nums.length;
-  }
+  if (mode === 'mood') return nums.reduce((s, v) => s + v, 0) / nums.length;
+  if (mode === 'tasks' || mode === 'rituals' || mode === 'correlation') return nums.reduce((s, v) => s + v, 0) / nums.length;
+  if (mode === 'rank') return nums[nums.length - 1];
   return nums.reduce((s, v) => s + v, 0);
 }
 
@@ -100,20 +93,12 @@ export function aggregateByDays(data: StatsDayRow[], startDate: string, endDate:
   const dates = generateDateRange(startDate, endDate);
   return dates.map((date) => {
     const dayData = data.find((d) => d.date === date);
-    return {
-      date,
-      label: date,
-      values: dayData ? { ...dayData.values } : {},
-      dateRange: null,
-    };
+    return { date, label: date, values: dayData ? { ...dayData.values } : {}, dateRange: null };
   });
 }
 
-export function aggregateByWeeks(data: StatsDayRow[], startDate: string, endDate: string): StatsAggregatedRow[] {
-  const weekGroups = new Map<
-    string,
-    { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; weekStart: Date }
-  >();
+export function aggregateByWeeks(data: StatsDayRow[], startDate: string, endDate: string, mode: StatsMode): StatsAggregatedRow[] {
+  const weekGroups = new Map<string, { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; weekStart: Date }>();
   const start = parseDate(startDate);
   const end = parseDate(endDate);
 
@@ -121,28 +106,15 @@ export function aggregateByWeeks(data: StatsDayRow[], startDate: string, endDate
     const date = parseDate(dayData.date);
     const weekStart = getWeekStart(date);
     const weekKey = formatDate(weekStart);
-    if (!weekGroups.has(weekKey)) {
-      weekGroups.set(weekKey, { date: weekKey, label: weekKey, values: {}, days: [], weekStart });
-    }
+    if (!weekGroups.has(weekKey)) weekGroups.set(weekKey, { date: weekKey, label: weekKey, values: {}, days: [], weekStart });
     weekGroups.get(weekKey)!.days.push(dayData);
   }
 
-  const allWeeks = new Map<
-    string,
-    { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; weekStart: Date }
-  >();
+  const allWeeks = new Map<string, { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; weekStart: Date }>();
   let currentWeekStart = getWeekStart(start);
   while (currentWeekStart <= end) {
     const weekKey = formatDate(currentWeekStart);
-    if (!allWeeks.has(weekKey)) {
-      allWeeks.set(weekKey, {
-        date: weekKey,
-        label: weekKey,
-        values: {},
-        days: [],
-        weekStart: new Date(currentWeekStart),
-      });
-    }
+    if (!allWeeks.has(weekKey)) allWeeks.set(weekKey, { date: weekKey, label: weekKey, values: {}, days: [], weekStart: new Date(currentWeekStart) });
     currentWeekStart = new Date(currentWeekStart);
     currentWeekStart.setDate(currentWeekStart.getDate() + 7);
   }
@@ -152,26 +124,24 @@ export function aggregateByWeeks(data: StatsDayRow[], startDate: string, endDate
   });
 
   const result: StatsAggregatedRow[] = [];
-  for (const [weekKey, week] of allWeeks.entries()) {
+  for (const [, week] of allWeeks.entries()) {
     const weekEnd = getWeekEnd(week.weekStart);
     if (week.weekStart > end || weekEnd < start) continue;
 
     const aggregatedValues: Record<string, StatsCellValue> = {};
     const allKeys = new Set<string>();
-    for (const day of week.days) {
-      Object.keys(day.values || {}).forEach((k) => allKeys.add(k));
-    }
+    for (const day of week.days) Object.keys(day.values || {}).forEach((k) => allKeys.add(k));
     for (const key of allKeys) {
       const vals = week.days.map((day) => day.values?.[key]);
-      const part = aggregateKeyValues(key, vals);
+      const part = aggregateKeyValues(mode, key, vals);
       if (part !== undefined) aggregatedValues[key] = part;
     }
 
     const weekStartInRange = week.weekStart < start ? start : week.weekStart;
     const weekEndInRange = weekEnd > end ? end : weekEnd;
     result.push({
-      date: weekKey,
-      label: weekKey,
+      date: week.date,
+      label: week.label,
       values: aggregatedValues,
       dateRange: { startDate: formatDate(weekStartInRange), endDate: formatDate(weekEndInRange) },
     });
@@ -179,11 +149,8 @@ export function aggregateByWeeks(data: StatsDayRow[], startDate: string, endDate
   return result.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function aggregateByMonths(data: StatsDayRow[], startDate: string, endDate: string): StatsAggregatedRow[] {
-  const monthGroups = new Map<
-    string,
-    { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; monthStart: Date }
-  >();
+export function aggregateByMonths(data: StatsDayRow[], startDate: string, endDate: string, mode: StatsMode): StatsAggregatedRow[] {
+  const monthGroups = new Map<string, { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; monthStart: Date }>();
   const start = parseDate(startDate);
   const end = parseDate(endDate);
 
@@ -191,28 +158,15 @@ export function aggregateByMonths(data: StatsDayRow[], startDate: string, endDat
     const date = parseDate(dayData.date);
     const monthStart = getMonthStart(date);
     const monthKey = formatDate(monthStart);
-    if (!monthGroups.has(monthKey)) {
-      monthGroups.set(monthKey, { date: monthKey, label: monthKey, values: {}, days: [], monthStart });
-    }
+    if (!monthGroups.has(monthKey)) monthGroups.set(monthKey, { date: monthKey, label: monthKey, values: {}, days: [], monthStart });
     monthGroups.get(monthKey)!.days.push(dayData);
   }
 
-  const allMonths = new Map<
-    string,
-    { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; monthStart: Date }
-  >();
+  const allMonths = new Map<string, { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; monthStart: Date }>();
   let currentMonthStart = getMonthStart(start);
   while (currentMonthStart <= end) {
     const monthKey = formatDate(currentMonthStart);
-    if (!allMonths.has(monthKey)) {
-      allMonths.set(monthKey, {
-        date: monthKey,
-        label: monthKey,
-        values: {},
-        days: [],
-        monthStart: new Date(currentMonthStart),
-      });
-    }
+    if (!allMonths.has(monthKey)) allMonths.set(monthKey, { date: monthKey, label: monthKey, values: {}, days: [], monthStart: new Date(currentMonthStart) });
     currentMonthStart = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 1);
   }
 
@@ -221,26 +175,24 @@ export function aggregateByMonths(data: StatsDayRow[], startDate: string, endDat
   });
 
   const result: StatsAggregatedRow[] = [];
-  for (const [monthKey, month] of allMonths.entries()) {
+  for (const [, month] of allMonths.entries()) {
     const monthEnd = getMonthEnd(month.monthStart);
     if (month.monthStart > end || monthEnd < start) continue;
 
     const aggregatedValues: Record<string, StatsCellValue> = {};
     const allKeys = new Set<string>();
-    for (const day of month.days) {
-      Object.keys(day.values || {}).forEach((k) => allKeys.add(k));
-    }
+    for (const day of month.days) Object.keys(day.values || {}).forEach((k) => allKeys.add(k));
     for (const key of allKeys) {
       const vals = month.days.map((day) => day.values?.[key]);
-      const part = aggregateKeyValues(key, vals);
+      const part = aggregateKeyValues(mode, key, vals);
       if (part !== undefined) aggregatedValues[key] = part;
     }
 
     const monthStartInRange = month.monthStart < start ? start : month.monthStart;
     const monthEndInRange = monthEnd > end ? end : monthEnd;
     result.push({
-      date: monthKey,
-      label: monthKey,
+      date: month.date,
+      label: month.label,
       values: aggregatedValues,
       dateRange: { startDate: formatDate(monthStartInRange), endDate: formatDate(monthEndInRange) },
     });
@@ -248,11 +200,8 @@ export function aggregateByMonths(data: StatsDayRow[], startDate: string, endDat
   return result.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function aggregateByYears(data: StatsDayRow[], startDate: string, endDate: string): StatsAggregatedRow[] {
-  const yearGroups = new Map<
-    string,
-    { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; yearStart: Date }
-  >();
+export function aggregateByYears(data: StatsDayRow[], startDate: string, endDate: string, mode: StatsMode): StatsAggregatedRow[] {
+  const yearGroups = new Map<string, { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; yearStart: Date }>();
   const start = parseDate(startDate);
   const end = parseDate(endDate);
 
@@ -260,28 +209,15 @@ export function aggregateByYears(data: StatsDayRow[], startDate: string, endDate
     const date = parseDate(dayData.date);
     const yearStart = getYearStart(date);
     const yearKey = formatDate(yearStart);
-    if (!yearGroups.has(yearKey)) {
-      yearGroups.set(yearKey, { date: yearKey, label: yearKey, values: {}, days: [], yearStart });
-    }
+    if (!yearGroups.has(yearKey)) yearGroups.set(yearKey, { date: yearKey, label: yearKey, values: {}, days: [], yearStart });
     yearGroups.get(yearKey)!.days.push(dayData);
   }
 
-  const allYears = new Map<
-    string,
-    { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; yearStart: Date }
-  >();
+  const allYears = new Map<string, { date: string; label: string; values: Record<string, StatsCellValue>; days: StatsDayRow[]; yearStart: Date }>();
   let currentYearStart = getYearStart(start);
   while (currentYearStart <= end) {
     const yearKey = formatDate(currentYearStart);
-    if (!allYears.has(yearKey)) {
-      allYears.set(yearKey, {
-        date: yearKey,
-        label: yearKey,
-        values: {},
-        days: [],
-        yearStart: new Date(currentYearStart),
-      });
-    }
+    if (!allYears.has(yearKey)) allYears.set(yearKey, { date: yearKey, label: yearKey, values: {}, days: [], yearStart: new Date(currentYearStart) });
     currentYearStart = new Date(currentYearStart.getFullYear() + 1, 0, 1);
   }
 
@@ -290,26 +226,24 @@ export function aggregateByYears(data: StatsDayRow[], startDate: string, endDate
   });
 
   const result: StatsAggregatedRow[] = [];
-  for (const [yearKey, year] of allYears.entries()) {
+  for (const [, year] of allYears.entries()) {
     const yearEnd = getYearEnd(year.yearStart);
     if (year.yearStart > end || yearEnd < start) continue;
 
     const aggregatedValues: Record<string, StatsCellValue> = {};
     const allKeys = new Set<string>();
-    for (const day of year.days) {
-      Object.keys(day.values || {}).forEach((k) => allKeys.add(k));
-    }
+    for (const day of year.days) Object.keys(day.values || {}).forEach((k) => allKeys.add(k));
     for (const key of allKeys) {
       const vals = year.days.map((day) => day.values?.[key]);
-      const part = aggregateKeyValues(key, vals);
+      const part = aggregateKeyValues(mode, key, vals);
       if (part !== undefined) aggregatedValues[key] = part;
     }
 
     const yearStartInRange = year.yearStart < start ? start : year.yearStart;
     const yearEndInRange = yearEnd > end ? end : yearEnd;
     result.push({
-      date: yearKey,
-      label: yearKey,
+      date: year.date,
+      label: year.label,
       values: aggregatedValues,
       dateRange: { startDate: formatDate(yearStartInRange), endDate: formatDate(yearEndInRange) },
     });
@@ -317,21 +251,15 @@ export function aggregateByYears(data: StatsDayRow[], startDate: string, endDate
   return result.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function aggregateData(
-  data: StatsDayRow[],
-  aggregation: StatsAggregation,
-  startDate: string,
-  endDate: string
-): StatsAggregatedRow[] {
+export function aggregateData(data: StatsDayRow[], aggregation: StatsAggregation, startDate: string, endDate: string, mode: StatsMode): StatsAggregatedRow[] {
   switch (aggregation) {
-    case 'day':
-      return aggregateByDays(data, startDate, endDate);
     case 'week':
-      return aggregateByWeeks(data, startDate, endDate);
+      return aggregateByWeeks(data, startDate, endDate, mode);
     case 'month':
-      return aggregateByMonths(data, startDate, endDate);
+      return aggregateByMonths(data, startDate, endDate, mode);
     case 'year':
-      return aggregateByYears(data, startDate, endDate);
+      return aggregateByYears(data, startDate, endDate, mode);
+    case 'day':
     default:
       return aggregateByDays(data, startDate, endDate);
   }

@@ -9,8 +9,8 @@ export const DEFAULT_NAV_ORDER = [
   'rituals',
   'diary',
   'timer',
-  'ranks',
   'stats',
+  'ranks',
   'calendar',
   'settings',
 ] as const;
@@ -27,8 +27,8 @@ export const NAV_PAGE_DEFINITIONS: Record<PageId, NavPageDefinition> = {
   rituals: { id: 'rituals', label: 'Ритуалы' },
   diary: { id: 'diary', label: 'Дневник' },
   timer: { id: 'timer', label: 'Таймер' },
-  ranks: { id: 'ranks', label: 'Ранги' },
   stats: { id: 'stats', label: 'Статистика' },
+  ranks: { id: 'ranks', label: 'Ранги' },
   calendar: { id: 'calendar', label: 'Календарь' },
   settings: { id: 'settings', label: 'Настройки' },
 };

@@ -11,7 +11,7 @@ declare global {
     };
     __auraMiniApi?: {
       callDbBatched: (method: string, args?: unknown[]) => Promise<unknown>;
-      fe/Users/doranzebrowski/Downloads/AURA/renderer/src/app/App.tsxtchBootstrap: (
+      fetchBootstrap: (
         screen: 'home' | 'rituals' | 'sidebar' | 'date-strip',
         body: Record<string, unknown>
       ) => Promise<unknown>;

@@ -18,7 +18,7 @@ export function useRadioGroupSlideAnimation<T extends string | number>(
   const { duration = 300 } = options;
   const prevIndexRef = useRef(optionValues.indexOf(currentValue));
   const [direction, setDirection] = useState<SlideDirection>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const currentIndex = optionValues.indexOf(currentValue);

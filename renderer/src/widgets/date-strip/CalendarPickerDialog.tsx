@@ -22,6 +22,7 @@ import { UniversalModalContent } from '@/components/ui/universal-modal';
 import { cn } from '@/lib/utils';
 import { dateToYmd, useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
+import { STORAGE_KEYS } from '@/shared/config/storage-keys';
 
 function parseYmd(s: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
@@ -59,7 +60,6 @@ type DataType = 'completion' | 'points' | 'rituals' | 'mood' | 'income' | 'expen
 type DayStatus = 'future' | 'open' | 'locked';
 type DayData = { value?: number; text?: string; color?: string; fillPercent?: number; icon?: string | null };
 
-const DATA_TYPE_STORAGE = 'calendar_data_type';
 const DATA_TYPES: { value: DataType; label: string }[] = [
   { value: 'completion', label: 'Прогресс' },
   { value: 'points', label: 'Очки' },
@@ -96,7 +96,7 @@ export function CalendarPickerDialog({ open, onOpenChange, mode = 'compact' }: P
   const selD = parseYmd(dateString) ?? todayD ?? new Date();
   const [dataType, setDataType] = useState<DataType>(() => {
     if (typeof localStorage === 'undefined') return 'completion';
-    const raw = localStorage.getItem(DATA_TYPE_STORAGE);
+    const raw = localStorage.getItem(STORAGE_KEYS.CALENDAR_DATA_TYPE);
     return DATA_TYPES.some((o) => o.value === raw) ? (raw as DataType) : 'completion';
   });
 
@@ -127,7 +127,7 @@ export function CalendarPickerDialog({ open, onOpenChange, mode = 'compact' }: P
   );
 
   useEffect(() => {
-    localStorage.setItem(DATA_TYPE_STORAGE, dataType);
+    localStorage.setItem(STORAGE_KEYS.CALENDAR_DATA_TYPE, dataType);
   }, [dataType]);
 
   const pointsApi = useMemo<LegacyPointsApi | null>(() => {

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -48,10 +49,41 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   const [prevPageId, setPrevPageIdState] = useState<PageId>('home');
   const [navOrder, setNavOrder] = useState<readonly PageId[]>(DEFAULT_NAV_ORDER);
   const [navOrderReady, setNavOrderReady] = useState(false);
+  const [reloadPending, setReloadPending] = useState(false);
+  const settingsDirtyRef = useRef(false);
+  const activePageIdRef = useRef<PageId>('home');
+
+  useEffect(() => {
+    activePageIdRef.current = activePageId;
+  }, [activePageId]);
+
+  // Track if any setting was changed while on the settings page
+  useEffect(() => {
+    if (activePageId !== 'settings') {
+      settingsDirtyRef.current = false;
+      return;
+    }
+    const handler = () => { settingsDirtyRef.current = true; };
+    window.addEventListener('settings-saved', handler);
+    return () => window.removeEventListener('settings-saved', handler);
+  }, [activePageId]);
+
+  // Trigger reload after overlay is shown
+  useEffect(() => {
+    if (!reloadPending) return;
+    const timer = setTimeout(() => window.location.reload(), 450);
+    return () => clearTimeout(timer);
+  }, [reloadPending]);
 
   const setActivePageId = useCallback(
     (id: PageId) => {
       const normalized = normalizeActivePageId(id, navOrder);
+      const current = activePageIdRef.current;
+      // If leaving settings with unsaved changes — show overlay and reload instead of navigating
+      if (current === 'settings' && normalized !== 'settings' && settingsDirtyRef.current) {
+        setReloadPending(true);
+        return;
+      }
       setActivePageIdState((prev) => {
         if (prev !== normalized) setPrevPageIdState(prev);
         return normalized;
@@ -146,7 +178,30 @@ export function ShellProvider({ children }: { children: ReactNode }) {
     [activePageId, setActivePageId, toggleCalendar, navOrder, navOrderReady]
   );
 
-  return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>;
+  return (
+    <ShellContext.Provider value={value}>
+      {children}
+      {reloadPending ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'var(--background)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
+          <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid var(--border)', borderTopColor: 'var(--primary)', animation: 'spin 0.7s linear infinite' }} />
+          <span style={{ color: 'var(--muted-foreground)', fontSize: '13px' }}>Применение настроек…</span>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      ) : null}
+    </ShellContext.Provider>
+  );
 }
 
 export function useShell(): ShellContextValue {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Coffee, MoonStar, Play, Square, Timer, Volume2, X } from 'lucide-react';
+import { Check, Coffee, MoonStar, Play, Shuffle, Square, Timer, Volume2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import type { TimerTaskSelection } from '@/features/timer/use-timer-session';
@@ -12,6 +12,7 @@ const BREAK_DURATION_SEC = 15 * 60;
 const BREAK_ALARM_REPEAT_MS = 2400;
 
 type BreakPhase = 'idle' | 'countdown' | 'alarm';
+type TimerDialMode = 'time' | 'percent' | 'bar' | 'hidden';
 const AMBIENT_VOLUME_KEY = 'timer-ambient-volume';
 
 type AmbientTrack = {
@@ -101,6 +102,9 @@ function resolveAmbientFileUrl(fileName: string): string | null {
       const existing = candidates.find((candidate) => fs.existsSync(candidate));
       if (existing) {
         const buf = fs.readFileSync(existing);
+        const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+        const arrayBuffer = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(arrayBuffer).set(bytes);
         const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
         const mime =
           ext === 'mp3' ? 'audio/mpeg' :
@@ -110,7 +114,7 @@ function resolveAmbientFileUrl(fileName: string): string | null {
           ext === 'flac' ? 'audio/flac' :
           ext === 'aac' ? 'audio/aac' :
           'audio/mpeg';
-        const blob = new Blob([buf], { type: mime });
+        const blob = new Blob([arrayBuffer], { type: mime });
         const url = URL.createObjectURL(blob);
         ambientBlobCache.set(fileName, url);
         return url;
@@ -145,6 +149,24 @@ function parseAmbientDefaults(row: AuraRow | null): AmbientDefaults {
   };
 }
 
+function formatRemainingText(remainingSec: number): string {
+  const safeRemainingSec = Math.max(0, Math.floor(remainingSec));
+  const mins = Math.ceil(safeRemainingSec / 60);
+  if (safeRemainingSec <= 0) return 'Цель закрыта';
+  if (safeRemainingSec < 60) return 'Осталось меньше минуты';
+  return `Осталось ~${mins} мин`;
+}
+
+function getStoicProgressMessage(progressPct: number, isRunning: boolean, hasElapsed: boolean): string {
+  if (progressPct >= 95) return 'Почти закончил';
+  if (progressPct >= 80) return 'Финиш рядом';
+  if (progressPct >= 55) return 'Ты уже в потоке';
+  if (progressPct >= 30) return 'Ты держишь курс';
+  if (progressPct > 5) return 'Ты набираешь ход';
+  if (hasElapsed && !isRunning) return 'Пауза тоже часть движения';
+  return 'Ты только начал';
+}
+
 export function TimerFullscreenDialog({
   open,
   lockClose,
@@ -171,6 +193,7 @@ export function TimerFullscreenDialog({
   });
   const [ambientTrackId, setAmbientTrackId] = useState('');
   const [ambientVolume, setAmbientVolume] = useState(() => readStoredVolume());
+  const [dialMode, setDialMode] = useState<TimerDialMode>('time');
 
   const [breakPhase, setBreakPhase] = useState<BreakPhase>('idle');
   const [breakRemainingSec, setBreakRemainingSec] = useState(BREAK_DURATION_SEC);
@@ -185,11 +208,37 @@ export function TimerFullscreenDialog({
   const hasTask = Boolean(selectedTask);
   const canStart = hasTask && !dayLocked;
   const shouldPlayAmbient = open && ((breakPhase === 'countdown') || (breakPhase === 'idle' && isRunning));
+  const canCycleDial = timerType === 'timer' && targetDurationSec > 0 && (isRunning || elapsedTimeSec > 0);
+  const ringPct = timerType === 'timer' && targetDurationSec > 0
+    ? Math.min(100, Math.max(0, (elapsedTimeSec / targetDurationSec) * 100))
+    : 0;
+  const remainingSec = Math.max(0, targetDurationSec - elapsedTimeSec);
+  const progressHint = useMemo(
+    () => getStoicProgressMessage(ringPct, isRunning, elapsedTimeSec > 0),
+    [elapsedTimeSec, isRunning, ringPct]
+  );
+  const remainingTimeText = useMemo(() => formatRemainingText(remainingSec), [remainingSec]);
 
   const currentAmbientTrack = useMemo(
     () => ambientTracks.find((track) => track.id === ambientTrackId) ?? null,
     [ambientTrackId, ambientTracks]
   );
+
+  useEffect(() => {
+    if (!canCycleDial && dialMode !== 'time') {
+      setDialMode('time');
+    }
+  }, [canCycleDial, dialMode]);
+
+  const cycleDialMode = useCallback(() => {
+    if (!canCycleDial) return;
+    setDialMode((current) => {
+      if (current === 'time') return 'percent';
+      if (current === 'percent') return 'bar';
+      if (current === 'bar') return 'hidden';
+      return 'time';
+    });
+  }, [canCycleDial]);
 
   const disposeAmbientAudio = useCallback((resetPosition: boolean) => {
     const audio = audioRef.current;
@@ -204,6 +253,35 @@ export function TimerFullscreenDialog({
     audioRef.current = null;
     audioTrackRef.current = '';
   }, []);
+
+  const seekAmbientRandomly = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const applyRandomSeek = () => {
+      const duration = audio.duration;
+      if (!Number.isFinite(duration) || duration <= 1) return;
+      const maxSeek = Math.max(0, duration - 0.25);
+      audio.currentTime = Math.random() * maxSeek;
+      if (shouldPlayAmbient) {
+        void audio.play().catch(() => {
+          /* ambient is optional */
+        });
+      }
+    };
+
+    if (Number.isFinite(audio.duration) && audio.duration > 1) {
+      applyRandomSeek();
+      return;
+    }
+
+    audio.addEventListener('loadedmetadata', applyRandomSeek, { once: true });
+    try {
+      audio.load();
+    } catch {
+      /* ignore load errors */
+    }
+  }, [shouldPlayAmbient]);
 
   const handleCloseRequest = useCallback(() => {
     if (lockClose) return;
@@ -366,12 +444,11 @@ export function TimerFullscreenDialog({
   const displayValue = useMemo(() => {
     if (breakPhase === 'alarm') return formatClock(0);
     if (breakPhase === 'countdown') return formatClock(breakRemainingSec);
+    if (timerType !== 'timer') return displayTime;
+    if (dialMode === 'percent') return `${Math.round(ringPct)}%`;
+    if (dialMode === 'bar' || dialMode === 'hidden') return '';
     return displayTime;
-  }, [
-    breakPhase,
-    breakRemainingSec,
-    displayTime,
-  ]);
+  }, [breakPhase, breakRemainingSec, dialMode, displayTime, ringPct, timerType]);
 
   return (
     <Dialog
@@ -405,6 +482,10 @@ export function TimerFullscreenDialog({
           handleCloseRequest();
         }}
       >
+        <DialogTitle className="sr-only">Полноэкранный таймер</DialogTitle>
+        <DialogDescription className="sr-only">
+          Управление таймером, секундомером и перерывом.
+        </DialogDescription>
         <div className="aura-timer-fs-shell mx-auto flex h-full w-full max-w-7xl flex-col gap-6 px-6 pb-8 pt-6 sm:px-10">
           <header className="aura-timer-fs-head flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -456,12 +537,86 @@ export function TimerFullscreenDialog({
               }}
             >
               <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">{subtitle}</p>
-              <div
-                className="mt-3 rounded-xl px-3 py-1 font-mono text-[clamp(3rem,13vw,8rem)] font-semibold leading-none tabular-nums"
-                style={{ color: breakPhase === 'idle' ? accent : undefined }}
+              <button
+                type="button"
+                className="mt-3 flex min-h-[clamp(5rem,14vw,8.5rem)] w-full flex-col items-center justify-center rounded-xl px-3 py-1 text-center outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/70"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                }}
+                onClick={cycleDialMode}
+                aria-label={
+                  canCycleDial
+                    ? `Переключить отображение таймера. Сейчас: ${dialMode === 'time' ? 'время' : dialMode === 'percent' ? `${Math.round(ringPct)}%` : dialMode === 'bar' ? 'прогресс-бар' : 'скрыто'}`
+                    : undefined
+                }
+                disabled={!canCycleDial}
               >
-                {displayValue}
-              </div>
+                {timerType === 'timer' && breakPhase === 'idle' ? (
+                  <>
+                    {dialMode === 'time' ? (
+                      <div
+                        className="font-mono text-[clamp(3rem,13vw,8rem)] font-semibold leading-none tabular-nums"
+                        style={{ color: accent }}
+                      >
+                        {displayTime}
+                      </div>
+                    ) : dialMode === 'percent' ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div
+                          className="font-mono text-[clamp(3rem,13vw,8rem)] font-semibold leading-none tabular-nums"
+                          style={{ color: accent }}
+                        >
+                          {displayValue}
+                        </div>
+                        <span className="max-w-[20rem] text-balance text-[11px] font-medium leading-tight text-muted-foreground">
+                          {progressHint}
+                        </span>
+                      </div>
+                    ) : dialMode === 'bar' ? (
+                      <div className="flex w-full max-w-[22rem] flex-col items-center gap-2">
+                        <div
+                          className="h-4 w-full overflow-hidden rounded-full ring-1 ring-border/60"
+                          style={{ backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--muted))` }}
+                        >
+                          <div
+                            className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-aura-glide motion-safe:ease-aura"
+                            style={{
+                              width: `${Math.max(8, ringPct)}%`,
+                              background: `linear-gradient(90deg, ${accent} 0%, color-mix(in srgb, ${accent} 85%, white 15%) 100%)`,
+                              boxShadow: `0 0 10px color-mix(in srgb, ${accent} 25%, transparent)`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-balance text-[11px] font-medium leading-tight text-muted-foreground">
+                          {progressHint}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex w-full max-w-[16rem] flex-col items-center gap-2">
+                        <div className="h-2.5 w-full overflow-hidden rounded-full ring-1 ring-border/55" style={{ backgroundColor: 'color-mix(in srgb, var(--muted) 84%, transparent)' }}>
+                          <div
+                            className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-aura-glide motion-safe:ease-aura"
+                            style={{
+                              width: `${Math.max(10, ringPct)}%`,
+                              background: `linear-gradient(90deg, color-mix(in srgb, ${accent} 80%, var(--foreground) 20%) 0%, ${accent} 100%)`,
+                              boxShadow: `0 0 6px color-mix(in srgb, ${accent} 18%, transparent)`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-semibold tracking-[0.24em] text-muted-foreground/80">клик для режима</span>
+                        <span className="sr-only">{remainingTimeText}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div
+                    className="font-mono text-[clamp(3rem,13vw,8rem)] font-semibold leading-none tabular-nums"
+                    style={{ color: breakPhase === 'idle' ? accent : undefined }}
+                  >
+                    {displayValue}
+                  </div>
+                )}
+              </button>
               {breakPhase === 'alarm' ? (
                 <p className="text-muted-foreground mt-1 text-[11px]">
                   Сигнал повторяется, пока не нажмёте «Вернуться к таймеру»
@@ -535,11 +690,22 @@ export function TimerFullscreenDialog({
                         className="h-2 w-full cursor-pointer appearance-none rounded-full"
                         style={volumeTrackStyle}
                       />
-                      <span className="bg-muted min-w-11 shrink-0 rounded-md px-1.5 py-0.5 text-center font-mono text-[11px] tabular-nums text-foreground">
-                        {ambientVolume}%
-                      </span>
-                    </div>
-                  </label>
+                        <span className="bg-muted min-w-11 shrink-0 rounded-md px-1.5 py-0.5 text-center font-mono text-[11px] tabular-nums text-foreground">
+                          {ambientVolume}%
+                        </span>
+                      </div>
+                    </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 h-9 w-full gap-2 rounded-xl"
+                    onClick={seekAmbientRandomly}
+                    disabled={!currentAmbientTrack}
+                  >
+                    <Shuffle className="size-3.5 shrink-0" />
+                    Случайный момент
+                  </Button>
                 </div>
               </div>
 

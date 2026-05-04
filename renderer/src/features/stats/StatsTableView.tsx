@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react';
-import { Calendar } from 'lucide-react';
 import type { StatsFormattedRow, StatsFormattedTable } from '@/shared/stats/stats-table-format';
 import type { StatsMeta, StatsMode } from '@/shared/stats/types';
 import { AURA_STATIC_SEMANTIC, FINANCE_SEMANTIC, MOOD_SCALE } from '@/shared/design/aura-palette';
@@ -39,11 +38,71 @@ function successPercent(raw: number | null, formatted: string | undefined): numb
   return Math.max(0, Math.min(100, pct));
 }
 
-function softTint(color: string, alpha: number): string {
-  return color.toLowerCase().startsWith('hsl(')
-    ? color.replace('hsl(', 'hsla(').replace(')', ` / ${alpha})`)
-    : color;
+function tintStyle(color: string, bgAlpha: number, borderAlpha?: number, extra?: Partial<CSSProperties>): CSSProperties {
+  const border = borderAlpha ?? Math.min(0.42, bgAlpha + 0.12);
+  return {
+    backgroundColor: `color-mix(in srgb, ${color} ${Math.round(bgAlpha * 100)}%, transparent)`,
+    borderColor: `color-mix(in srgb, ${color} ${Math.round(border * 100)}%, transparent)`,
+    ...extra,
+  };
 }
+
+function makeCellStyle(mode: StatsMode, colColor: string | undefined, raw: number | null, formatted: string | undefined, range: { min: number; max: number } | null): CSSProperties | undefined {
+  const span = range ? Math.max(range.max - range.min, 0) : 0;
+  const strength = raw != null && range && span > 0 ? (raw - range.min) / span : null;
+  const hasRange = Boolean(range && range.max !== range.min);
+  const isMin = hasRange && raw === range?.min;
+  const isMax = hasRange && raw === range?.max;
+  const success = successPercent(raw, formatted);
+  const normalizedStrength = raw != null ? Math.min(1, Math.abs(raw)) : null;
+
+  if (mode === 'finance') {
+    if (raw == null) return undefined;
+    if (raw > 0) {
+      return tintStyle(FINANCE_SEMANTIC.income, isMax ? 0.18 : isMin ? 0.08 : 0.14, isMax ? 0.36 : 0.3, isMax ? { boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--finance-income) 35%, transparent)' } : undefined);
+    }
+    if (raw < 0) {
+      return tintStyle(FINANCE_SEMANTIC.expense, isMax ? 0.18 : isMin ? 0.08 : 0.14, isMax ? 0.36 : 0.3, isMax ? { boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--finance-expense) 35%, transparent)' } : undefined);
+    }
+    return tintStyle(FINANCE_SEMANTIC.transfer, isMax ? 0.16 : isMin ? 0.07 : 0.12, isMax ? 0.3 : 0.26);
+  }
+
+  if (mode === 'mood' && raw != null) {
+    const level = Math.max(1, Math.min(5, Math.round(raw)));
+    return tintStyle(MOOD_SCALE[level], isMax ? 0.18 : isMin ? 0.08 : 0.14, isMax ? 0.34 : 0.28, isMax ? { boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--semantic-success) 24%, transparent)' } : undefined);
+  }
+
+  if (success != null) {
+    const token = success >= 75 ? AURA_STATIC_SEMANTIC.success : success >= 45 ? AURA_STATIC_SEMANTIC.warning : AURA_STATIC_SEMANTIC.danger;
+    const bgAlpha = Math.max(0.06, Math.min(0.18, 0.06 + success / 650));
+    const borderAlpha = Math.max(0.16, Math.min(0.34, 0.16 + success / 500));
+    return tintStyle(token, isMax ? bgAlpha + 0.03 : isMin ? bgAlpha - 0.02 : bgAlpha, isMax ? borderAlpha + 0.05 : borderAlpha, isMax ? { boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${token} 28%, transparent)` } : isMin ? { boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${token} 14%, transparent)` } : undefined);
+  }
+
+  if (mode === 'correlation' && raw != null) {
+    const token = raw >= 0 ? AURA_STATIC_SEMANTIC.success : AURA_STATIC_SEMANTIC.danger;
+    const intensity = normalizedStrength ?? 0;
+    const bgAlpha = 0.08 + intensity * 0.08;
+    const borderAlpha = 0.18 + intensity * 0.18;
+    return tintStyle(token, isMax ? bgAlpha + 0.04 : isMin ? bgAlpha - 0.02 : bgAlpha, isMax ? borderAlpha + 0.05 : borderAlpha, isMax ? { boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${token} 28%, transparent)` } : undefined);
+  }
+
+  if (colColor) {
+    return tintStyle(colColor, isMax ? 0.16 : isMin ? 0.06 : 0.08, isMax ? 0.3 : 0.18, isMax ? { boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${colColor} 26%, transparent)` } : undefined);
+  }
+
+  if (strength != null) {
+    const bgAlpha = 0.06 + strength * 0.08;
+    const borderAlpha = 0.14 + strength * 0.14;
+    return tintStyle(AURA_STATIC_SEMANTIC.info, isMax ? bgAlpha + 0.04 : isMin ? bgAlpha - 0.02 : bgAlpha, isMax ? borderAlpha + 0.04 : borderAlpha, isMax ? { boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${AURA_STATIC_SEMANTIC.info} 28%, transparent)` } : isMin ? { boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${AURA_STATIC_SEMANTIC.info} 14%, transparent)` } : undefined);
+  }
+
+  return undefined;
+}
+
+const STICKY_HEADER_SHADOW = 'inset 0 -1px 0 hsl(var(--border))';
+const STICKY_COLUMN_SHADOW = 'inset -1px 0 0 hsl(var(--border))';
+const STICKY_CORNER_SHADOW = `${STICKY_HEADER_SHADOW}, ${STICKY_COLUMN_SHADOW}`;
 
 export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props) {
   const cols = visibleColumns(table.columns, selectedSeriesKeys);
@@ -57,11 +116,21 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
     );
   }
 
+  if (cols.length === 0) {
+    return (
+      <div className="border-border/60 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/10 p-8 text-center">
+        <div className="max-w-sm space-y-2">
+          <p className="text-sm text-muted-foreground">Сейчас скрыты все серии. Включите хотя бы одну серию слева, чтобы показать таблицу.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="border-border/60 bg-card/70 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border">
-        <div className="relative min-h-0 flex-1 overflow-auto">
-          <table className="border-border/60 w-max min-w-full table-fixed border-separate border-spacing-0 text-sm">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+      <div className="border-border/50 bg-background flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border shadow-sm">
+        <div className="h-full min-h-0 min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
+          <table className="w-max min-w-full table-fixed border-separate border-spacing-0 text-sm">
             <colgroup>
               <col className="w-[6.5rem] sm:w-[8rem]" />
               {cols.map((col) => (
@@ -70,24 +139,21 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
             </colgroup>
             <thead className="sticky top-0 z-[4]">
               <tr>
-                <th className="border-border/60 bg-muted/60 text-muted-foreground sticky left-0 top-0 z-[6] border border-b-2 border-r-2 border-border px-2 py-2 text-center align-middle sm:py-3">
-                  <div className="flex flex-col items-center justify-center gap-1.5">
-                    <Calendar className="text-muted-foreground size-4 shrink-0 opacity-80" aria-hidden />
-                    <span className="hidden text-xs font-semibold uppercase tracking-wider sm:inline">Период</span>
-                  </div>
+                <th
+                  className="border-border/60 bg-background text-muted-foreground sticky left-0 top-0 z-[6] border-b border-r border-border px-2 py-2 text-left align-middle sm:py-3"
+                  style={{ boxShadow: STICKY_CORNER_SHADOW }}
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider">Период</span>
                 </th>
                 {cols.map((col) => (
                   <th
                     key={col}
-                    className="border-border/60 bg-muted/60 text-muted-foreground sticky top-0 z-[5] border border-b-2 border-b-border px-2 py-2 text-center align-middle sm:py-3"
+                    className="border-border/60 bg-background text-muted-foreground sticky top-0 z-[5] border-b border-r border-border px-2 py-2 text-center align-middle sm:py-3"
+                    style={{ boxShadow: STICKY_HEADER_SHADOW }}
                   >
                     <div className="mx-auto flex max-w-[8.5rem] flex-col items-center justify-center gap-1.5">
                       {meta.icons[col] ? (
-                        <IconWithBadge
-                          iconName={meta.icons[col]}
-                          tint={meta.colors[col]}
-                          size="md"
-                        />
+                        <IconWithBadge iconName={meta.icons[col]} tint={meta.colors[col]} size="md" />
                       ) : (
                         <span className="bg-muted-foreground/25 size-5 shrink-0 rounded-full" aria-hidden />
                       )}
@@ -100,81 +166,41 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
               </tr>
             </thead>
             <tbody>
-              {table.rows.map((row: StatsFormattedRow, ri) => (
+              {table.rows.map((row: StatsFormattedRow) => (
                 <tr key={row.date}>
                   <td
                     className={cn(
-                      'border-border/50 text-foreground sticky left-0 z-[3] border px-2 py-2.5 text-xs font-medium',
-                      ri % 2 === 1 ? 'bg-muted/40' : 'bg-background'
+                      'border-border/50 text-foreground sticky left-0 z-[4] border-r border-b border-border bg-background px-2 py-2.5 text-xs font-medium'
                     )}
+                    style={{ boxShadow: STICKY_COLUMN_SHADOW }}
                   >
                     {row.label}
                   </td>
                   {cols.map((col) => (
-                    <td key={col} className={cn('border-border/50 border px-2 py-2.5 text-center text-xs tabular-nums', ri % 2 === 1 && 'bg-muted/[0.02]')}>
+                    <td
+                      key={col}
+                      className={cn(
+                        'border-border/35 border-r border-b bg-background px-2 py-2.5 text-center text-xs tabular-nums'
+                      )}
+                    >
                       {(() => {
                         const raw = numericCell(row.originalValues[col]);
                         const range = ranges.get(col);
-                        const span = range ? Math.max(range.max - range.min, 0) : 0;
-                        const strength = raw != null && range && span > 0 ? (raw - range.min) / span : null;
-                        const success = successPercent(raw, row.values[col]);
-                        const isNegFinance = mode === 'finance' && raw != null && raw < 0;
-                        const isPosFinance = mode === 'finance' && raw != null && raw > 0;
-                        const moodLevel = mode === 'mood' && raw != null ? Math.max(1, Math.min(5, Math.round(raw))) : null;
-                        let badgeStyle: CSSProperties | undefined;
-
-                        if (mode === 'finance') {
-                          if (isPosFinance) {
-                            badgeStyle = {
-                              backgroundColor: softTint(FINANCE_SEMANTIC.income, 0.16),
-                              borderColor: softTint(FINANCE_SEMANTIC.income, 0.32),
-                            };
-                          } else if (isNegFinance) {
-                            badgeStyle = {
-                              backgroundColor: softTint(FINANCE_SEMANTIC.expense, 0.16),
-                              borderColor: softTint(FINANCE_SEMANTIC.expense, 0.32),
-                            };
-                          } else {
-                            badgeStyle = {
-                              backgroundColor: softTint(FINANCE_SEMANTIC.transfer, 0.14),
-                              borderColor: softTint(FINANCE_SEMANTIC.transfer, 0.28),
-                            };
-                          }
-                        } else if (moodLevel != null) {
-                          const moodColor = MOOD_SCALE[moodLevel];
-                          badgeStyle = {
-                            backgroundColor: softTint(moodColor, 0.15),
-                            borderColor: softTint(moodColor, 0.3),
-                          };
-                        } else if (success != null) {
-                          const scoreColor =
-                            success >= 75
-                              ? AURA_STATIC_SEMANTIC.success
-                              : success >= 45
-                                ? AURA_STATIC_SEMANTIC.warning
-                                : AURA_STATIC_SEMANTIC.danger;
-                          badgeStyle = {
-                            backgroundColor: softTint(scoreColor, 0.14),
-                            borderColor: softTint(scoreColor, 0.28),
-                          };
-                        } else if (strength != null) {
-                          badgeStyle = {
-                            backgroundColor: softTint(AURA_STATIC_SEMANTIC.info, Number((0.06 + strength * 0.12).toFixed(3))),
-                            borderColor: softTint(AURA_STATIC_SEMANTIC.info, Number((0.14 + strength * 0.18).toFixed(3))),
-                          };
-                        }
+                        const badgeStyle = makeCellStyle(mode, meta.colors[col], raw, row.values[col], range ?? null);
+                        const isMin = Boolean(range && range.max !== range.min && raw === range.min);
+                        const isMax = Boolean(range && range.max !== range.min && raw === range.max);
 
                         return (
                           <span
                             className={cn(
-                              'inline-flex max-w-full items-center rounded-md border px-1.5 py-0.5 font-medium',
-                              isNegFinance && 'text-destructive',
-                              isPosFinance && 'text-emerald-600 dark:text-emerald-400'
+                              'inline-flex max-w-full items-center rounded-md border px-1.5 py-0.5 font-medium text-foreground shadow-none',
+                              isMin && 'ring-1 ring-inset ring-border/70',
+                              isMax && 'ring-2 ring-inset ring-primary/35 font-semibold'
                             )}
                             style={badgeStyle}
                             title={
                               raw != null && range
-                                ? `Мин: ${range.min.toLocaleString('ru-RU')} · Макс: ${range.max.toLocaleString('ru-RU')}`
+                                ? `${isMin ? 'Минимум' : isMax ? 'Максимум' : 'Значение'} · Мин: ${range.min.toLocaleString('ru-RU')} · Макс: ${range.max.toLocaleString('ru-RU')}`
                                 : undefined
                             }
                           >

@@ -77,6 +77,7 @@ export function PageSectionsSettingsCard(props: PageSectionsSettingsCardProps = 
       const fixed = enforceVisibilityInvariants(JSON.parse(JSON.stringify(next)) as PageSectionsVisibility);
       setVis(fixed);
       if (db) mergeSave(db, fixed);
+      window.dispatchEvent(new Event('settings-saved'));
       onSaved?.();
     },
     [db, onSaved]
@@ -95,7 +96,6 @@ export function PageSectionsSettingsCard(props: PageSectionsSettingsCardProps = 
     <SettingsSectionCard
       title="Секции страниц"
       leadingIcon={Home}
-      description="Минимальные ограничения: в дневнике и рангах должен оставаться хотя бы один ключевой блок."
       contentClassName="p-0"
     >
       <div className="overflow-hidden rounded-lg border border-border/70">

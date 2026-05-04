@@ -11,11 +11,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { calculatePresetNutrition, calculateProductNutrition } from '@/shared/lib/nutrition-calc';
+import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { Apple, UtensilsCrossed } from 'lucide-react';
 import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
 import type { AuraDatabase } from '@/types/aura';
 import type { AuraRow } from '@/types/aura';
-import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import {
   ActField,
   ActAffixValueField,
@@ -23,7 +23,6 @@ import {
   ActModal,
   ActModalFooter,
   ActModeSwitch,
-  ActTableBox,
 } from '@/features/act/ActModal';
 
 type Props = {
@@ -192,6 +191,8 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
     if (kind === 'product' && q <= 0) return;
     const now = new Date().toISOString();
     let row: AuraRow | null = null;
+    let ingredientRows: AuraRow[] = [];
+    let presetEditMode = false;
     if (kind === 'product') {
       const p = productsById[itemId];
       if (!p) return;
@@ -219,7 +220,7 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
       } catch {
         ingredients = [];
       }
-      const ingredientRows = ingredients
+      ingredientRows = ingredients
         .map((ingredient, index) => {
           const ingredientProductId = ingredient?.product_id ? String(ingredient.product_id) : '';
           const ingredientPortions = Number(ingredient?.portions || 0);
@@ -247,28 +248,31 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
         })
         .filter((r): r is AuraRow => r != null);
       if (ingredientRows.length === 0) return;
-
-      if (isEditMode && editEntry?.id) {
-        const [first, ...rest] = ingredientRows;
-        db.updateNutritionEntry(String(editEntry.id), {
-          product_id: first.product_id,
-          preset_id: null,
-          portions: first.portions,
-          total_calories: first.total_calories,
-          total_proteins: first.total_proteins,
-          total_fats: first.total_fats,
-          total_carbs: first.total_carbs,
-        });
-        rest.forEach((r) => db.addNutritionEntry(r));
-      } else {
-        ingredientRows.forEach((r) => db.addNutritionEntry(r));
+      presetEditMode = Boolean(isEditMode && editEntry?.id);
+    }
+    runAuraMutation('nutrition', () => {
+      if (ingredientRows.length > 0) {
+        if (presetEditMode && editEntry?.id) {
+          const [first, ...rest] = ingredientRows;
+          db.updateNutritionEntry(String(editEntry.id), {
+            product_id: first.product_id,
+            preset_id: null,
+            portions: first.portions,
+            total_calories: first.total_calories,
+            total_proteins: first.total_proteins,
+            total_fats: first.total_fats,
+            total_carbs: first.total_carbs,
+          });
+          rest.forEach((r) => db.addNutritionEntry(r));
+        } else {
+          ingredientRows.forEach((r) => db.addNutritionEntry(r));
+        }
       }
-    }
-    if (row) {
-      if (isEditMode) db.updateNutritionEntry(String(row.id), row);
-      else db.addNutritionEntry(row);
-    }
-    runAuraMutation('nutrition', () => undefined);
+      if (row) {
+        if (isEditMode) db.updateNutritionEntry(String(row.id), row);
+        else db.addNutritionEntry(row);
+      }
+    });
     setDialogOpen(false);
     setItemId('');
     setPortions('1');
@@ -289,7 +293,8 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
       ) : null}
       <ActModal
         icon={UtensilsCrossed}
-        title={isEditMode ? 'Редактирование питания' : 'Питание'}
+        title={isEditMode ? 'Редактирование приёма пищи' : 'Питание'}
+        contentClassName="shadow-none ring-1 ring-border/60"
         footer={
           <ActModalFooter
             onCancel={() => setDialogOpen(false)}
@@ -299,83 +304,83 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
           />
         }
       >
-        <ActTableBox>
+        <div className="flex flex-col gap-4">
           <ActFormTable>
             <ActField label="Режим">
-            <ActModeSwitch
-              value={kind}
-              onValueChange={(v) => setKind(v as 'product' | 'preset')}
-              options={[
-                { value: 'product', label: 'Продукт', icon: Apple },
-                { value: 'preset', label: 'Блюдо', icon: UtensilsCrossed },
-              ]}
-            />
+              <ActModeSwitch
+                value={kind}
+                onValueChange={(v) => setKind(v as 'product' | 'preset')}
+                options={[
+                  { value: 'product', label: 'Продукт', icon: Apple },
+                  { value: 'preset', label: 'Блюдо', icon: UtensilsCrossed },
+                ]}
+              />
             </ActField>
+
             <ActField label={kind === 'product' ? 'Продукт' : 'Блюдо'}>
-            <Select
-              value={itemId}
-              onValueChange={(v) => {
-                setItemId(v);
-              }}
-            >
-              <SelectTrigger className="h-9 w-full min-w-0 justify-center text-center">
-                <SelectValue placeholder="Выберите…" />
-              </SelectTrigger>
-              <SelectContent>
-                {kind === 'product' ? (
-                  <SelectGroup>
-                    <SelectLabel>Продукты</SelectLabel>
-                    {products.map((p) => {
-                      const iconName = NUTRITION_GROUP_ICON[String(p.group ?? 'proteins')] ?? 'apple';
-                      const tint =
-                        typeof p.color === 'string' && p.color.trim() ? String(p.color) : undefined;
-                      return (
-                        <SelectItem key={String(p.id)} value={String(p.id)}>
-                          <span className="flex items-center gap-2">
-                            {iconName ? (
-                              tint ? (
-                                <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />
+              <Select
+                value={itemId}
+                onValueChange={(v) => {
+                  setItemId(v);
+                }}
+              >
+                <SelectTrigger className="h-9 w-full min-w-0 justify-center rounded-md text-center">
+                  <SelectValue placeholder="Выберите…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {kind === 'product' ? (
+                    <SelectGroup>
+                      <SelectLabel>Продукты</SelectLabel>
+                      {products.map((p) => {
+                        const iconName = NUTRITION_GROUP_ICON[String(p.group ?? 'proteins')] ?? 'apple';
+                        const tint = typeof p.color === 'string' && p.color.trim() ? String(p.color) : undefined;
+                        return (
+                          <SelectItem key={String(p.id)} value={String(p.id)}>
+                            <span className="flex items-center gap-2">
+                              {iconName ? (
+                                tint ? (
+                                  <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />
+                                ) : (
+                                  <ColoredAuraIcon name={iconName} tint="var(--foreground)" size={16} className="shrink-0" />
+                                )
                               ) : (
-                                <ColoredAuraIcon name={iconName} tint="var(--foreground)" size={16} className="shrink-0" />
-                              )
-                            ) : (
-                              <Apple className="text-muted-foreground size-4 shrink-0" aria-hidden />
-                            )}
-                            <span className="truncate">{String(p.title)}</span>
-                          </span>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectGroup>
-                ) : (
-                  <SelectGroup>
-                    <SelectLabel>Блюда</SelectLabel>
-                    {presets.map((p) => {
-                      const iconName = typeof p.icon === 'string' ? p.icon : null;
-                      const tint =
-                        typeof p.color === 'string' && p.color.trim() ? String(p.color) : undefined;
-                      return (
-                        <SelectItem key={String(p.id)} value={String(p.id)}>
-                          <span className="flex items-center gap-2">
-                            {iconName ? (
-                              tint ? (
-                                <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />
+                                <Apple className="text-muted-foreground size-4 shrink-0" aria-hidden />
+                              )}
+                              <span className="truncate">{String(p.title)}</span>
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectGroup>
+                  ) : (
+                    <SelectGroup>
+                      <SelectLabel>Блюда</SelectLabel>
+                      {presets.map((p) => {
+                        const iconName = typeof p.icon === 'string' ? p.icon : null;
+                        const tint = typeof p.color === 'string' && p.color.trim() ? String(p.color) : undefined;
+                        return (
+                          <SelectItem key={String(p.id)} value={String(p.id)}>
+                            <span className="flex items-center gap-2">
+                              {iconName ? (
+                                tint ? (
+                                  <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />
+                                ) : (
+                                  <ColoredAuraIcon name={iconName} tint="var(--foreground)" size={16} className="shrink-0" />
+                                )
                               ) : (
-                                <ColoredAuraIcon name={iconName} tint="var(--foreground)" size={16} className="shrink-0" />
-                              )
-                            ) : (
-                              <UtensilsCrossed className="text-muted-foreground size-4 shrink-0" aria-hidden />
-                            )}
-                            <span className="truncate">{String(p.title)}</span>
-                          </span>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectGroup>
-                )}
-              </SelectContent>
-            </Select>
+                                <UtensilsCrossed className="text-muted-foreground size-4 shrink-0" aria-hidden />
+                              )}
+                              <span className="truncate">{String(p.title)}</span>
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectGroup>
+                  )}
+                </SelectContent>
+              </Select>
             </ActField>
+
             {kind === 'product' ? (
               <>
                 <ActField label="Порции">
@@ -416,34 +421,35 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
                 </ActField>
               </>
             ) : null}
+
             <ActField label="Предпросмотр">
-            {preview ? (
-              <div className="text-muted-foreground flex w-full flex-col gap-1.5 text-sm">
-                <p>
-                  Ккал: {Math.round(preview.calories)} · Б {preview.proteins.toFixed(1)} · Ж {preview.fats.toFixed(1)} · У{' '}
-                  {preview.carbs.toFixed(1)}
-                </p>
-                {kind === 'preset' ? (
-                  presetIngredientsPreview.length > 0 ? (
-                    <ul className="space-y-1">
-                      {presetIngredientsPreview.map((item) => (
-                        <li key={item.key} className="flex items-center justify-between gap-3 text-xs">
-                          <span className="truncate">{item.title}</span>
-                          <span className="tabular-nums">{Math.round(item.weight)} г</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-xs">В блюде пока нет состава.</p>
-                  )
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">Выберите продукт/блюдо и порцию.</p>
-            )}
+              {preview ? (
+                <div className="text-muted-foreground flex w-full flex-col gap-1.5 text-sm">
+                  <p className="text-foreground text-base font-medium tracking-tight">
+                    Ккал {Math.round(preview.calories)} · Б {preview.proteins.toFixed(1)} · Ж {preview.fats.toFixed(1)} · У{' '}
+                    {preview.carbs.toFixed(1)}
+                  </p>
+                  {kind === 'preset' ? (
+                    presetIngredientsPreview.length > 0 ? (
+                      <ul className="space-y-1">
+                        {presetIngredientsPreview.map((item) => (
+                          <li key={item.key} className="flex items-center justify-between gap-3 text-xs">
+                            <span className="truncate">{item.title}</span>
+                            <span className="tabular-nums">{Math.round(item.weight)} г</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs">В блюде пока нет состава.</p>
+                    )
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">Выберите продукт/блюдо и порцию.</p>
+              )}
             </ActField>
           </ActFormTable>
-        </ActTableBox>
+        </div>
       </ActModal>
     </Dialog>
   );

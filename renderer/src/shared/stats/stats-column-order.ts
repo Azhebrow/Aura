@@ -1,9 +1,6 @@
 import type { StatsGroupBy, StatsMode } from './types';
 import { TASK_CATEGORY_DEFAULT_META } from '@/shared/config/domain-taxonomy';
 
-/**
- * Порядок столбцов (как `getColumnOrder` в legacy `StatsDataFormatter.js`).
- */
 export function getColumnOrder(mode: StatsMode, groupBy: StatsGroupBy, allKeys: Set<string>): string[] {
   const keysArray = Array.from(allKeys);
 
@@ -16,9 +13,7 @@ export function getColumnOrder(mode: StatsMode, groupBy: StatsGroupBy, allKeys: 
     ];
     return order.filter((k) => allKeys.has(k)).concat(keysArray.filter((k) => !order.includes(k)));
   }
-  if (mode === 'tasks' && groupBy === 'elements') {
-    return keysArray;
-  }
+  if (mode === 'tasks' && groupBy === 'elements') return keysArray;
 
   if (mode === 'finance' && groupBy === 'categories') {
     const order = ['Доходы', 'Расходы'];
@@ -35,36 +30,22 @@ export function getColumnOrder(mode: StatsMode, groupBy: StatsGroupBy, allKeys: 
     const order = mode === 'leisure' ? ['Наполнение', 'Эскапизм'] : ['Фокус', 'Наполнение', 'Эскапизм'];
     return order.filter((k) => allKeys.has(k)).concat(keysArray.filter((k) => !order.includes(k)));
   }
-  if ((mode === 'time' || mode === 'leisure') && groupBy === 'elements') {
-    return keysArray;
-  }
+  if ((mode === 'time' || mode === 'leisure') && groupBy === 'elements') return keysArray;
 
   if (mode === 'rituals' && groupBy === 'categories') {
     const order = ['Утро', 'Вечер'];
     return order.filter((k) => allKeys.has(k)).concat(keysArray.filter((k) => !order.includes(k)));
   }
-  if (mode === 'rituals' && groupBy === 'elements') {
-    return keysArray;
-  }
+  if (mode === 'rituals' && groupBy === 'elements') return keysArray;
 
   if (mode === 'nutrition' && groupBy === 'categories') {
     const order = ['Белки', 'Жиры', 'Углеводы', 'Калории'];
     return order.filter((k) => allKeys.has(k)).concat(keysArray.filter((k) => !order.includes(k)).sort());
   }
-  if (mode === 'nutrition' && groupBy === 'elements') {
-    return keysArray.sort();
-  }
+  if (mode === 'nutrition' && groupBy === 'elements') return keysArray.sort();
 
   if (mode === 'correlation') {
-    const order = [
-      'Успех, %',
-      'Фокус, ч',
-      'Калории, ккал',
-      'Ритуалы, %',
-      'Настроение',
-      'Эскапизм, ч',
-      'Наполнение, ч',
-    ];
+    const order = ['Успех, %', 'Фокус, %', 'Калории, %', 'Ритуалы, %', 'Настроение, %', 'Эскапизм, %', 'Наполнение, %'];
     return order.filter((k) => allKeys.has(k)).concat(keysArray.filter((k) => !order.includes(k)).sort());
   }
 

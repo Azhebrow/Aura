@@ -7,7 +7,7 @@
     "postinstall": "cd server-mini-app && npm install && cd .. && npm run rebuild-native",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3 || true",
     "setup": "node scripts/setup.js",
-    "desktop": "node scripts/cleanup-ports.js && concurrently -k \"node server-mini-app/index.js\" \"vite\" \"wait-on http://127.0.0.1:5173 && cross-env AURA_USE_VITE=1 electron .\"",
+    "desktop": "node scripts/cleanup-ports.js && concurrently -k \"ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron server-mini-app/index.js\" \"node ./node_modules/vite/bin/vite.js --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && AURA_USE_VITE=1 ./node_modules/.bin/electron .\"",
     "build": "echo '🔨 Сборка renderer + Electron…' && vite build && electron-builder --dir",
     "build:mac": "echo '🍎 Создание установщика AURA для macOS...' && vite build && electron-builder --mac",
     "clear-db": "echo '🗑️  Очистка базы данных...' && node scripts/clear-db-standalone.js"
@@ -65,14 +65,13 @@
   },
   "dependencies": {
     "better-sqlite3": "^9.6.0",
-    "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "echarts": "^6.0.0",
     "lucide-react": "^0.503.0",
     "radix-ui": "^1.4.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "recharts": "^2.15.4",
     "tailwind-merge": "^3.2.0"
   }
 }

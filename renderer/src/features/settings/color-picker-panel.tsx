@@ -5,6 +5,8 @@ import { Label } from '@/components/ui/label';
 import { CFG_COLOR_PRESETS, type CfgColorPreset, normalizeHexColor } from '@/features/settings/cfg-color-presets';
 import { cn } from '@/lib/utils';
 
+const COLOR_PICKER_DEFAULT = '#64748b';
+
 type Props = {
   value: string;
   onChange: (value: string) => void;
@@ -19,7 +21,7 @@ export function ColorPickerPanel({ value, onChange, onPresetPick, presets, allow
   const palette = presets ?? CFG_COLOR_PRESETS.map((p) => ({ label: p.label, value: p.hex }));
 
   useEffect(() => {
-    setDraft(value || '#64748b');
+    setDraft(value || COLOR_PICKER_DEFAULT);
   }, [value]);
 
   const applyDraft = (next: string) => {

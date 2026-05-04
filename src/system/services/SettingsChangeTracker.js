@@ -67,7 +67,6 @@ class SettingsChangeTracker {
     if (window.pageManager && window.pageManager.currentPage) {
       const page = window.pageManager.currentPage;
       if (page.classList.contains('page-settings')) return 'settings';
-      if (page.classList.contains('page-stats')) return 'stats';
       if (page.classList.contains('page-ranks')) return 'ranks';
       if (page.classList.contains('page-rituals')) return 'rituals';
       if (page.classList.contains('page-diary')) return 'diary';

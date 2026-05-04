@@ -16,7 +16,7 @@ export function PageFrame({ children, className, contentClassName }: Props) {
     <div className={cn('text-foreground flex min-h-0 w-full min-w-0 flex-1 flex-col', className)}>
       <div
         className={cn(
-          'aura-tx-opacity flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4',
+          'aura-tx-opacity flex min-h-0 w-full min-w-0 flex-1 flex-col gap-2 sm:gap-4',
           contentClassName
         )}
       >

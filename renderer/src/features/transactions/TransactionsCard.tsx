@@ -1,18 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AlertTriangle, Wallet } from 'lucide-react';
 import { ListItem } from '@/components/ui/list-item';
 import { AddListButton } from '@/components/ui/add-list-button';
 import { Progress } from '@/components/ui/progress';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { AddTransactionDialog } from '@/features/transactions/AddTransactionDialog';
-import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
-import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
 import { formatAmount } from '@/shared/lib/money';
 import { resolveTransactionRow } from '@/shared/lib/finance-display';
+import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import type { AuraRow } from '@/types/aura';
 import { cn } from '@/lib/utils';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
+import { LoadingShell } from '@/shared/ui/data-states';
+import { useAsyncData } from '@/shared/hooks/use-async-data';
 
 type TransactionsCardProps = {
   cardClassName?: string;
@@ -53,46 +54,40 @@ function loadTopAccounts(db: NonNullable<ReturnType<typeof useAuraDb>['db']>): F
 
 export function TransactionsCard({ cardClassName, contentClassName }: TransactionsCardProps = {}) {
   const { dateString } = useSelectedDate();
-  const { db, ready } = useAuraDb();
-  const dataTick = useAuraDataRefresh({ types: ['transaction'] });
-  const [rows, setRows] = useState<AuraRow[]>([]);
-  const [currency, setCurrency] = useState<string | undefined>('RUB');
-  const [topAccounts, setTopAccounts] = useState<FinanceAccountSummary[]>([]);
+  const { db } = useAuraDb();
+  const { data: txData, status, reload } = useAsyncData<{
+    rows: AuraRow[];
+    currency: string;
+    topAccounts: FinanceAccountSummary[];
+  }>(
+    (database) => ({
+      rows: database.getTransactions(dateString),
+      currency: (() => {
+        const settings = database.getAppSettings() as AuraRow | null;
+        return typeof settings?.currency === 'string' ? settings.currency : 'RUB';
+      })(),
+      topAccounts: loadTopAccounts(database),
+    }),
+    [dateString],
+    { events: ['transaction'] }
+  );
   const [addOpen, setAddOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<AuraRow | null>(null);
-
-  const reload = useCallback(() => {
-    if (!db) {
-      setRows([]);
-      return;
-    }
-    const settings = db.getAppSettings();
-    setCurrency(typeof settings?.currency === 'string' ? settings.currency : 'RUB');
-    setRows(db.getTransactions(dateString));
-    setTopAccounts(loadTopAccounts(db));
-  }, [db, dateString]);
-
-  useEffect(() => {
-    if (!ready) return;
-    reload();
-  }, [ready, reload, dataTick]);
-
-  const remove = (id: string) => {
+  const rows = txData?.rows ?? [];
+  const currency = txData?.currency ?? 'RUB';
+  const topAccounts = txData?.topAccounts ?? [];
+  const removeTx = (id: string) => {
     if (!db) return;
-    try {
-      runAuraMutation('transaction', () => db.deleteTransaction(id));
-      reload();
-    } catch {
-      /* ignore */
-    }
+    runAuraMutation('transaction', () => db.deleteTransaction(id));
+    reload({ silent: false });
   };
 
   return (
     <>
       <div className={cn('flex min-h-0 flex-1 flex-col', cardClassName)}>
         <div className={cn('flex min-h-0 flex-1 flex-col gap-1', contentClassName)}>
-          {!ready ? (
-            <p className="text-muted-foreground text-sm">Загрузка…</p>
+          {status === 'loading' ? (
+            <LoadingShell />
           ) : !db ? (
             <p className="text-muted-foreground text-sm">База данных недоступна.</p>
           ) : (
@@ -174,7 +169,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                             setEditingTransaction(t);
                             setAddOpen(true);
                           }}
-                          onDelete={() => remove(id)}
+                          onDelete={() => removeTx(id)}
                         />
                       </li>
                     );
@@ -188,7 +183,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
               setEditingTransaction(null);
               setAddOpen(true);
             }}
-            disabled={!ready || !db}
+            disabled={status === 'loading' || !db}
             className="mt-auto"
           />
         </div>
@@ -204,8 +199,8 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
             if (!next) setEditingTransaction(null);
           }}
           onSaved={() => {
-            reload();
             setEditingTransaction(null);
+            reload({ silent: false });
           }}
         />
       ) : null}

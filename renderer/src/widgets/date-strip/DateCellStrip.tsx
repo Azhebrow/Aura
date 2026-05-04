@@ -5,7 +5,9 @@ import { cn } from '@/lib/utils';
 import { dateToYmd, useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
+import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
 import { getCategoryProgresses } from '@/shared/bridge/get-category-progresses';
+import { TASK_CATEGORY_IDS } from '@/shared/config/domain-taxonomy';
 
 function parseYmd(s: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
@@ -28,9 +30,9 @@ function addDaysToYmd(ymd: string, delta: number): string {
 const DOW_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
 function countFromWidth(px: number): number {
-  if (!px || px < 200) return 7;
+  if (!px || px < 200) return 3;
   const cell = 52;
-  return Math.max(5, Math.min(21, Math.floor(px / cell)));
+  return Math.max(3, Math.min(21, Math.floor(px / cell)));
 }
 
 /** Окно из `count` дней, центрированное на `selection`, последний день не позже `todayYmd`. */
@@ -72,7 +74,7 @@ function clampWindowStartOnly(startYmd: string, count: number, todayYmd: string)
 /**
  * Горизонтальные «ячейки» дат: столько, сколько помещается; стрелки сдвигают окно.
  */
-const CAT_IDS = ['rituals', 'time', 'body', 'deps'] as const;
+const CAT_IDS = TASK_CATEGORY_IDS;
 type LegacyPointsApi = {
   isDayOpen: (date: string) => boolean;
   isFutureDay: (date: string) => boolean;
@@ -80,28 +82,46 @@ type LegacyPointsApi = {
 
 export function DateCellStrip() {
   const { dateString, setDateString, todayString } = useSelectedDate();
-  const { db, ready } = useAuraDb();
+  const { db } = useAuraDb();
   const dataTick = useAuraDataRefresh();
-  const isMiniApp = typeof document !== 'undefined' && document.documentElement.dataset.auraMiniapp === '1';
-  const forceCompactMiniStrip = isMiniApp && typeof window !== 'undefined' && window.innerWidth < 900;
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState(forceCompactMiniStrip ? 3 : 7);
+  const [visibleCount, setVisibleCount] = useState(7);
   const [windowStart, setWindowStart] = useState(() =>
-    computeWindowStart(dateString, forceCompactMiniStrip ? 3 : 7, todayString)
+    computeWindowStart(dateString, 7, todayString)
   );
-  const [bootstrapRows, setBootstrapRows] = useState<Array<{ date: string; categoryProgresses?: Record<string, number> }> | null>(null);
+  const bootstrapParams = useMemo(
+    () => ({ date: windowStart, rangeDays: visibleCount }),
+    [windowStart, visibleCount]
+  );
+  const { data: bootstrapRowsRaw } = useBootstrapData<unknown>(
+    'date-strip',
+    bootstrapParams,
+    [dataTick],
+    {
+      keepStaleOnError: true,
+      cacheMs: 0,
+      dedupeKey: `date-strip:${windowStart}:${visibleCount}:${dataTick}`,
+    }
+  );
+  const bootstrapRows = useMemo(
+    () =>
+      Array.isArray(bootstrapRowsRaw)
+        ? (bootstrapRowsRaw as Array<{ date: string; categoryProgresses?: Record<string, number> }>)
+        : null,
+    [bootstrapRowsRaw]
+  );
 
   useLayoutEffect(() => {
     const el = wrapRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect?.width ?? 0;
-      setVisibleCount(forceCompactMiniStrip ? 3 : countFromWidth(w));
+      setVisibleCount(countFromWidth(w));
     });
     ro.observe(el);
-    setVisibleCount(forceCompactMiniStrip ? 3 : countFromWidth(el.getBoundingClientRect().width));
+    setVisibleCount(countFromWidth(el.getBoundingClientRect().width));
     return () => ro.disconnect();
-  }, [forceCompactMiniStrip]);
+  }, []);
 
   useEffect(() => {
     setWindowStart(computeWindowStart(dateString, visibleCount, todayString));
@@ -120,7 +140,7 @@ export function DateCellStrip() {
 
   const dayScores = useMemo(() => {
     const map: Record<string, number> = {};
-    if (!ready || !db) return map;
+    if (!db) return map;
     if (bootstrapRows && bootstrapRows.length) {
       for (const row of bootstrapRows) {
         const values = CAT_IDS.map((cat) => Number(row.categoryProgresses?.[cat] ?? 0));
@@ -153,35 +173,10 @@ export function DateCellStrip() {
       cur = addDaysToYmd(cur, 1);
     }
     return map;
-  }, [bootstrapRows, db, ready, windowStart, visibleCount, dataTick]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const api = window.__auraMiniApi;
-    if (!api) {
-      setBootstrapRows(null);
-      return;
-    }
-    api
-      .fetchBootstrap('date-strip', { date: windowStart, rangeDays: visibleCount })
-      .then((data) => {
-        if (cancelled) return;
-        if (!Array.isArray(data)) {
-          setBootstrapRows(null);
-          return;
-        }
-        setBootstrapRows(data as Array<{ date: string; categoryProgresses?: Record<string, number> }>);
-      })
-      .catch(() => {
-        if (!cancelled) setBootstrapRows(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [windowStart, visibleCount, dataTick]);
+  }, [bootstrapRows, db, windowStart, visibleCount, dataTick]);
 
   const pointsApi = useMemo<LegacyPointsApi | null>(() => {
-    if (!ready || !db) return null;
+    if (!db) return null;
     const Ctor = typeof window !== 'undefined' ? window.PointsService : undefined;
     if (!Ctor) return null;
     try {
@@ -189,7 +184,7 @@ export function DateCellStrip() {
     } catch {
       return null;
     }
-  }, [db, ready]);
+  }, [db]);
 
   const shiftWindow = (deltaDays: number) => {
     setWindowStart((prev) => {

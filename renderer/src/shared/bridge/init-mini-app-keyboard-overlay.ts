@@ -1,6 +1,7 @@
 function isMiniAppRuntime() {
   if (typeof window === 'undefined') return false;
-  return Boolean(window.__auraMiniApi);
+  if (typeof navigator !== 'undefined' && /Electron/i.test(navigator.userAgent)) return false;
+  return document.documentElement.dataset.auraMiniapp === '1';
 }
 
 function isEditableTarget(target: EventTarget | null): target is HTMLElement {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AURA_DATA_CHANGED } from '@/features/stats/stats-data-events';
+import { AURA_DATA_CHANGED } from '@/shared/lib/aura-data-events';
 
 type UseAuraDataRefreshOptions = {
   types?: string[];
@@ -16,15 +16,12 @@ export function useAuraDataRefresh(options: UseAuraDataRefreshOptions = {}): num
 
   useEffect(() => {
     const allowed = Array.isArray(types) ? new Set(types) : null;
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile|Telegram/i.test(ua);
-    const throttleMs = isMobile ? 100 : 50;
-    let timer: number | null = null;
+    let raf: number | null = null;
     let queued = false;
 
     const flush = () => {
       queued = false;
-      timer = null;
+      raf = null;
       setTick((v) => v + 1);
     };
 
@@ -33,18 +30,18 @@ export function useAuraDataRefresh(options: UseAuraDataRefreshOptions = {}): num
         queued = true;
         return;
       }
-      if (timer != null) {
+      if (raf != null) {
         queued = true;
         return;
       }
-      timer = window.setTimeout(flush, throttleMs);
+      raf = window.requestAnimationFrame(flush);
     };
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible' && queued) {
-        if (timer != null) {
-          window.clearTimeout(timer);
-          timer = null;
+        if (raf != null) {
+          window.cancelAnimationFrame(raf);
+          raf = null;
         }
         flush();
       }
@@ -70,7 +67,7 @@ export function useAuraDataRefresh(options: UseAuraDataRefreshOptions = {}): num
       if (includeTaskCategoriesConfig) {
         window.removeEventListener('task-categories-config-changed', bump);
       }
-      if (timer != null) window.clearTimeout(timer);
+      if (raf != null) window.cancelAnimationFrame(raf);
     };
   }, [includeTaskCategoriesConfig, types]);
 

@@ -1,13 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
-// Используем локальный better-sqlite3 (скомпилирован для Node, не для Electron)
 const Module = require('module');
 const _resolveFilename = Module._resolveFilename;
 Module._resolveFilename = function(request, parent, isMain, options) {
   if (request === 'better-sqlite3') {
-    return _resolveFilename.call(this, path.join(__dirname, 'node_modules', 'better-sqlite3'), parent, isMain, options);
+    return _resolveFilename.call(this, path.join(__dirname, '..', 'node_modules', 'better-sqlite3'), parent, isMain, options);
   }
   return _resolveFilename.call(this, request, parent, isMain, options);
 };
@@ -17,6 +17,8 @@ const getDB = require(path.resolve(__dirname, '../src/system/database/Database.j
 const app = express();
 const PORT = Number(process.env.AURA_API_PORT || 8787);
 const HOST = process.env.AURA_API_HOST || '127.0.0.1';
+const rendererBuildDir = path.resolve(__dirname, '..', 'renderer-build');
+const publicDir = path.resolve(__dirname, '..', 'public');
 
 const metrics = {
   startedAt: Date.now(),
@@ -218,6 +220,20 @@ function bootstrapDateStrip(db, date, rangeDays = 7) {
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(__dirname));
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+}
+if (fs.existsSync(rendererBuildDir)) {
+  app.use(express.static(rendererBuildDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    const indexHtml = path.join(rendererBuildDir, 'index.html');
+    if (fs.existsSync(indexHtml)) {
+      return res.sendFile(indexHtml);
+    }
+    return next();
+  });
+}
 
 app.get('/api/health', (_req, res) => {
   const db = getDB();

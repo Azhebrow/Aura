@@ -16,6 +16,7 @@ export type ListItemProps = {
   description?: string | ReactNode;
   trailing?: ReactNode;
   actionsAlwaysVisible?: boolean;
+  showDisabledMoveButtons?: boolean;
 
   onEdit?: () => void;
   onActivate?: () => void;
@@ -44,6 +45,7 @@ export function ListItem({
   description,
   trailing,
   actionsAlwaysVisible,
+  showDisabledMoveButtons,
   onEdit,
   onDelete,
   onActivate,
@@ -193,40 +195,44 @@ export function ListItem({
         )}
 
         {/* Mode: edit-delete - удаление на hover */}
-        {mode === 'edit-delete' && (onMoveUp || onMoveDown || onDelete || actionsAlwaysVisible) && (
+        {mode === 'edit-delete' && (onMoveUp || onMoveDown || onDelete || actionsAlwaysVisible || showDisabledMoveButtons) && (
           <div className="flex items-center gap-0 h-full">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMoveUp?.();
-              }}
-              disabled={!onMoveUp}
-              className={cn(
-                'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                onMoveUp ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
-              )}
-              aria-label="Переместить вверх"
-              aria-disabled={!onMoveUp}
-            >
-              <ChevronUp className="size-4" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMoveDown?.();
-              }}
-              disabled={!onMoveDown}
-              className={cn(
-                'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                onMoveDown ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
-              )}
-              aria-label="Переместить вниз"
-              aria-disabled={!onMoveDown}
-            >
-              <ChevronDown className="size-4" />
-            </button>
+            {onMoveUp || showDisabledMoveButtons ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMoveUp?.();
+                }}
+                className={cn(
+                  'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
+                  onMoveUp ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
+                )}
+                aria-label="Переместить вверх"
+                disabled={!onMoveUp}
+                aria-disabled={!onMoveUp}
+              >
+                <ChevronUp className="size-4" />
+              </button>
+            ) : null}
+            {onMoveDown || showDisabledMoveButtons ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMoveDown?.();
+                }}
+                className={cn(
+                  'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
+                  onMoveDown ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
+                )}
+                aria-label="Переместить вниз"
+                disabled={!onMoveDown}
+                aria-disabled={!onMoveDown}
+              >
+                <ChevronDown className="size-4" />
+              </button>
+            ) : null}
             {onDelete ? (
               <button
                 type="button"

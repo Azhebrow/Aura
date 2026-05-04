@@ -19,8 +19,7 @@ type CachedIconsManifest = {
 };
 
 function getIconsPrefix() {
-  const base = import.meta.env.BASE_URL ?? './';
-  return base.endsWith('/') ? `${base}icons` : `${base}/icons`;
+  return `${getAppBaseUrl()}icons`;
 }
 
 function isValidManifest(value: unknown): value is IconsManifest {
@@ -145,3 +144,4 @@ export function clearIconsManifestCache() {
     }
   }
 }
+import { getAppBaseUrl } from '@/shared/lib/base-url';

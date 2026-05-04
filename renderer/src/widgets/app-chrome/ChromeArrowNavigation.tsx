@@ -19,10 +19,10 @@ function isArrowNavigationBlocked(target: EventTarget | null): boolean {
   return false;
 }
 
-/** Порядок страниц для ↑/↓: все кроме «Настройки», затем настройки в конце (как в сайдбаре). */
+/** Порядок страниц для ↑/↓: календарь исключаем, чтобы он не попадал в циклический список. */
 function pageIdsForVerticalNav(navOrder: readonly PageId[]): PageId[] {
   const ordered = getNavPagesInOrder(navOrder).map((p) => p.id);
-  const main = ordered.filter((id) => id !== 'settings');
+  const main = ordered.filter((id) => id !== 'settings' && id !== 'calendar');
   const hasSettings = ordered.includes('settings');
   return hasSettings ? [...main, 'settings'] : main;
 }

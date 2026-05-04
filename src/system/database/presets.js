@@ -220,6 +220,37 @@ const PRESETS = {
     }
   ],
 
+  // ЦИТАТЫ / ПОДСКАЗКИ ЗАПИСИ
+  diaryEntryPresets: [
+    {
+      id: 'entry_0',
+      title: 'Начало',
+      prompt: 'Сделай первый честный абзац и не редактируй его заранее.',
+      description: 'Мягкий вход в пустой дневник.',
+      icon: 'book-text',
+      active: 1,
+      level: 0
+    },
+    {
+      id: 'entry_1',
+      title: 'Проверка курса',
+      prompt: 'Что сегодня важно не потерять из виду?',
+      description: 'Короткая вечерняя фиксация.',
+      icon: 'compass',
+      active: 1,
+      level: 1
+    },
+    {
+      id: 'entry_2',
+      title: 'Тихий старт',
+      prompt: 'Не ищи идеальную формулировку, просто назови факт.',
+      description: 'Подходит для дней с низкой энергией.',
+      icon: 'sparkles',
+      active: 1,
+      level: 2
+    }
+  ],
+
   // СЧЕТА (цвета из palette.css)
   accounts: [
     {
@@ -855,4 +886,3 @@ const PRESETS = {
 // Экспортируем для CommonJS (для require в Node.js)
 module.exports = { PRESETS };
 module.exports.PRESETS = PRESETS;
-

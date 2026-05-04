@@ -1,6 +1,3 @@
-/**
- * Порт идеи `collectMeta` из legacy `StatsPage.js` (иконки/цвета для таблицы и графиков).
- */
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import {
   AURA_STATIC_SEMANTIC,
@@ -12,7 +9,7 @@ import {
   moodColor,
 } from '@/shared/design/aura-palette';
 import type { StatsGroupBy, StatsMeta, StatsMode } from '@/shared/stats/types';
-import { loadTaskCategoryConfig, type TaskCategoryKey } from '@/shared/stats/task-categories-settings';
+import { loadTaskCategoryConfig, type TaskCategoryKey } from '@/shared/config/task-categories-settings';
 
 const NUTR_CAT: Record<string, { icon: string; color: string }> = {
   Белки: { icon: 'dumbbell', color: NUTRITION_SEMANTIC.proteins },
@@ -31,14 +28,8 @@ function dishColor(): string {
   return NUTRITION_SEMANTIC.dish;
 }
 
-export function buildStatsMeta(
-  db: AuraDatabase,
-  mode: StatsMode,
-  groupBy: StatsGroupBy,
-  allKeys: Set<string>
-): StatsMeta {
+export function buildStatsMeta(db: AuraDatabase, mode: StatsMode, groupBy: StatsGroupBy, allKeys: Set<string>): StatsMeta {
   const meta: StatsMeta = { icons: {}, colors: {} };
-
   if (allKeys.size === 0) return meta;
 
   if (mode === 'tasks') {
@@ -136,9 +127,7 @@ export function buildStatsMeta(
         if (!allKeys.has(keyWithPrefix)) continue;
         if (typeof category.icon === 'string' && category.icon) meta.icons[keyWithPrefix] = category.icon;
         meta.colors[keyWithPrefix] =
-          typeof category.color === 'string' && category.color.trim()
-            ? category.color
-            : FINANCE_SEMANTIC.income;
+          typeof category.color === 'string' && category.color.trim() ? category.color : FINANCE_SEMANTIC.income;
       }
       for (const category of db.getAll('cfg_expense_categories')) {
         const categoryTitle = String(category.title ?? category.id);
@@ -147,9 +136,7 @@ export function buildStatsMeta(
         if (!allKeys.has(keyWithPrefix)) continue;
         if (typeof category.icon === 'string' && category.icon) meta.icons[keyWithPrefix] = category.icon;
         meta.colors[keyWithPrefix] =
-          typeof category.color === 'string' && category.color.trim()
-            ? category.color
-            : FINANCE_SEMANTIC.expense;
+          typeof category.color === 'string' && category.color.trim() ? category.color : FINANCE_SEMANTIC.expense;
       }
     }
     return meta;
@@ -172,16 +159,14 @@ export function buildStatsMeta(
         meta.ritualTypes![ritualTitle] = 'morning';
         if (!allKeys.has(ritualTitle)) continue;
         if (typeof ritual.icon === 'string' && ritual.icon) meta.icons[ritualTitle] = ritual.icon;
-        meta.colors[ritualTitle] =
-          typeof ritual.color === 'string' && ritual.color.trim() ? ritual.color : RITUAL_SEMANTIC.morning;
+        meta.colors[ritualTitle] = typeof ritual.color === 'string' && ritual.color.trim() ? ritual.color : RITUAL_SEMANTIC.morning;
       }
       for (const ritual of db.getAll('cfg_rituals_evening')) {
         const ritualTitle = String(ritual.title ?? ritual.id);
         meta.ritualTypes![ritualTitle] = 'evening';
         if (!allKeys.has(ritualTitle)) continue;
         if (typeof ritual.icon === 'string' && ritual.icon) meta.icons[ritualTitle] = ritual.icon;
-        meta.colors[ritualTitle] =
-          typeof ritual.color === 'string' && ritual.color.trim() ? ritual.color : RITUAL_SEMANTIC.evening;
+        meta.colors[ritualTitle] = typeof ritual.color === 'string' && ritual.color.trim() ? ritual.color : RITUAL_SEMANTIC.evening;
       }
     }
     return meta;
@@ -205,15 +190,11 @@ export function buildStatsMeta(
     meta.moodNames = {};
     for (let level = 1; level <= 5; level++) {
       const mood = moodMap.get(level);
-      const label =
-        mood && typeof mood.title === 'string' && mood.title.trim() ? mood.title.trim() : `Уровень ${level}`;
+      const label = mood && typeof mood.title === 'string' && mood.title.trim() ? mood.title.trim() : `Уровень ${level}`;
       meta.moodNames[level] = label;
       if (mood) {
         if (typeof mood.icon === 'string' && mood.icon) meta.icons[label] = mood.icon;
-        meta.colors[label] =
-          typeof mood.color === 'string' && mood.color.trim()
-            ? mood.color
-            : moodColor(level);
+        meta.colors[label] = typeof mood.color === 'string' && mood.color.trim() ? mood.color : moodColor(level);
       } else {
         meta.icons[label] = MOOD_DEFAULT_ICONS[level - 1] ?? 'minus';
         meta.colors[label] = MOOD_SCALE[level] ?? moodColor(level);
@@ -222,6 +203,42 @@ export function buildStatsMeta(
     if (allKeys.has('Настроение')) {
       meta.icons['Настроение'] = 'heart';
       meta.colors['Настроение'] = RITUAL_SEMANTIC.vows;
+    }
+    return meta;
+  }
+
+  if (mode === 'correlation') {
+    const cfg = loadTaskCategoryConfig(db);
+    const focusKey = 'Фокус, %';
+    const fillingKey = 'Наполнение, %';
+    const escapeKey = 'Эскапизм, %';
+    if (allKeys.has('Успех, %')) {
+      meta.icons['Успех, %'] = 'target';
+      meta.colors['Успех, %'] = AURA_STATIC_SEMANTIC.success;
+    }
+    if (allKeys.has(focusKey)) {
+      meta.icons[focusKey] = cfg.time.icon;
+      meta.colors[focusKey] = cfg.time.color;
+    }
+    if (allKeys.has('Калории, %')) {
+      meta.icons['Калории, %'] = 'flame';
+      meta.colors['Калории, %'] = NUTRITION_SEMANTIC.calories;
+    }
+    if (allKeys.has('Ритуалы, %')) {
+      meta.icons['Ритуалы, %'] = 'sparkles';
+      meta.colors['Ритуалы, %'] = RITUAL_SEMANTIC.morning;
+    }
+    if (allKeys.has('Настроение, %')) {
+      meta.icons['Настроение, %'] = 'smile';
+      meta.colors['Настроение, %'] = MOOD_SCALE[5];
+    }
+    if (allKeys.has(escapeKey)) {
+      meta.icons[escapeKey] = LEISURE_CATEGORY_ICONS.escape;
+      meta.colors[escapeKey] = LEISURE_SEMANTIC.escape;
+    }
+    if (allKeys.has(fillingKey)) {
+      meta.icons[fillingKey] = LEISURE_CATEGORY_ICONS.filling;
+      meta.colors[fillingKey] = LEISURE_SEMANTIC.filling;
     }
     return meta;
   }
@@ -258,48 +275,5 @@ export function buildStatsMeta(
     }
   }
 
-  if (mode === 'correlation') {
-    const cfg = loadTaskCategoryConfig(db);
-    const leisureTasks = db.getAll('cfg_leisure_tasks') || [];
-    const fillingTask = leisureTasks.find((t) => t.leisure_type === 'filling');
-    const escapeTask = leisureTasks.find((t) => t.leisure_type === 'escape');
-    const fillingColor =
-      fillingTask && typeof fillingTask.color === 'string' && fillingTask.color.trim()
-        ? fillingTask.color
-        : LEISURE_SEMANTIC.filling;
-    const escapeColor =
-      escapeTask && typeof escapeTask.color === 'string' && escapeTask.color.trim()
-        ? escapeTask.color
-        : LEISURE_SEMANTIC.escape;
-    const presets: Record<string, { icon: string; color: string }> = {
-      'Успех, %': { icon: 'percent', color: AURA_STATIC_SEMANTIC.rankGold },
-      'Фокус, ч': { icon: cfg.time.icon, color: cfg.time.color },
-      'Калории, ккал': { icon: 'flame', color: NUTRITION_SEMANTIC.calories },
-      'Ритуалы, %': { icon: 'sun', color: RITUAL_SEMANTIC.morning },
-      Настроение: { icon: 'heart', color: MOOD_SCALE[4] },
-      'Эскапизм, ч': {
-        icon: LEISURE_CATEGORY_ICONS.escape,
-        color: escapeColor,
-      },
-      'Наполнение, ч': {
-        icon: LEISURE_CATEGORY_ICONS.filling,
-        color: fillingColor,
-      },
-    };
-    for (const key of allKeys) {
-      const preset = presets[key];
-      if (!preset) continue;
-      meta.icons[key] = preset.icon;
-      meta.colors[key] = preset.color;
-    }
-    return meta;
-  }
-
   return meta;
-}
-
-/** Заголовки категорий задач для порядка колонок (как legacy). */
-export function taskCategoryOrderTitles(db: AuraDatabase | null): string[] {
-  const cfg = loadTaskCategoryConfig(db);
-  return (['rituals', 'time', 'body', 'deps'] as TaskCategoryKey[]).map((k) => cfg[k].title);
 }

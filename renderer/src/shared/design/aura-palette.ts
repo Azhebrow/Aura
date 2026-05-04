@@ -3,29 +3,29 @@
  * Используется для валидации цветов из `task_categories_config`.
  */
 export const TASK_CATEGORY_PALETTE = [
-  'hsl(24, 58%, 52%)',
-  'hsl(165, 50%, 46%)',
-  'hsl(258, 48%, 56%)',
-  'hsl(352, 58%, 52%)',
-  'hsl(204, 62%, 56%)',
-  'hsl(38, 78%, 54%)',
-  'hsl(278, 48%, 56%)',
-  'hsl(214, 56%, 54%)',
-  'hsl(42, 58%, 55%)',
-  'hsl(232, 48%, 56%)',
-  'hsl(148, 50%, 46%)',
-  'hsl(196, 45%, 52%)',
+  'hsl(24, 78%, 55%)',
+  'hsl(160, 52%, 44%)',
+  'hsl(258, 54%, 56%)',
+  'hsl(352, 64%, 54%)',
+  'hsl(195, 58%, 48%)',
+  'hsl(38, 72%, 54%)',
+  'hsl(305, 46%, 52%)',
+  'hsl(172, 48%, 44%)',
+  'hsl(18, 58%, 52%)',
+  'hsl(276, 48%, 54%)',
+  'hsl(48, 66%, 52%)',
+  'hsl(332, 52%, 52%)',
 ] as const;
 
 /**
  * Legacy-палитра (до редизайна) для обратной совместимости:
  * если в БД сохранён старый цвет, маппим его на тот же индекс новой палитры.
  */
-const LEGACY_TASK_CATEGORY_PALETTE = [
-  'hsl(15, 50%, 50%)',
-  'hsl(140, 45%, 48%)',
-  'hsl(260, 45%, 50%)',
-  'hsl(0, 48%, 48%)',
+export const LEGACY_TASK_CATEGORY_PALETTE = [
+  'hsl(15, 58%, 52%)',
+  'hsl(142, 44%, 48%)',
+  'hsl(260, 48%, 54%)',
+  'hsl(0, 56%, 50%)',
   'hsl(195, 45%, 50%)',
   'hsl(35, 50%, 52%)',
   'hsl(300, 40%, 50%)',
@@ -72,10 +72,10 @@ export function validateTaskCategoryColor(color: string): string {
 
 /** Семантические токены для финансов / негатива (фиксированные, как ориентир UI). */
 export const FINANCE_SEMANTIC = {
-  income: 'hsl(148, 50%, 46%)',
-  expense: 'hsl(356, 62%, 56%)',
-  transfer: 'hsl(214, 56%, 54%)',
-  negative: 'hsl(356, 58%, 48%)',
+  income: 'hsl(145, 58%, 42%)',
+  expense: 'hsl(356, 68%, 54%)',
+  transfer: 'hsl(214, 70%, 54%)',
+  negative: 'hsl(356, 72%, 46%)',
 } as const;
 
 /** Токены для эскапизма/наполнения — адаптируются к теме через CSS-переменные. */
@@ -85,26 +85,26 @@ export const LEISURE_SEMANTIC = {
 } as const;
 
 export const RITUAL_SEMANTIC = {
-  morning: 'hsl(38, 78%, 54%)',
-  evening: 'hsl(226, 52%, 58%)',
-  vows: 'hsl(278, 48%, 56%)',
+  morning: 'hsl(38, 82%, 54%)',
+  evening: 'hsl(226, 60%, 58%)',
+  vows: 'hsl(278, 54%, 56%)',
 } as const;
 
 export const AURA_STATIC_SEMANTIC = {
-  ambient: 'hsl(204, 62%, 56%)',
-  rankGold: 'hsl(45, 90%, 55%)',
-  info: 'hsl(218, 42%, 54%)',
-  success: 'hsl(145, 58%, 40%)',
-  warning: 'hsl(45, 84%, 52%)',
-  danger: 'hsl(0, 65%, 52%)',
+  ambient: 'hsl(204, 70%, 55%)',
+  rankGold: 'hsl(45, 94%, 56%)',
+  info: 'hsl(218, 56%, 54%)',
+  success: 'hsl(145, 60%, 40%)',
+  warning: 'hsl(45, 88%, 52%)',
+  danger: 'hsl(0, 72%, 52%)',
 } as const;
 
 export const NUTRITION_SEMANTIC = {
-  proteins: 'hsl(210, 70%, 55%)',
-  fats: 'hsl(35, 85%, 52%)',
-  carbs: 'hsl(280, 55%, 58%)',
-  calories: 'hsl(0, 72%, 55%)',
-  dish: 'hsl(220, 55%, 50%)',
+  proteins: 'hsl(145, 58%, 42%)',
+  fats: 'hsl(35, 82%, 52%)',
+  carbs: 'hsl(214, 70%, 54%)',
+  calories: 'hsl(0, 72%, 54%)',
+  dish: 'hsl(214, 70%, 54%)',
 } as const;
 
 export const MOOD_SCALE: Record<number, string> = {
@@ -152,4 +152,7 @@ export function applyFinanceSemanticCssVars(): void {
   r.style.setProperty('--finance-expense', FINANCE_SEMANTIC.expense);
   r.style.setProperty('--finance-transfer', FINANCE_SEMANTIC.transfer);
   r.style.setProperty('--semantic-negative', FINANCE_SEMANTIC.negative);
+  r.style.setProperty('--semantic-success', AURA_STATIC_SEMANTIC.success);
+  r.style.setProperty('--semantic-warning', AURA_STATIC_SEMANTIC.warning);
+  r.style.setProperty('--semantic-info', AURA_STATIC_SEMANTIC.info);
 }

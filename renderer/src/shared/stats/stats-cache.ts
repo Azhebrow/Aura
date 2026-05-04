@@ -13,14 +13,13 @@ export class StatsCache {
 
   generateKey(
     mode: string,
-    viewType: string,
     groupBy: string,
     period: number,
     aggregation: string,
     startDate: string,
     endDate: string
   ): string {
-    return `${mode}_${viewType}_${groupBy}_${period}_${aggregation}_${startDate}_${endDate}`;
+    return `${mode}_${groupBy}_${period}_${aggregation}_${startDate}_${endDate}`;
   }
 
   get<T>(key: string): T | null {

@@ -19,5 +19,5 @@
       "@/*": ["renderer/src/*"]
     }
   },
-  "include": ["renderer/src", "vite.config.ts"]
+  "include": ["renderer/src"]
 }

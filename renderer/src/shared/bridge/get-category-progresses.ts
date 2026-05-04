@@ -1,6 +1,5 @@
 import type { AuraDatabase } from '@/types/aura';
-
-const DEFAULT_CATEGORY_IDS = ['rituals', 'time', 'body', 'deps'] as const;
+import { TASK_CATEGORY_IDS } from '@/shared/config/domain-taxonomy';
 const CACHE_TTL_MS_MOBILE = 3500;
 const CACHE_TTL_MS_DESKTOP = 1800;
 const CACHE = new Map<string, { ts: number; data: Record<string, number> }>();
@@ -17,7 +16,7 @@ function isMobileRuntime() {
 export function getCategoryProgresses(
   db: AuraDatabase,
   date: string,
-  categories: readonly string[] = DEFAULT_CATEGORY_IDS
+  categories: readonly string[] = TASK_CATEGORY_IDS
 ): Record<string, number> {
   const key = cacheKey(date, categories);
   const cached = CACHE.get(key);

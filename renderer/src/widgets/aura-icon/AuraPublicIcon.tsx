@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { resolveAuraIconFileBase } from '@/shared/lib/aura-icon-name';
+import { getAppBaseUrl } from '@/shared/lib/base-url';
 
 type Props = {
   /** Имя файла без `.svg` из `public/icons/` (или с `.svg`). */
@@ -11,9 +12,7 @@ type Props = {
 };
 
 function iconUrl(fileBase: string): string {
-  const base = import.meta.env.BASE_URL ?? './';
-  const prefix = base.endsWith('/') ? base : `${base}/`;
-  return `${prefix}icons/${encodeURIComponent(fileBase)}.svg`;
+  return `${getAppBaseUrl()}icons/${encodeURIComponent(fileBase)}.svg`;
 }
 
 /** Иконка из тех же SVG, что и legacy (`public/icons`). Работает с `file://` при `base: './'`. */

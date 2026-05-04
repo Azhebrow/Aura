@@ -305,6 +305,17 @@ export const CFG_CONFIGS = {
     ]
   },
 
+  'diary-entry-presets': {
+    tableName: 'cfg_diary_entry_presets',
+    fields: [
+      { name: 'title', label: 'Название', type: 'text', required: true },
+      { name: 'prompt', label: 'Цитата / подсказка', type: 'textarea', required: true },
+      { name: 'description', label: 'Описание', type: 'textarea' },
+      { name: 'icon', label: 'Иконка', type: 'icon' },
+      { name: 'active', label: 'Активная', type: 'checkbox' }
+    ]
+  },
+
   // ЦЕЛИ
   'goals': {
     tableName: 'cfg_goals',
@@ -414,4 +425,3 @@ export const CFG_CONFIGS = {
     ]
   }
 };
-

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   Check,
-  Circle,
   Compass,
   Droplets,
   Flame,
@@ -13,289 +12,187 @@ import {
   Palette,
   Sparkles,
   Sun,
-  Type,
   Waves,
   Zap,
 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { UniversalRadioGroup, type UniversalRadioOption } from '@/components/ui/header-segmented-radio';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
+import { getAuraAccentPresetColors } from '@/features/theme/apply-theme-dom';
 import { useAuraTheme } from '@/features/theme/ThemeContext';
 import type { AuraAccentPreset, AuraThemeMode } from '@/features/theme/theme-constants';
 import { AURA_FONT_CHOICES, AURA_FONT_STANDARD, isAuraFontFamily } from '@/features/theme/font-constants';
 import type { AuraRow } from '@/types/aura';
 import { SettingsSectionCard } from '@/widgets/settings/SettingsSectionCard';
-import { cn } from '@/lib/utils';
 
 const THEMES: UniversalRadioOption<AuraThemeMode>[] = [
   { value: 'light', label: 'Светлая', Icon: Sun },
-  { value: 'dim', label: 'Приглушённая', Icon: Circle },
+  { value: 'dim', label: 'Тихая', Icon: MoonStar },
   { value: 'dark', label: 'Тёмная', Icon: Moon },
 ];
 
-const ACCENT_PRESETS: UniversalRadioOption<AuraAccentPreset>[] = [
-  { value: 'violet', label: 'Фиолетовый', Icon: Sparkles },
-  { value: 'blue', label: 'Синий', Icon: Droplets },
-  { value: 'emerald', label: 'Изумруд', Icon: Leaf },
-  { value: 'amber', label: 'Графит', Icon: MoonStar },
-  { value: 'rose', label: 'Розовый', Icon: Heart },
-  { value: 'mono', label: 'Моно', Icon: Circle },
-  { value: 'cyan', label: 'Циан', Icon: Waves },
-  { value: 'orange', label: 'Оранжевый', Icon: Flame },
-  { value: 'lime', label: 'Лайм', Icon: Zap },
-  { value: 'red', label: 'Красный', Icon: Sun },
-  { value: 'indigo', label: 'Индиго', Icon: Gem },
-  { value: 'teal', label: 'Тил', Icon: Compass },
+const ACCENT_PRESETS: Array<{
+  value: AuraAccentPreset;
+  label: string;
+  icon: typeof Sparkles;
+}> = [
+  { value: 'slate', label: 'Сланец', icon: MoonStar },
+  { value: 'stone', label: 'Камень', icon: Compass },
+  { value: 'graphite', label: 'Графит', icon: Zap },
+  { value: 'violet', label: 'Фиолетовый', icon: Sparkles },
+  { value: 'indigo', label: 'Индиго', icon: Gem },
+  { value: 'blue', label: 'Синий', icon: Droplets },
+  { value: 'cobalt', label: 'Кобальт', icon: Gem },
+  { value: 'cyan', label: 'Циан', icon: Waves },
+  { value: 'teal', label: 'Бирюза', icon: Waves },
+  { value: 'emerald', label: 'Изумруд', icon: Leaf },
+  { value: 'forest', label: 'Лес', icon: Compass },
+  { value: 'lime', label: 'Лайм', icon: Leaf },
+  { value: 'amber', label: 'Янтарь', icon: Flame },
+  { value: 'rose', label: 'Роза', icon: Heart },
+  { value: 'mono', label: 'Моно', icon: MoonStar },
 ];
 
-const ACCENT_SWATCH: Record<AuraAccentPreset, string> = {
-  violet: 'bg-violet-500',
-  blue: 'bg-blue-500',
-  emerald: 'bg-emerald-500',
-  amber: 'bg-zinc-900 dark:bg-zinc-50',
-  rose: 'bg-rose-500',
-  mono: 'bg-slate-500',
-  cyan: 'bg-cyan-500',
-  orange: 'bg-orange-500',
-  lime: 'bg-lime-500',
-  red: 'bg-red-500',
-  indigo: 'bg-indigo-500',
-  teal: 'bg-teal-500',
-};
+const APP_SCALE_MIN = 90;
+const APP_SCALE_MAX = 125;
+const APP_SCALE_STEP = 5;
 
-const FONT_SCALE_OPTIONS = [
-  { value: '85', label: '85%' },
-  { value: '90', label: '90%' },
-  { value: '95', label: '95%' },
-  { value: '100', label: '100%' },
-  { value: '105', label: '105%' },
-  { value: '110', label: '110%' },
-  { value: '115', label: '115%' },
-  { value: '120', label: '120%' },
-];
+function scaleToSlider(value: string) {
+  const n = Math.round(Number(value) * 100);
+  return Number.isFinite(n) ? Math.min(APP_SCALE_MAX, Math.max(APP_SCALE_MIN, n)) : 100;
+}
 
-function FontScaleCard() {
-  const [fontScale, setFontScale] = useState(100);
+function sliderToScale(value: number) {
+  return (value / 100).toFixed(2).replace(/\.00$/, '');
+}
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('aura-font-scale');
-      if (raw) {
-        const v = parseInt(raw, 10);
-        if (v >= 85 && v <= 120) {
-          setFontScale(v);
-          document.documentElement.style.setProperty('--aura-font-scale', String(v / 100));
-        }
-      }
-    } catch { /* ignore */ }
-  }, []);
-
-  const apply = (val: number) => {
-    setFontScale(val);
-    document.documentElement.style.setProperty('--aura-font-scale', String(val / 100));
-    try { localStorage.setItem('aura-font-scale', String(val)); } catch { /* ignore */ }
-  };
-
-  return (
-    <SettingsSectionCard title="Масштаб текста" leadingIcon={Type}>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {FONT_SCALE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => apply(parseInt(opt.value, 10))}
-              className={cn(
-                'h-8 min-w-[3rem] rounded-md border px-2 text-xs font-medium transition-colors aura-tx-colors',
-                fontScale === parseInt(opt.value, 10)
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'border-border bg-card hover:bg-muted/50 text-foreground/80'
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        <p className="text-muted-foreground text-xs">Текущий масштаб: {fontScale}%</p>
-      </div>
-    </SettingsSectionCard>
-  );
+function saveAppSettings(db: ReturnType<typeof useAuraDb>['db'], patch: Partial<AuraRow>) {
+  if (!db) return;
+  const cur = (db.getAppSettings() ?? {}) as AuraRow;
+  db.saveAppSettings({ ...cur, ...patch });
+  window.dispatchEvent(new Event('settings-saved'));
 }
 
 export function AppearanceSettingsCard() {
   const { db } = useAuraDb();
   const { theme, setTheme, accentPreset, setAccentPreset, fontFamily, setFontFamily } = useAuraTheme();
   const [appScale, setAppScale] = useState('1');
-  const [pageTransitionsEnabled, setPageTransitionsEnabled] = useState(true);
 
   useEffect(() => {
     if (!db) return;
     const settings = (db.getAppSettings() ?? {}) as AuraRow;
-    setAppScale(settings.app_scale != null ? String(settings.app_scale) : '1');
-    setPageTransitionsEnabled(settings.page_transitions_enabled !== 0 && settings.page_transitions_enabled !== false);
-    applyLiveAppearance({
-      appScale: settings.app_scale != null ? String(settings.app_scale) : '1',
-      transitionsEnabled: settings.page_transitions_enabled !== 0 && settings.page_transitions_enabled !== false,
-    });
+    const nextScale = settings.app_scale != null && settings.app_scale !== '' ? String(settings.app_scale) : '1';
+    setAppScale(nextScale);
+    document.documentElement.style.setProperty('--aura-ui-scale', nextScale);
   }, [db]);
 
   const persistAccentPreset = (preset: AuraAccentPreset) => {
     setAccentPreset(preset);
-    if (!db) return;
-    try {
-      const cur = (db.getAppSettings() ?? {}) as AuraRow;
-      db.saveAppSettings({ ...cur, accent_preset: preset });
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const saveAppearancePatch = (patch: Partial<AuraRow>) => {
-    if (!db) return;
-    try {
-      const cur = (db.getAppSettings() ?? {}) as AuraRow;
-      db.saveAppSettings({ ...cur, ...patch });
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const applyLiveAppearance = ({
-    appScale: nextScale,
-    transitionsEnabled,
-  }: {
-    appScale: string;
-    transitionsEnabled: boolean;
-  }) => {
-    const root = document.documentElement;
-    const scaleNum = Number(nextScale);
-    const safeScale = Number.isFinite(scaleNum) && scaleNum > 0 ? scaleNum : 1;
-    root.style.setProperty('--aura-ui-scale', String(safeScale));
-    root.setAttribute('data-page-transitions', transitionsEnabled ? 'on' : 'off');
-    root.style.setProperty('--aura-gradient-intensity', '1');
+    saveAppSettings(db, { accent_preset: preset });
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <SettingsSectionCard title="Быстрая тема" leadingIcon={Palette}>
-        <UniversalRadioGroup
-          value={theme}
-          onValueChange={setTheme}
-          options={THEMES}
-          ariaLabel="Тема окна"
-          fullWidth
-          className="bg-muted/50 p-1"
-          optionClassName="h-11 rounded-md px-3 text-sm"
-        />
-      </SettingsSectionCard>
+    <SettingsSectionCard title="Оформление" leadingIcon={Palette} contentClassName="gap-2.5">
+      <div className="grid grid-cols-1 gap-2.5">
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Тема</p>
+          <UniversalRadioGroup
+            value={theme}
+            onValueChange={(v) => { setTheme(v); window.dispatchEvent(new Event('settings-saved')); }}
+            options={THEMES}
+            ariaLabel="Тема"
+            fullWidth
+            className="bg-muted/25 h-12 min-h-12 rounded-xl p-1"
+            optionClassName="rounded-lg px-3 text-xs"
+            selectedOptionClassName="bg-background text-foreground shadow-sm ring-1 ring-border"
+            unselectedOptionClassName="text-muted-foreground"
+          />
+        </div>
 
-      <SettingsSectionCard title="Цветовой акцент" leadingIcon={Palette}>
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2.5">
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Акцент</p>
+          <div className="flex flex-wrap gap-2">
             {ACCENT_PRESETS.map((item) => {
               const selected = accentPreset === item.value;
+              const Icon = item.icon;
+              const { tint, tintFg } = getAuraAccentPresetColors(item.value, theme);
               return (
                 <button
                   key={item.value}
                   type="button"
-                  title={item.label}
-                  aria-label={item.label}
                   aria-pressed={selected}
+                  aria-label={item.label}
+                  title={item.label}
                   onClick={() => persistAccentPreset(item.value)}
-                  className={cn(
-                    'relative inline-flex size-9 items-center justify-center rounded-full aura-tx-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                    ACCENT_SWATCH[item.value],
-                    selected && 'ring-2 ring-foreground/40 ring-offset-2 ring-offset-background scale-110'
-                  )}
+                  className="border-border/70 flex h-10 min-w-0 items-center gap-2 rounded-full border px-3 text-left text-xs transition-[transform,box-shadow,border-color,background-color] hover:scale-[1.01]"
+                  style={{
+                    backgroundColor: tint,
+                    color: tintFg,
+                    boxShadow: selected ? `inset 0 0 0 1px ${tintFg}33, 0 0 0 2px ${tint}22` : undefined,
+                    opacity: selected ? 1 : 0.94,
+                  }}
                 >
-                  {selected ? (
-                    <Check className="size-4 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]" strokeWidth={3} />
-                  ) : null}
+                  <Icon className="size-3.5 shrink-0 opacity-95" />
+                  <span className="min-w-0 truncate font-medium">{item.label}</span>
+                  {selected ? <Check className="ml-auto size-3.5 shrink-0" /> : null}
                 </button>
               );
             })}
           </div>
-          <p className="text-muted-foreground text-xs">
-            {ACCENT_PRESETS.find((p) => p.value === accentPreset)?.label ?? ''}
-          </p>
         </div>
-      </SettingsSectionCard>
+      </div>
 
-      <SettingsSectionCard title="Визуальные эффекты" leadingIcon={Sparkles}>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2.5">
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Масштаб</p>
+          <div className="border-border/70 bg-muted/20 rounded-xl border px-3 py-2">
+            <Slider
+              min={APP_SCALE_MIN}
+              max={APP_SCALE_MAX}
+              step={APP_SCALE_STEP}
+              value={[scaleToSlider(appScale)]}
+              onValueChange={(values) => {
+                const next = sliderToScale(values[0] ?? APP_SCALE_MIN);
+                setAppScale(next);
+                saveAppSettings(db, { app_scale: next });
+                document.documentElement.style.setProperty('--aura-ui-scale', next);
+              }}
+              className="px-1 py-2"
+            />
+            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>90%</span>
+              <span className="tabular-nums text-foreground/80">{Math.round(Number(appScale) * 100)}%</span>
+              <span>125%</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Шрифт</p>
           <Select
-            value={appScale}
+            value={fontFamily}
             onValueChange={(v) => {
-              setAppScale(v);
-              saveAppearancePatch({ app_scale: v });
-              applyLiveAppearance({
-                appScale: v,
-                transitionsEnabled: pageTransitionsEnabled,
-              });
+              if (isAuraFontFamily(v)) { setFontFamily(v); window.dispatchEvent(new Event('settings-saved')); }
             }}
           >
-            <SelectTrigger className="h-9 w-full text-xs">
-              <SelectValue placeholder="Масштаб интерфейса" />
+            <SelectTrigger id="settings-font-family" contentAlign="start" className="h-10 w-full text-xs">
+              <SelectValue>{fontFamily === AURA_FONT_STANDARD ? 'Стандартный' : fontFamily}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {['0.9', '1', '1.1', '1.15', '1.25'].map((v) => (
-                <SelectItem key={v} value={v} className="text-xs">
-                  Масштаб: {v}
+              {AURA_FONT_CHOICES.map((font) => (
+                <SelectItem key={font} value={font} className="text-xs">
+                  {font === AURA_FONT_STANDARD ? (
+                    <span className="font-sans">Стандартный</span>
+                  ) : (
+                    <span style={{ fontFamily: `'${font}', ui-sans-serif, system-ui, sans-serif` }}>{font}</span>
+                  )}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <button
-            type="button"
-            onClick={() => {
-              const next = !pageTransitionsEnabled;
-              setPageTransitionsEnabled(next);
-              saveAppearancePatch({ page_transitions_enabled: next ? 1 : 0 });
-              applyLiveAppearance({
-                appScale,
-                transitionsEnabled: next,
-              });
-            }}
-            className="border-border bg-card hover:bg-muted/40 flex h-9 items-center justify-between rounded-md border px-3 text-xs aura-tx-colors"
-          >
-            <span>Переходы страниц</span>
-            <span className="text-muted-foreground">{pageTransitionsEnabled ? 'Вкл' : 'Выкл'}</span>
-          </button>
         </div>
-      </SettingsSectionCard>
-
-      <FontScaleCard />
-
-      <SettingsSectionCard title="Шрифт интерфейса" leadingIcon={Type}>
-        <Select
-          value={fontFamily}
-          onValueChange={(v) => {
-            if (isAuraFontFamily(v)) setFontFamily(v);
-          }}
-        >
-          <SelectTrigger id="settings-font-family" contentAlign="start" className="h-8 w-full text-xs">
-            <SelectValue>{fontFamily === AURA_FONT_STANDARD ? 'Стандартный' : fontFamily}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {AURA_FONT_CHOICES.map((font) => (
-              <SelectItem key={font} value={font} className="text-xs">
-                <Type className="text-muted-foreground size-3.5" />
-                {font === AURA_FONT_STANDARD ? (
-                  <span className="font-sans">Стандартный</span>
-                ) : (
-                  <span style={{ fontFamily: `'${font}', ui-sans-serif, system-ui, sans-serif` }}>{font}</span>
-                )}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </SettingsSectionCard>
-    </div>
+      </div>
+    </SettingsSectionCard>
   );
 }

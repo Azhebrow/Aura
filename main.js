@@ -33,6 +33,7 @@ let trayUpdateInterval = null;
 let devToolsTabShortcut = null;
 let isQuitting = false;
 const macTrayMode = process.env.AURA_MAC_TRAY_MODE || (process.platform === 'darwin' ? 'icon' : 'text');
+const LOCAL_API_URL = 'http://127.0.0.1:8787';
 
 function hideWindowToTray() {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -91,27 +92,15 @@ function ensureWindowInWorkArea() {
 }
 
 function resolveRendererTarget() {
-  const legacyPath = path.join(__dirname, 'index.html');
-  const viteBuiltPath = path.join(__dirname, 'renderer-build', 'index.html');
-
-  if (process.env.AURA_LEGACY_UI === '1') {
-    return { kind: 'file', filePath: legacyPath };
-  }
   if (process.env.AURA_USE_VITE === '1') {
     return { kind: 'url', url: 'http://127.0.0.1:5173' };
   }
-  if (fs.existsSync(viteBuiltPath)) {
-    return { kind: 'file', filePath: viteBuiltPath };
-  }
-  console.warn(
-    '[Main] renderer-build/index.html не найден — загружается legacy UI. Соберите: npm run build:renderer'
-  );
-  return { kind: 'file', filePath: legacyPath };
+  return { kind: 'file', file: path.join(__dirname, 'renderer-build', 'index.html') };
 }
 
 function createWindow() {
   const rendererTarget = resolveRendererTarget();
-  const useViteDevServer = rendererTarget.kind === 'url';
+  const useViteDevServer = rendererTarget.kind === 'url' && rendererTarget.url.includes(':5173');
 
   const iconPath = path.join(__dirname, 'public', 'icon.ico');
   
@@ -128,7 +117,7 @@ function createWindow() {
     titleBarStyle: isMac ? 'default' : 'hidden', // Стандартная шапка для macOS
     autoHideMenuBar: false,
     fullscreenable: true,
-    show: false, // Показываем только по клику на иконку в трее
+    show: process.env.AURA_START_HIDDEN === '1' ? false : true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -142,6 +131,7 @@ function createWindow() {
 
   // После загрузки страницы: инъекция БД в renderer + настройка DevTools Tab
   mainWindow.webContents.on('did-finish-load', () => {
+    console.log('[Main] Renderer did-finish-load:', mainWindow.webContents.getURL());
     const dbPath = path.join(__dirname, 'src', 'system', 'database', 'Database.js');
     const dbPathModule = path.join(__dirname, 'src', 'system', 'database', 'DBPath.js');
     const pointsServicePath = path.join(__dirname, 'src', 'system', 'services', 'PointsService.js');
@@ -221,24 +211,44 @@ function createWindow() {
     }, 500);
   });
 
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error('[Main] Renderer did-fail-load:', { errorCode, errorDescription, validatedURL });
+  });
+
+  mainWindow.webContents.on('did-stop-loading', () => {
+    console.log('[Main] Renderer did-stop-loading:', mainWindow.webContents.getURL());
+  });
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[Main] Renderer process gone:', details);
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+    mainWindow.focus();
+  });
+
   // CSP: для Vite dev-сервера не навешиваем жёсткий CSP (HMR / ws). Для file:// — прежняя политика.
   if (!useViteDevServer) {
     mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
       callback({
-        responseHeaders: {
-          ...details.responseHeaders,
-          'Content-Security-Policy': [
-            "default-src 'self' file:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data: file:; media-src 'self' file:; connect-src 'self' file:;"
+          responseHeaders: {
+            ...details.responseHeaders,
+            'Content-Security-Policy': [
+            "default-src 'self' file:; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data: file:; media-src 'self' blob: file:; connect-src 'self' file: http://127.0.0.1:8787;"
           ]
-        }
-      });
+          }
+        });
     });
   }
 
-  if (rendererTarget.kind === 'url') {
-    mainWindow.loadURL(rendererTarget.url);
+  if (rendererTarget.kind === 'file') {
+    mainWindow.loadFile(rendererTarget.file);
   } else {
-    mainWindow.loadFile(rendererTarget.filePath);
+    mainWindow.loadURL(rendererTarget.url);
   }
 
   // Функция для регистрации/отмены регистрации горячей клавиши Tab для DevTools
@@ -401,6 +411,33 @@ function createWindow() {
   });
 
   // Обработка клика на трей будет настроена после создания трея
+}
+
+async function isApiServerReady() {
+  try {
+    const response = await fetch(`${LOCAL_API_URL}/api/health`, { cache: 'no-store' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureLocalApiServer() {
+  if (await isApiServerReady()) return;
+
+  try {
+    require(path.join(__dirname, 'server-mini-app', 'index.js'));
+  } catch (error) {
+    console.warn('[Main] Не удалось запустить встроенный mini-app сервер:', error.message);
+  }
+
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 5000) {
+    if (await isApiServerReady()) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  throw new Error('Local API server did not become ready');
 }
 
 // Функция форматирования времени для трея
@@ -769,16 +806,21 @@ function createTray() {
   console.log('[Main] Системный трей создан');
 }
 
-app.whenReady().then(() => {
-  // Убираем меню-бар
-  Menu.setApplicationMenu(null);
-  // Скрываем иконку из Dock — приложение живёт только в трее
-  if (process.platform === 'darwin' && app.dock) {
-    app.dock.hide();
-  }
-  createWindow();
-  createTray();
-});
+app.whenReady()
+  .then(async () => {
+    // Убираем меню-бар
+    Menu.setApplicationMenu(null);
+    // Скрываем иконку из Dock — приложение живёт только в трее
+    if (process.platform === 'darwin' && app.dock) {
+      app.dock.hide();
+    }
+    await ensureLocalApiServer();
+    createWindow();
+    createTray();
+  })
+  .catch((error) => {
+    console.error('[Main] Ошибка запуска приложения:', error);
+  });
 
 app.on('window-all-closed', () => {
   // Не закрываем приложение если таймер активен - сворачиваем в трей

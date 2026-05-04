@@ -85,9 +85,15 @@ export function useTimerSession(db: AuraDatabase | null, dateString: string, day
         return next;
       }
 
+      if (Math.max(0, Math.floor(m.elapsedTime)) < 60) {
+        console.log('[useTimerSession] Сессия меньше 60 секунд не сохраняется');
+        pushToMain(next);
+        return next;
+      }
+
       try {
         const sessionId = `timer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-        runAuraMutation('timer', () =>
+        runAuraMutation('timer', () => {
           db.addTimerSession({
             id: sessionId,
             date: dateString,
@@ -95,8 +101,8 @@ export function useTimerSession(db: AuraDatabase | null, dateString: string, day
             duration: m.elapsedTime,
             timer_type: m.timerType,
             target_duration: m.timerType === 'timer' ? m.targetDuration : null,
-          })
-        );
+          });
+        });
         sendTimerCompleted({
           isNaturalCompletion,
           taskTitle: task.title || null,

@@ -10,6 +10,7 @@ type ModeSwitchHeaderProps<T extends string> = {
   className?: string;
   /** When true, segment buttons are disabled (e.g. while a session is active). */
   disabled?: boolean;
+  locked?: boolean;
 };
 
 export function ModeSwitchHeader<T extends string>({
@@ -19,7 +20,9 @@ export function ModeSwitchHeader<T extends string>({
   ariaLabel,
   className,
   disabled = false,
+  locked = false,
 }: ModeSwitchHeaderProps<T>) {
+  void locked;
   return (
     <div className={cn(MEGA_PANEL_HEADER_CN, 'items-stretch gap-0 px-0 py-0 sm:px-0', className)}>
       <UniversalRadioGroup

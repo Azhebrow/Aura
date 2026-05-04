@@ -49,9 +49,11 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentProps<typeof DialogPrimitive.Content> & {
     showCloseButton?: boolean
+    enableEnterToConfirm?: boolean
   }
->(function DialogContent({ className, children, showCloseButton = true, onKeyDownCapture, ...props }, ref) {
+>(function DialogContent({ className, children, showCloseButton = true, enableEnterToConfirm = false, onKeyDownCapture, ...props }, ref) {
   const handleKeyDownCapture = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!enableEnterToConfirm) return
     if (event.key !== "Enter" || event.defaultPrevented || event.nativeEvent.isComposing) return
     const target = event.target as HTMLElement | null
     if (!target) return
@@ -69,7 +71,7 @@ const DialogContent = React.forwardRef<
 
     event.preventDefault()
     confirmButton.click()
-  }, [])
+  }, [enableEnterToConfirm])
 
   const mergedOnKeyDownCapture = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {

@@ -1,100 +1,113 @@
-import { TASK_CATEGORY_PALETTE } from '@/shared/design/aura-palette';
+import { normalizeCssColorForPaint } from '@/lib/css-color';
+import { getAuraPublicIconUrlFromName } from '@/shared/lib/aura-icon-url';
 import type { StatsCellValue, StatsMode } from '@/shared/stats/types';
+import type { StatsFormattedRow } from '@/shared/stats/stats-table-format';
 
-/** Число для столбчатых/линейных графиков (калории для питания по элементам). */
-export function statsNumericForChart(mode: StatsMode, v: StatsCellValue | undefined): number {
-  void mode;
-  if (v === null || v === undefined) return 0;
-  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
-  if (typeof v === 'object' && v !== null && 'calories' in v) {
-    const c = (v as { calories?: number }).calories;
-    return typeof c === 'number' && Number.isFinite(c) ? c : 0;
-  }
-  return 0;
+const RAW_ICON_MODULES = import.meta.glob('../../../public/icons/*.svg', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
+const RAW_ICON_BY_NAME = new Map<string, string>(
+  Object.entries(RAW_ICON_MODULES).map(([path, svg]) => [path.split('/').pop()?.replace(/\.svg$/i, '') ?? path, svg])
+);
+
+export function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (ch) => {
+    switch (ch) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#39;';
+      default:
+        return ch;
+    }
+  });
 }
 
-function hashKey(key: string): number {
-  let h = 0;
-  for (let i = 0; i < key.length; i += 1) h = (h * 33 + key.charCodeAt(i)) | 0;
-  return Math.abs(h);
+export function visibleSeriesKeys(columns: string[], selected: string[] | null): string[] {
+  if (selected === null) return columns;
+  return columns.filter((c) => selected.includes(c));
 }
 
-/**
- * Цвет серии: только из `meta.colors` или детерминированно из фиксированной палитры (никакой случайной подстановки).
- */
-export function resolveChartColor(
-  metaColors: Record<string, string> | undefined,
-  key: string,
-  index: number
-): string {
-  const raw = metaColors?.[key];
-  if (typeof raw === 'string' && raw.trim()) {
-    const t = raw.trim();
-    if (t.startsWith('#') && (t.length === 7 || t.length === 4)) return t;
-    if (t.toLowerCase().startsWith('hsl')) return t;
-    if (t.toLowerCase().startsWith('rgb')) return t;
-    if (t.toLowerCase().startsWith('var(')) return t;
-  }
-  const idx = (hashKey(key) + index) % TASK_CATEGORY_PALETTE.length;
-  return TASK_CATEGORY_PALETTE[idx];
-}
-
-export function pieFillColor(metaColors: Record<string, string> | undefined, key: string, index: number): string {
-  return resolveChartColor(metaColors, key, index);
-}
-
-export function chartAxisUnit(mode: StatsMode): string {
-  switch (mode) {
-    case 'tasks':
-    case 'rituals':
-      return '%';
-    case 'finance':
-      return 'RUB';
-    case 'time':
-    case 'leisure':
-      return 'ч';
-    case 'rank':
-      return 'очки';
-    case 'nutrition':
-      return 'ккал';
-    case 'mood':
-      return 'ур.';
-    case 'correlation':
-      return 'коэф.';
-    default:
-      return 'ед.';
+function readCssVariable(variableName: string): string {
+  if (typeof document === 'undefined') return '';
+  try {
+    return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+  } catch {
+    return '';
   }
 }
 
-export function formatChartAxisValue(value: number, mode: StatsMode): string {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return '0';
-
-  switch (mode) {
-    case 'tasks':
-    case 'rituals':
-      return `${Math.round(n)}%`;
-    case 'finance':
-      return new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
-    case 'time':
-    case 'leisure':
-      return `${Math.round(n)}ч`;
-    case 'rank':
-      return Math.round(n).toLocaleString('ru-RU');
-    case 'nutrition':
-      return `${Math.round(n)}`;
-    case 'mood':
-      return `${Math.round(n)}`;
-    case 'correlation':
-      return `${n.toFixed(2)}`;
-    default:
-      return Math.round(n).toLocaleString('ru-RU');
+export function resolveChartColor(raw: string | null | undefined, fallback = 'hsl(214, 70%, 56%)'): string {
+  if (!raw) return fallback;
+  const t = String(raw).trim();
+  if (!t) return fallback;
+  const varMatch = t.match(/^var\((--[A-Za-z0-9-_]+)\)$/);
+  if (varMatch) {
+    const resolved = readCssVariable(varMatch[1]);
+    if (resolved) return resolved;
   }
+  return normalizeCssColorForPaint(t) ?? fallback;
 }
 
-export function formatChartXAxisLabel(value: unknown): string {
-  const source = String(value ?? '').trim();
-  if (!source) return '';
-  const noYear = source.replace(/\s+\d{4}$/u, '');
-  return noYear.length > 7 ? `${noYear.slice(0, 7)}…` : noYear;
+export function getChartNumericValue(mode: StatsMode, key: string, raw: StatsCellValue): number | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  if (mode === 'nutrition' && typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+    const v = raw as { calories?: number };
+    const calories = Number(v.calories ?? 0);
+    return Number.isFinite(calories) ? calories : null;
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function getNutritionNumericValue(key: string, raw: StatsCellValue): number | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+    const v = raw as { calories?: number; proteins?: number; fats?: number; carbs?: number };
+    if (key.includes('Белки')) return Number.isFinite(Number(v.proteins)) ? Number(v.proteins ?? 0) : null;
+    if (key.includes('Жиры')) return Number.isFinite(Number(v.fats)) ? Number(v.fats ?? 0) : null;
+    if (key.includes('Углеводы')) return Number.isFinite(Number(v.carbs)) ? Number(v.carbs ?? 0) : null;
+    if (key.includes('Калории')) return Number.isFinite(Number(v.calories)) ? Number(v.calories ?? 0) : null;
+    const calories = Number(v.calories ?? 0);
+    return Number.isFinite(calories) ? calories : null;
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function getChartDisplayValue(row: StatsFormattedRow, key: string): string {
+  return row.values[key] ?? '—';
+}
+
+export function getChartIconUrl(iconName: string | null | undefined): string | null {
+  return getAuraPublicIconUrlFromName(iconName ?? '');
+}
+
+export function getThemedChartIconDataUrl(iconUrl: string | null | undefined, color: string): string | null {
+  if (!iconUrl) return null;
+  const fileName = iconUrl.split('/').pop()?.replace(/\?.*$/, '').replace(/\.svg$/i, '') ?? '';
+  const rawSvg = RAW_ICON_BY_NAME.get(fileName);
+  if (!rawSvg) return iconUrl;
+
+  const themedSvg = rawSvg
+    .replace(/stroke="currentColor"/g, `stroke="${color}"`)
+    .replace(/fill="currentColor"/g, `fill="${color}"`)
+    .replace('<svg', `<svg color="${color}"`);
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(themedSvg)}`;
+}
+
+export function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

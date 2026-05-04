@@ -17,8 +17,8 @@ export const PAGE_ICONS: Record<PageId, LucideIcon> = {
   rituals: Flame,
   diary: BookOpen,
   timer: Timer,
-  ranks: Trophy,
   stats: ChartColumn,
+  ranks: Trophy,
   calendar: CalendarDays,
   settings: Settings,
 };

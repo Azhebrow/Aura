@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ChevronDown, Clock, ListTodo, Timer, Trash2 } from 'lucide-react';
-import { useRadioGroupSlideAnimation, getSlideAnimationClasses } from '@/shared/hooks/use-radio-group-slide-animation';
 import { Badge } from '@/components/ui/badge';
 import { AddListButton } from '@/components/ui/add-list-button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -53,9 +52,11 @@ import {
 } from '@/shared/ui/mega-section-layout';
 import { MegaPanelHeader } from '@/shared/ui/mega-panel-header';
 import { ModeSwitchHeader } from '@/shared/ui/mode-switch-header';
-import { getCategoryColor } from '@/shared/stats/task-categories-settings';
+import { getCategoryColor } from '@/shared/config/task-categories-settings';
 import { buildTimerTaskGroupById, getSessionGroup } from '@/features/timer/timer-session-groups';
-import { MobileSectionSwitcher } from '@/shared/ui/mobile-section-switcher';
+import { MobileSectionTabs } from '@/shared/ui/mobile';
+import { LoadingShell } from '@/shared/ui/data-states';
+import { ANIM } from '@/shared/lib/animation-classes';
 
 const QUICK_MINUTES = [5, 15, 25, 45, 60, 120];
 
@@ -121,6 +122,14 @@ function newSessionId() {
   return `timer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
 
+function sameSessions(a: AuraRow[], b: AuraRow[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (JSON.stringify(a[i]) !== JSON.stringify(b[i])) return false;
+  }
+  return true;
+}
+
 /** Прогресс по цели задачи за выбранный день (часы из cfg_target_hours). */
 function timerTaskDailyProgressPct(t: Pick<TimerTaskRow, 'cfg_target_hours' | 'currentSeconds'>): number {
   const th = t.cfg_target_hours ?? 0;
@@ -131,11 +140,11 @@ function timerTaskDailyProgressPct(t: Pick<TimerTaskRow, 'cfg_target_hours' | 'c
 
 export function TimerStatusPage() {
   const { dateString } = useSelectedDate();
-  const { db, ready } = useAuraDb();
-  const dayLocked = useDayLocked(db, ready, dateString);
-  const timer = useTimerSession(db, dateString, dayLocked);
-  const { byGroup, reload: reloadTasks } = useTimerTasksAll(db, ready, dateString);
+  const { db } = useAuraDb();
   const dataTick = useAuraDataRefresh({ types: ['timer'] });
+  const dayLocked = useDayLocked(db, Boolean(db), dateString);
+  const timer = useTimerSession(db, dateString, dayLocked);
+  const { byGroup, reload: reloadTasks } = useTimerTasksAll(db, dateString, dataTick);
   const ipc = useMemo(() => getIpcRenderer(), []);
 
   const [sessions, setSessions] = useState<AuraRow[]>([]);
@@ -144,23 +153,19 @@ export function TimerStatusPage() {
       setSessions([]);
       return;
     }
-    setSessions(db.getTimerSessions(dateString));
+    const next = db.getTimerSessions(dateString);
+    setSessions((prev) => (sameSessions(prev, next) ? prev : next));
   }, [db, dateString]);
 
   useEffect(() => {
-    if (!ready || !db) {
+    if (!db) {
       setSessions([]);
       return;
     }
     refreshSessions();
-  }, [dataTick, db, dateString, ready, refreshSessions, timer.model.isRunning, timer.model.elapsedTime]);
+  }, [dataTick, db, dateString, refreshSessions]);
 
-  useEffect(() => {
-    if (!ready) return;
-    reloadTasks();
-  }, [dataTick, ready, reloadTasks]);
-
-  const pickerTasks = useMemo(() => (db ? loadPickerTasks(db) : []), [db, ready]);
+  const pickerTasks = useMemo(() => (db ? loadPickerTasks(db) : []), [db]);
 
   const taskMetaById = useMemo(() => {
     const m = new Map<string, { title: string; icon?: string; color?: string }>();
@@ -181,8 +186,6 @@ export function TimerStatusPage() {
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [sessionHeroExpanded, setSessionHeroExpanded] = useState(true);
   const [mobileSection, setMobileSection] = useState<'tasks' | 'timer' | 'sessions'>('timer');
-  const sectionSlideDirection = useRadioGroupSlideAnimation(mobileSection, ['tasks', 'timer', 'sessions'] as const);
-  const timerTypeSlideDirection = useRadioGroupSlideAnimation(formTimerType, ['timer', 'stopwatch'] as const);
   const wasRunningRef = useRef(timer.model.isRunning);
   const timerHydrating = !!ipc && !timer.isHydrated;
 
@@ -229,16 +232,16 @@ export function TimerStatusPage() {
             timer_type: formTimerType,
             target_duration: formTimerType === 'timer' ? durationSec : null,
           });
-          return;
+        } else {
+          db.addTimerSession({
+            id: newSessionId(),
+            date: dateString,
+            task_id: formTaskId,
+            duration: durationSec,
+            timer_type: formTimerType,
+            target_duration: formTimerType === 'timer' ? durationSec : null,
+          });
         }
-        db.addTimerSession({
-          id: newSessionId(),
-          date: dateString,
-          task_id: formTaskId,
-          duration: durationSec,
-          timer_type: formTimerType,
-          target_duration: formTimerType === 'timer' ? durationSec : null,
-        });
       });
       setSessionDialogOpen(false);
       refreshSessions();
@@ -321,7 +324,7 @@ export function TimerStatusPage() {
   const [visibleDailyProgressByTaskId, setVisibleDailyProgressByTaskId] = useState<Map<string, number>>(
     () => new Map()
   );
-  const sessionTaskGroupById = useMemo(() => buildTimerTaskGroupById(db), [db, ready]);
+  const sessionTaskGroupById = useMemo(() => buildTimerTaskGroupById(db), [db]);
   const timerShare = useMemo(() => {
     let focusSec = 0;
     let escapeSec = 0;
@@ -350,7 +353,6 @@ export function TimerStatusPage() {
   }, [sessionTaskGroupById, sessions]);
 
   useEffect(() => {
-    if (!ready) return;
     const selected = timer.model.selectedTask;
     if (!selected) return;
     const selectedId = selected.id;
@@ -381,10 +383,9 @@ export function TimerStatusPage() {
       color: getTaskColor(found.group, found.task.color),
       icon: found.task.icon,
     });
-  }, [byGroup, groupAccentByKey, ready, timer]);
+  }, [byGroup, groupAccentByKey, timer]);
 
   useEffect(() => {
-    if (!ready) return;
     if (timer.model.selectedTask) return;
     const groupOrder: TimerTaskTab[] = ['tasks', 'escape', 'filling'];
     for (const group of groupOrder) {
@@ -400,22 +401,21 @@ export function TimerStatusPage() {
         return;
       }
     }
-  }, [byGroup, groupAccentByKey, ready, timer]);
+  }, [byGroup, groupAccentByKey, timer]);
 
   useLayoutEffect(() => {
-    if (!ready) {
+    if (!db) {
       setVisibleDailyProgressByTaskId(new Map());
       return;
     }
     setVisibleDailyProgressByTaskId(new Map(rawDailyProgressByTaskId));
-  }, [dateString, rawDailyProgressByTaskId, ready]);
+  }, [dateString, rawDailyProgressByTaskId, db]);
 
   useEffect(() => {
-    if (!ready) return;
     window.requestAnimationFrame(() => {
       setVisibleDailyProgressByTaskId(new Map(rawDailyProgressByTaskId));
     });
-  }, [dateString, rawDailyProgressByTaskId, ready]);
+  }, [dateString, rawDailyProgressByTaskId]);
 
   useEffect(() => {
     const wasRunning = wasRunningRef.current;
@@ -452,18 +452,18 @@ export function TimerStatusPage() {
             </div>
           ) : null}
             {/* Задачи */}
-            <section className={cn('h-full min-h-0 min-w-0 flex-col', mobileSection === 'tasks' ? 'flex' : 'hidden', 'lg:flex', getSlideAnimationClasses(mobileSection === 'tasks', sectionSlideDirection))}>
-              <MegaPanelHeader title="Задачи" />
-              <div className={MEGA_PANEL_BODY_CN}>
-                {!ready ? (
-                  <p className="text-muted-foreground text-sm">Загрузка…</p>
+            <section className={cn('h-full min-h-0 min-w-0 flex-col', mobileSection === 'tasks' ? 'flex' : 'hidden', 'lg:flex', ANIM.enterFade)}>
+              <MegaPanelHeader title="Задачи" locked={dayLocked} />
+              <div className={cn(MEGA_PANEL_BODY_CN, 'relative')}>
+                {dayLocked ? <div className="absolute inset-0 z-20 bg-background/30 backdrop-blur-[1px]" aria-hidden /> : null}
+                {!db ? (
+                  <LoadingShell />
                 ) : totalTimerTasks === 0 ? (
                   <p className="text-muted-foreground text-sm">Нет таймер-задач в CFG.</p>
                 ) : (
                   <div className="flex flex-col gap-4">
                     {TIMER_TASK_GROUPS.map(({ key, title }) => {
                       const tasks = byGroup[key];
-                      const groupAccent = groupAccentByKey[key] ?? 'var(--primary)';
                       return (
                         <div key={key} className="flex flex-col gap-2.5">
                           <div className="flex items-center gap-3">
@@ -493,13 +493,15 @@ export function TimerStatusPage() {
                                   <li
                                     key={t.id}
                                     className={cn(
-                                      'overflow-hidden rounded-lg border bg-transparent transition-colors cursor-pointer',
+                                      'overflow-hidden rounded-lg border bg-transparent aura-tx-colors cursor-pointer',
                                       selected
                                         ? 'border-primary/55 bg-primary/5'
-                                        : 'border-border/60 hover:border-border'
+                                        : 'border-border/60 hover:border-border',
+                                      dayLocked && 'pointer-events-none opacity-55'
                                     )}
                                     onClick={() => {
                                       if (timer.model.isRunning) return;
+                                      if (dayLocked) return;
                                       timer.selectTask({
                                         id: t.id,
                                         title: t.title,
@@ -518,7 +520,8 @@ export function TimerStatusPage() {
                                       className={cn(
                                         'rounded-none border-0 bg-transparent shadow-none pointer-events-none',
                                         'hover:border-0 hover:bg-transparent hover:shadow-none',
-                                        'aura-tx-surface'
+                                        'aura-tx-surface',
+                                        dayLocked && 'opacity-65'
                                       )}
                                       onEdit={undefined}
                                     />
@@ -557,7 +560,7 @@ export function TimerStatusPage() {
             </section>
 
             {/* Таймер — центральная колонка: заголовок колонки = переключатель режима */}
-            <section className={cn('h-full min-h-0 min-w-0 flex-col overflow-hidden', mobileSection === 'timer' ? 'flex' : 'hidden', 'lg:flex', getSlideAnimationClasses(mobileSection === 'timer', sectionSlideDirection))}>
+            <section className={cn('h-full min-h-0 min-w-0 flex-col overflow-hidden', mobileSection === 'timer' ? 'flex' : 'hidden', 'lg:flex', ANIM.enterFade)}>
               <ModeSwitchHeader
                 value={timer.model.timerType}
                 onValueChange={(v) => timer.setTimerType(v)}
@@ -687,9 +690,10 @@ export function TimerStatusPage() {
             </section>
 
             {/* Сессии за день */}
-            <section className={cn('h-full min-h-0 min-w-0 flex-col', mobileSection === 'sessions' ? 'flex' : 'hidden', 'lg:flex', getSlideAnimationClasses(mobileSection === 'sessions', sectionSlideDirection))}>
-              <MegaPanelHeader title="Сессии за день" />
-              <div className={MEGA_PANEL_BODY_CN}>
+            <section className={cn('h-full min-h-0 min-w-0 flex-col', mobileSection === 'sessions' ? 'flex' : 'hidden', 'lg:flex', ANIM.enterFade)}>
+              <MegaPanelHeader title="Сессии за день" locked={dayLocked} />
+              <div className={cn(MEGA_PANEL_BODY_CN, 'relative')}>
+                {dayLocked ? <div className="absolute inset-0 z-20 bg-background/30 backdrop-blur-[1px]" aria-hidden /> : null}
                 {sessions.length === 0 ? (
                   <EmptyState
                     title="Пока нет записей."
@@ -717,7 +721,7 @@ export function TimerStatusPage() {
                             iconTint={resolvedRowTint}
                             title={label}
                             amount={`${mins} мин · ${isStopwatch ? 'секундомер' : 'таймер'}`}
-                            className="aura-tx-surface"
+                            className={cn('aura-tx-surface', dayLocked && 'opacity-65')}
                             onEdit={() => {
                               if (!dayLocked) openEditSession(s);
                             }}
@@ -732,18 +736,18 @@ export function TimerStatusPage() {
                 )}
                 <AddListButton
                   onClick={openCreateSession}
-                  disabled={dayLocked || !ready || pickerTasks.length === 0}
+                  disabled={dayLocked || !db || pickerTasks.length === 0}
                   className="mt-3"
                 />
               </div>
             </section>
           </div>
-          <MobileSectionSwitcher
+          <MobileSectionTabs
             className="lg:hidden"
             sections={[
-              { id: 'tasks', label: 'Задачи', icon: ListTodo },
-              { id: 'timer', label: 'Таймер', icon: Timer },
-              { id: 'sessions', label: 'Сессии', icon: Clock },
+              { id: 'tasks', label: 'Задачи', Icon: ListTodo },
+              { id: 'timer', label: 'Таймер', Icon: Timer },
+              { id: 'sessions', label: 'Сессии', Icon: Clock },
             ]}
             value={mobileSection}
             onChange={setMobileSection}
