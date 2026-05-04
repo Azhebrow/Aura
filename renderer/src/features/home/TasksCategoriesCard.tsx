@@ -654,11 +654,14 @@ export function TasksCategoriesCard() {
   const goRituals = (ritualType: string) => {
     const rt = String(ritualType);
     const kind = rt === 'sunset' ? 'evening' : 'morning';
+    console.log(`[goRituals] ritualType=${ritualType}, kind=${kind}`);
     try {
       localStorage.setItem(STORAGE_KEYS.RITUALS_KIND, kind);
-    } catch {
-      /* ignore */
+      console.log(`[goRituals] localStorage set to ${kind}`);
+    } catch (e) {
+      console.error(`[goRituals] Error setting localStorage:`, e);
     }
+    console.log(`[goRituals] Calling setActivePageId('rituals')`);
     setActivePageId('rituals');
   };
 

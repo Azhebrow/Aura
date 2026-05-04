@@ -27,11 +27,17 @@ export function RitualsChecklistPanel() {
   const { getCached, setCached, invalidate } = useRitualsCache(dateString);
   const [kind, setKind] = useState<RitualKind>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.RITUALS_KIND);
-    if (stored === 'morning' || stored === 'evening') return stored;
+    console.log(`[Init] localStorage value: ${stored}`);
+    if (stored === 'morning' || stored === 'evening') {
+      console.log(`[Init] Returning ${stored}`);
+      return stored;
+    }
+    console.log(`[Init] Returning default 'morning'`);
     return 'morning';
   });
   const [priorityKind, setPriorityKind] = useState<RitualKind>('morning');
 
+  console.log(`[Render] kind=${kind}, activePageId=${activePageId}`);
   const cache = getCached();
   const [morningRituals, setMorningRituals] = useState<AuraRow[]>(cache?.morning ?? []);
   const [eveningRituals, setEveningRituals] = useState<AuraRow[]>(cache?.evening ?? []);
@@ -70,8 +76,11 @@ export function RitualsChecklistPanel() {
   );
 
   useEffect(() => {
+    console.log(`[Effect] activePageId=${activePageId}`);
     const raw = localStorage.getItem(STORAGE_KEYS.RITUALS_KIND);
+    console.log(`[Effect] localStorage value: ${raw}`);
     if (raw === 'morning' || raw === 'evening') {
+      console.log(`[Effect] Setting kind to ${raw}`);
       setKind(raw);
       setPriorityKind(raw);
       localStorage.removeItem(STORAGE_KEYS.RITUALS_KIND);

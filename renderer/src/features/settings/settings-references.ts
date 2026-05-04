@@ -30,7 +30,8 @@ export type SettingsFieldDef = {
 export type SettingsReferenceUsage = {
   page: string;
   section: string;
-  sectionId: string;
+  sectionId?: string;
+  isNavLink?: boolean;
 };
 
 export type SettingsReferenceRelated = {
@@ -44,6 +45,11 @@ export type SettingsReferenceAdditionalFunction = {
   example: string;
 };
 
+export type SettingsReferenceImpact = {
+  title: string;
+  description: string;
+};
+
 export type SettingsReference = {
   id: string;
   icon: LucideIcon;
@@ -53,6 +59,7 @@ export type SettingsReference = {
   fields: SettingsFieldDef[];
   relatedSettings: SettingsReferenceRelated[];
   additionalFunctions: SettingsReferenceAdditionalFunction[];
+  impacts?: SettingsReferenceImpact[];
 };
 
 export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
@@ -67,6 +74,20 @@ export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
         page: 'Главная',
         section: 'Боковая панель',
         sectionId: 'home-sidebar',
+      },
+    ],
+    impacts: [
+      {
+        title: 'Отображение валют',
+        description: 'Выбранная валюта используется во всех финансовых разделах (счета, доходы, расходы) для отображения сумм.',
+      },
+      {
+        title: 'Цели питания',
+        description: 'Целевые показатели калорий и макронутриентов влияют на прогресс в разделе "Питание" и рассчитываемые проценты.',
+      },
+      {
+        title: 'Оформление интерфейса',
+        description: 'Тема и цветовая схема применяется ко всему приложению и влияет на видимость всех элементов.',
       },
     ],
     fields: [
@@ -128,12 +149,24 @@ export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
       {
         page: 'Главная',
         section: 'Карточка утренних ритуалов',
-        sectionId: 'home-rituals-morning',
       },
       {
         page: 'Ритуалы',
         section: 'Чек-лист утра',
-        sectionId: 'rituals-checklist-morning',
+      },
+    ],
+    impacts: [
+      {
+        title: 'Карточка на главной',
+        description: 'Активные ритуалы отображаются в карточке "Ритуалы" на главной странице с отслеживанием прогресса.',
+      },
+      {
+        title: 'Страница Ритуалы',
+        description: 'Полный чек-лист всех утренних ритуалов для проверки выполнения каждое утро.',
+      },
+      {
+        title: 'Прогресс дня',
+        description: 'Выполненные ритуалы влияют на общий прогресс категории "Ритуалы" в статистике.',
       },
     ],
     fields: [
@@ -667,17 +700,28 @@ export const SETTINGS_REFERENCES: Record<string, SettingsReference> = {
       {
         page: 'Главная',
         section: 'Виджет балансов (боковая панель)',
-        sectionId: 'home-sidebar-balances',
       },
       {
         page: 'Финансы',
         section: 'Список счетов и транзакций',
-        sectionId: 'finance-transactions-page',
       },
       {
-        page: 'Диалог добавления транзакции',
-        section: 'Выбор счёта для расхода/дохода',
-        sectionId: 'add-transaction-dialog',
+        page: 'Диалоги',
+        section: 'При добавлении доходов и расходов',
+      },
+    ],
+    impacts: [
+      {
+        title: 'Виджет на главной',
+        description: 'Счёта с флагом "Показывать на главной" отображаются в боковой панели (максимум 3 видимых).',
+      },
+      {
+        title: 'Балансы и статистика',
+        description: 'Все транзакции относятся к конкретным счетам, что влияет на их баланс и финансовую статистику.',
+      },
+      {
+        title: 'Выбор при вводе',
+        description: 'При добавлении дохода или расхода нужно выбрать счёт, на который/с которого идёт перевод.',
       },
     ],
     fields: [
