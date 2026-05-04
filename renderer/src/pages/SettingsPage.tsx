@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AppSettingsTechnicalCard } from '@/features/app-settings/AppSettingsTechnicalCard';
+import { AppGuidePanel } from '@/features/settings/AppGuidePanel';
 import { AppearanceSettingsCard } from '@/features/settings/AppearanceSettingsCard';
 import { CfgSectionCard } from '@/features/settings/CfgSectionCard';
 import { SettingsReferenceBlock } from '@/features/settings/SettingsReferenceBlock';
@@ -86,6 +87,9 @@ export function SettingsPage() {
   const reference = useMemo(() => getSettingsReference(active), [active]);
 
   const panel = (() => {
+    if (active === 'app-guide') {
+      return <AppGuidePanel />;
+    }
     if (active === 'interface-data') {
       return (
         <div className="flex flex-col gap-4 sm:gap-5">

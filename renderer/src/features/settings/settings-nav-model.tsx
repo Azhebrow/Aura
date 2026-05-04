@@ -3,6 +3,7 @@ import {
   Activity,
   Ban,
   BookHeart,
+  BookOpen,
   BookText,
   Ghost,
   Apple,
@@ -90,6 +91,11 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     id: 'ambient',
     label: 'Медиа',
     items: [{ id: 'ambient-music', title: 'Фоновая музыка', icon: Music }],
+  },
+  {
+    id: 'about',
+    label: 'Справка',
+    items: [{ id: 'app-guide', title: 'Как пользоваться AURA', icon: BookOpen }],
   },
 ];
 
