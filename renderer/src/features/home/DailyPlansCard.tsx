@@ -76,20 +76,18 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
   return (
     <>
       <div className={cn('flex min-h-0 flex-1 flex-col', cardClassName)}>
-        <div className={cn('flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain', contentClassName)}>
+        <ul className={cn('flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain', contentClassName)}>
           {status === 'loading' ? (
-            <LoadingShell />
-          ) : rowsList.length === 0 ? null : (
-            <ul className="flex flex-col gap-1.5">
+            <li className="flex-1"><LoadingShell /></li>
+          ) : (
+            <>
               {rowsList.map((p) => {
                 const id = String(p.id);
                 const done = p.completed === 1 || p.completed === true;
                 const label = String(p.title ?? '');
-
                 const idx = rowsList.findIndex(r => String(r.id) === id);
                 const isFirst = idx === 0;
                 const isLast = idx === rowsList.length - 1;
-
                 return (
                   <li key={id}>
                     <ListItem
@@ -97,11 +95,8 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                       title={label}
                       checked={done}
                       onCheckedChange={(c) => toggle(id, c)}
-                      onMoveUp={!isFirst ? () => {
-                        // Логика перемещения вверх
-                      } : undefined}
-                      onMoveDown={!isLast ? () => {
-                      } : undefined}
+                      onMoveUp={!isFirst ? () => {} : undefined}
+                      onMoveDown={!isLast ? () => {} : undefined}
                       onDelete={() => {
                         if (!db) return;
                         submitMutation({ kind: 'delete', payload: { id } });
@@ -111,12 +106,12 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                   </li>
                 );
               })}
-              <li>
+              <li className="mt-2">
                 <AddListButton onClick={() => setAddOpen(true)} disabled={status === 'loading'} />
               </li>
-            </ul>
+            </>
           )}
-        </div>
+        </ul>
       </div>
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <ActModal

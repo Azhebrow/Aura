@@ -85,7 +85,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
   return (
     <>
       <div className={cn('flex min-h-0 flex-1 flex-col', cardClassName)}>
-        <div className={cn('flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain', contentClassName)}>
+        <div className={cn('flex min-h-0 flex-1 flex-col', contentClassName)}>
           {status === 'loading' ? (
             <LoadingShell />
           ) : !db ? (
@@ -93,7 +93,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
           ) : (
             <>
               {topAccounts.length > 0 ? (
-                <div className="mb-2 grid auto-cols-fr gap-2 shrink-0" style={{ gridTemplateColumns: `repeat(${Math.min(topAccounts.length, 3)}, 1fr)` }}>
+                <div className="mb-2 grid shrink-0 auto-cols-fr gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(topAccounts.length, 3)}, 1fr)` }}>
                   {topAccounts.map((acc) => {
                     const isSavings = acc.type === 'savings';
                     const hasTarget = acc.target > 0;
@@ -134,57 +134,55 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                   })}
                 </div>
               ) : null}
-              {rows.length === 0 ? null : (
-                <ul className="flex flex-col gap-1">
-                  {rows.map((t) => {
-                    const id = String(t.id);
-                    const r = resolveTransactionRow(db, t);
-                    const amount = t.amount;
-                    const desc = t.description ? String(t.description) : '';
-                    const tint = r.accentColor ?? 'var(--muted-foreground)';
-                    return (
-                      <li key={id}>
-                        <ListItem
-                          mode="edit-delete"
-                          icon={r.iconName}
-                          iconTint={tint}
-                          title={
-                            r.isCompulsiveExpense ? (
-                              <span className="inline-flex min-w-0 items-center gap-1.5">
-                                <span className="truncate">{r.title}</span>
-                                <span
-                                  className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200"
-                                  title="Импульсивная покупка"
-                                >
-                                  <AlertTriangle className="size-3" aria-hidden />
-                                </span>
+              <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain">
+                {rows.map((t) => {
+                  const id = String(t.id);
+                  const r = resolveTransactionRow(db, t);
+                  const amount = t.amount;
+                  const desc = t.description ? String(t.description) : '';
+                  const tint = r.accentColor ?? 'var(--muted-foreground)';
+                  return (
+                    <li key={id}>
+                      <ListItem
+                        mode="edit-delete"
+                        icon={r.iconName}
+                        iconTint={tint}
+                        title={
+                          r.isCompulsiveExpense ? (
+                            <span className="inline-flex min-w-0 items-center gap-1.5">
+                              <span className="truncate">{r.title}</span>
+                              <span
+                                className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200"
+                                title="Импульсивная покупка"
+                              >
+                                <AlertTriangle className="size-3" aria-hidden />
                               </span>
-                            ) : (
-                              r.title
-                            )
-                          }
-                          amount={`${r.typeKey === 'expense' ? '−' : r.typeKey === 'income' ? '+' : ''}${formatAmount(amount, currency)}`}
-                          description={desc ? <span className="line-clamp-2 text-xs">{desc}</span> : undefined}
-                          onEdit={() => {
-                            setEditingTransaction(t);
-                            setAddOpen(true);
-                          }}
-                          onDelete={() => removeTx(id)}
-                        />
-                      </li>
-                    );
-                  })}
-                  <li>
-                    <AddListButton
-                      onClick={() => {
-                        setEditingTransaction(null);
-                        setAddOpen(true);
-                      }}
-                      disabled={status === 'loading' || !db}
-                    />
-                  </li>
-                </ul>
-              )}
+                            </span>
+                          ) : (
+                            r.title
+                          )
+                        }
+                        amount={`${r.typeKey === 'expense' ? '−' : r.typeKey === 'income' ? '+' : ''}${formatAmount(amount, currency)}`}
+                        description={desc ? <span className="line-clamp-2 text-xs">{desc}</span> : undefined}
+                        onEdit={() => {
+                          setEditingTransaction(t);
+                          setAddOpen(true);
+                        }}
+                        onDelete={() => removeTx(id)}
+                      />
+                    </li>
+                  );
+                })}
+                <li className="mt-2">
+                  <AddListButton
+                    onClick={() => {
+                      setEditingTransaction(null);
+                      setAddOpen(true);
+                    }}
+                    disabled={status === 'loading' || !db}
+                  />
+                </li>
+              </ul>
             </>
           )}
         </div>

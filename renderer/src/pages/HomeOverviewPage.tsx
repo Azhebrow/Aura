@@ -165,29 +165,25 @@ export function HomeOverviewPage() {
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Финансы" />
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain p-3 gap-1 pr-0.5">
-                  <TransactionsCard contentClassName="min-h-0 flex-1 gap-1" />
-                </div>
+                <TransactionsCard contentClassName="min-h-0 flex-1 gap-1 p-3 pr-0.5" />
               </div>
             ) : null}
             {showPlans ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full border-l border-border/40"
+                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Планы" />
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain p-3 gap-1 pr-0.5">
-                  <DailyPlansCard contentClassName="min-h-0 flex-1 gap-1" />
-                </div>
+                <DailyPlansCard contentClassName="min-h-0 flex-1 gap-1.5 p-3 pr-0.5" />
               </div>
             ) : null}
             {showChart ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full border-l border-border/40"
+                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Прогресс" />
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain p-3">
+                <div className="flex min-h-0 flex-1 flex-col p-3">
                   <CategoryProgressCard contentClassName="min-h-0 flex-1 p-0" />
                 </div>
               </div>
