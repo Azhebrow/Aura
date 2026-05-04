@@ -165,7 +165,7 @@ export function HomeOverviewPage() {
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Финансы" />
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain p-3 gap-1">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain p-3 gap-1 pr-0.5">
                   <TransactionsCard contentClassName="min-h-0 flex-1 gap-1" />
                 </div>
               </div>
@@ -176,7 +176,7 @@ export function HomeOverviewPage() {
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Планы" />
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain p-3 gap-1">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain p-3 gap-1 pr-0.5">
                   <DailyPlansCard contentClassName="min-h-0 flex-1 gap-1" />
                 </div>
               </div>

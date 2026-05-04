@@ -80,7 +80,7 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
           {status === 'loading' ? (
             <LoadingShell />
           ) : rowsList.length === 0 ? null : (
-            <ul className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-y-contain pr-0.5">
+            <ul className="flex min-h-0 flex-1 flex-col gap-1.5">
               {rowsList.map((p) => {
                 const id = String(p.id);
                 const done = p.completed === 1 || p.completed === true;
