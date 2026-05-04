@@ -219,7 +219,7 @@ export function SidebarDaySnapshot({ compact = false }: { compact?: boolean } = 
       } as Record<SidebarMetricKey, { value: string; muted: boolean }>,
       settings,
     };
-  }, [bootstrapData, db, dateString, focusTaskIds]);
+  }, [bootstrapData, db, dateString, focusTaskIds, dataTick]);
 
   const metricIcons: Record<SidebarMetricKey, LucideIcon> = {
     'day-progress': CalendarDays,

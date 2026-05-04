@@ -5,6 +5,7 @@ import { useSelectedDate } from '@/features/selected-date/selected-date-context'
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useDayLocked } from '@/shared/hooks/use-day-locked';
 import { useRitualsCache } from '@/shared/hooks/use-rituals-cache';
+import { useShell } from '@/app/navigation/shell-context';
 import { cn } from '@/lib/utils';
 import type { AuraRow } from '@/types/aura';
 import { LIST_CONTENT_CN, MEGA_PANEL_BODY_CN } from '@/shared/ui/mega-section-layout';
@@ -21,10 +22,21 @@ import { useFormMutation } from '@/shared/hooks/use-form-mutation';
 export function RitualsChecklistPanel() {
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
+  const { activePageId } = useShell();
   const dayLocked = useDayLocked(db, Boolean(db), dateString);
   const { getCached, setCached, invalidate } = useRitualsCache(dateString);
-  const [kind, setKind] = useState<RitualKind>('morning');
+  const [kind, setKind] = useState<RitualKind>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.RITUALS_KIND);
+    if (stored === 'morning' || stored === 'evening') {
+      localStorage.removeItem(STORAGE_KEYS.RITUALS_KIND);
+      console.log(`[RitualsChecklistPanel] initialized kind=${stored} from localStorage`);
+      return stored;
+    }
+    return 'morning';
+  });
   const [priorityKind, setPriorityKind] = useState<RitualKind>('morning');
+
+  console.log(`[RitualsChecklistPanel] render: kind=${kind}, activePageId=${activePageId}`);
   const cache = getCached();
   const [morningRituals, setMorningRituals] = useState<AuraRow[]>(cache?.morning ?? []);
   const [eveningRituals, setEveningRituals] = useState<AuraRow[]>(cache?.evening ?? []);
@@ -63,6 +75,25 @@ export function RitualsChecklistPanel() {
   );
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.RITUALS_KIND);
+      console.log(`[RitualsChecklistPanel effect] activePageId=${activePageId}, raw=${raw}`);
+      if (raw === 'morning' || raw === 'evening') {
+        console.log(`[RitualsChecklistPanel] Setting kind to ${raw}`);
+        setKind(raw as RitualKind);
+        console.log(`[RitualsChecklistPanel] Setting priorityKind to ${raw}`);
+        setPriorityKind(raw as RitualKind);
+        localStorage.removeItem(STORAGE_KEYS.RITUALS_KIND);
+        console.log(`[RitualsChecklistPanel] Successfully switched to ${raw} mode`);
+      } else {
+        console.log(`[RitualsChecklistPanel] No RITUALS_KIND in localStorage`);
+      }
+    } catch (e) {
+      console.error(`[RitualsChecklistPanel] Error:`, e);
+    }
+  }, [activePageId]);
+
+  useEffect(() => {
     if (!loaded) return;
     setMorningRituals(loadedMorningRituals);
     setEveningRituals(loadedEveningRituals);
@@ -76,18 +107,6 @@ export function RitualsChecklistPanel() {
     });
   }, [loaded, loadedMorningRituals, loadedEveningRituals, loadedMorningDone, loadedEveningDone, setCached]);
 
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEYS.RITUALS_KIND);
-      if (raw === 'morning' || raw === 'evening') {
-        setKind(raw);
-        setPriorityKind(raw);
-        sessionStorage.removeItem(STORAGE_KEYS.RITUALS_KIND);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   useEffect(() => {
     const onData = (ev: Event) => {
@@ -133,6 +152,19 @@ export function RitualsChecklistPanel() {
   const desktopRituals = useMemo(() => (kind === 'morning' ? morningRituals : eveningRituals), [kind, morningRituals, eveningRituals]);
   const desktopDone = useMemo(() => (kind === 'morning' ? morningDone : eveningDone), [kind, morningDone, eveningDone]);
 
+  const modeOptions = useMemo(
+    () => {
+      console.log(`[RitualsChecklistPanel] modeOptions memo computed, dayLocked=${dayLocked}`);
+      return [
+        { value: 'morning' as const, label: 'Утро', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Sunrise className="size-3.5 shrink-0" aria-hidden /> },
+        { value: 'evening' as const, label: 'Вечер', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Moon className="size-3.5 shrink-0" aria-hidden /> },
+      ];
+    },
+    [dayLocked]
+  );
+
+  console.log(`[RitualsChecklistPanel] About to render ModeSwitchHeader: kind=${kind}, options length=${modeOptions.length}`);
+
   return (
     <>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -142,10 +174,7 @@ export function RitualsChecklistPanel() {
             onValueChange={setKind}
             ariaLabel="Режим ритуалов"
             locked={dayLocked}
-            options={[
-              { value: 'morning', label: 'Утро', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Sunrise className="size-3.5 shrink-0" aria-hidden /> },
-              { value: 'evening', label: 'Вечер', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Moon className="size-3.5 shrink-0" aria-hidden /> },
-            ]}
+            options={modeOptions}
           />
         </div>
         <div className={cn(MEGA_PANEL_BODY_CN, 'flex flex-col gap-2', ANIM.enterFade)}>

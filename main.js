@@ -35,59 +35,29 @@ let isQuitting = false;
 const macTrayMode = process.env.AURA_MAC_TRAY_MODE || (process.platform === 'darwin' ? 'icon' : 'text');
 const LOCAL_API_URL = 'http://127.0.0.1:8787';
 
+function isWindowValid() {
+  return mainWindow && !mainWindow.isDestroyed();
+}
+
 function hideWindowToTray() {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.hide();
-    if (process.platform === 'darwin' && app.dock) {
-      app.dock.hide();
-    }
-    updateTrayMenu();
-  }
+  if (!isWindowValid()) return;
+  mainWindow.hide();
+  updateTrayMenu();
 }
 
 function showWindowFromTray() {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.setAlwaysOnTop(true, 'floating');
-    mainWindow.show();
-    mainWindow.focus();
-    mainWindow.setAlwaysOnTop(false);
-    if (process.platform === 'darwin' && app.dock) {
-      app.dock.show();
+  if (!isWindowValid()) {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
     }
-    app.focus();
-    ensureWindowInWorkArea();
-    if (mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
-      mainWindow.webContents.send('timer:sync-state');
-    }
-  } else if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    return;
   }
-}
 
-/**
- * На macOS: проверяет, что окно не уходит под панель меню.
- * Исправляет позицию при переключении рабочих столов/Spaces.
- */
-function ensureWindowInWorkArea() {
-  if (process.platform !== 'darwin' || !mainWindow || mainWindow.isDestroyed()) return;
-  if (mainWindow.isFullScreen()) return; // В полноэкранном режиме всё ок
+  mainWindow.show();
+  mainWindow.focus();
 
-  try {
-    const bounds = mainWindow.getBounds();
-    const display = screen.getDisplayMatching(bounds);
-    const workArea = display.workArea;
-
-    // Если верхняя граница окна выше рабочей области (под меню-баром) — смещаем вниз
-    if (bounds.y < workArea.y) {
-      mainWindow.setBounds({
-        x: bounds.x,
-        y: workArea.y,
-        width: bounds.width,
-        height: Math.min(bounds.height, workArea.height)
-      });
-    }
-  } catch (e) {
-    console.warn('[Main] ensureWindowInWorkArea:', e.message);
+  if (mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+    mainWindow.webContents.send('timer:sync-state');
   }
 }
 
@@ -289,44 +259,25 @@ function createWindow() {
     }
   }
 
-  // Горячие клавиши для обновления страницы
-  // Ctrl+R (стандартное обновление)
-  globalShortcut.register('CommandOrControl+R', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
+  // Горячие клавиши для обновления страницы (только Ctrl+R и F5)
+  const reloadHandler = () => {
+    if (isWindowValid()) {
       mainWindow.reload();
     }
-  });
+  };
 
-  // F5 (стандартное обновление)
-  globalShortcut.register('F5', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.reload();
-    }
-  });
-
-  // Ctrl+Alt+R
-  globalShortcut.register('CommandOrControl+Alt+R', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.reload();
-    }
-  });
-
-  // Shift+Alt+R
-  globalShortcut.register('Shift+Alt+R', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.reload();
-    }
-  });
+  globalShortcut.register('CommandOrControl+R', reloadHandler);
+  globalShortcut.register('F5', reloadHandler);
 
   // IPC обработчик для обновления горячей клавиши DevTools Tab
   ipcMain.on('devtools-tab-setting-changed', (event, enabled) => {
     updateDevToolsTabShortcut(enabled);
   });
 
-  // IPC обработчики для управления окном (удаляем старый перед регистрацией нового)
+  // IPC обработчик для управления окном
   ipcMain.removeHandler('window-control');
   ipcMain.handle('window-control', async (event, action) => {
-    if (!mainWindow || mainWindow.isDestroyed()) {
+    if (!isWindowValid()) {
       return { success: false, error: 'Window not available' };
     }
 
@@ -335,23 +286,18 @@ function createWindow() {
         case 'minimize':
           mainWindow.minimize();
           return { success: true };
-        
+
         case 'maximize':
-          if (mainWindow.isMaximized()) {
-            mainWindow.unmaximize();
-          } else {
-            mainWindow.maximize();
-          }
+          mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize();
           return { success: true };
-        
+
         case 'close':
-          // Всегда сворачиваем в трей, не закрываем окно — чтобы при открытии не перезагружалось
           hideWindowToTray();
           return { success: true, minimizedToTray: true };
-        
+
         case 'isMaximized':
           return { success: true, isMaximized: mainWindow.isMaximized() };
-        
+
         default:
           return { success: false, error: 'Unknown action' };
       }
@@ -392,22 +338,11 @@ function createWindow() {
     }
   });
 
-  // При показе окна синхронизируем состояние таймера и проверяем позицию (macOS)
+  // При показе окна синхронизируем состояние таймера
   mainWindow.on('show', () => {
-    ensureWindowInWorkArea();
     if (mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
       mainWindow.webContents.send('timer:sync-state');
     }
-  });
-
-  // При выходе из полноэкранного режима проверяем позицию (macOS — окно может уйти под меню)
-  mainWindow.on('leave-full-screen', () => {
-    ensureWindowInWorkArea();
-  });
-
-  // При фокусе окна (переключение Cmd+Tab, клик в Dock) — проверяем позицию на macOS
-  mainWindow.on('focus', () => {
-    ensureWindowInWorkArea();
   });
 
   // Обработка клика на трей будет настроена после создания трея
@@ -782,17 +717,8 @@ function createTray() {
   }
 
   tray.on('click', () => {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    // Если окно в полноэкранном режиме — показываем/переключаемся (как «Показать окно»)
-    if (mainWindow.isFullScreen()) {
-      showWindowFromTray();
-      return;
-    }
-    if (mainWindow.isVisible()) {
-      hideWindowToTray();
-    } else {
-      showWindowFromTray();
-    }
+    if (!isWindowValid()) return;
+    mainWindow.isVisible() ? hideWindowToTray() : showWindowFromTray();
   });
 
   tray.on('right-click', () => {
@@ -808,12 +734,7 @@ function createTray() {
 
 app.whenReady()
   .then(async () => {
-    // Убираем меню-бар
     Menu.setApplicationMenu(null);
-    // Скрываем иконку из Dock — приложение живёт только в трее
-    if (process.platform === 'darwin' && app.dock) {
-      app.dock.hide();
-    }
     await ensureLocalApiServer();
     createWindow();
     createTray();
@@ -833,12 +754,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    // Если окно в полноэкранном режиме (свой Space) — не вызываем show(),
-    // иначе окно «вытаскивается» на текущий рабочий стол вместо переключения на его Space
-    if (mainWindow.isFullScreen()) {
-      return; // macOS сам переключит на fullscreen Space приложения
-    }
+  if (isWindowValid()) {
     showWindowFromTray();
   } else if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
@@ -846,18 +762,13 @@ app.on('activate', () => {
 });
 
 app.on('will-quit', () => {
-  if (devToolsTabShortcut) {
-    try {
-      globalShortcut.unregister('Tab');
-    } catch (e) {
-      console.warn('[Main] Ошибка отмены регистрации Tab при выходе:', e);
-    }
-  }
   globalShortcut.unregisterAll();
+
   if (trayUpdateInterval) {
     clearInterval(trayUpdateInterval);
     trayUpdateInterval = null;
   }
+
   if (tray && !tray.isDestroyed()) {
     tray.destroy();
     tray = null;

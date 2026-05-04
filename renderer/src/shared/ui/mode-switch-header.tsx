@@ -23,6 +23,7 @@ export function ModeSwitchHeader<T extends string>({
   locked = false,
 }: ModeSwitchHeaderProps<T>) {
   void locked;
+  console.log(`[ModeSwitchHeader] rendering with value=${value}, options=${options.length}`);
   return (
     <div className={cn(MEGA_PANEL_HEADER_CN, 'items-stretch gap-0 px-0 py-0 sm:px-0', className)}>
       <UniversalRadioGroup

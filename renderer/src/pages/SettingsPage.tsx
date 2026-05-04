@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppSettingsTechnicalCard } from '@/features/app-settings/AppSettingsTechnicalCard';
 import { AppearanceSettingsCard } from '@/features/settings/AppearanceSettingsCard';
 import { CfgSectionCard } from '@/features/settings/CfgSectionCard';
-import { SettingsInfoBlock } from '@/features/settings/SettingsInfoBlock';
-import { SETTINGS_INFO } from '@/features/settings/settings-info-config';
+import { SettingsReferenceBlock } from '@/features/settings/SettingsReferenceBlock';
+import { getSettingsReference } from '@/features/settings/settings-references';
 import { NutritionTargetsSettingsCard } from '@/features/settings/NutritionTargetsSettingsCard';
 import { getCfgSectionSpec } from '@/features/settings/cfg-section-specs';
 import { SETTINGS_NAV_GROUPS, flattenSettingsNav } from '@/features/settings/settings-nav-model';
@@ -83,7 +83,7 @@ export function SettingsPage() {
 
   const activeItem = useMemo(() => FLAT.find((i) => i.id === active), [active]);
   const activeSelectItem = useMemo(() => FLAT.find((i) => i.id === active) ?? FLAT[0], [active]);
-  const infoEntry = SETTINGS_INFO[active];
+  const reference = useMemo(() => getSettingsReference(active), [active]);
 
   const panel = (() => {
     if (active === 'interface-data') {
@@ -208,8 +208,10 @@ export function SettingsPage() {
                             key={active}
                             className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.99] motion-safe:duration-200 motion-safe:ease-out motion-reduce:animate-none flex flex-col gap-3 pr-1 sm:gap-6 sm:pr-2"
                           >
-                            {infoEntry ? <SettingsInfoBlock entry={infoEntry} /> : null}
                             {panel}
+                            {reference ? (
+                              <SettingsReferenceBlock reference={reference} onNavigate={setActive} />
+                            ) : null}
                           </div>
                         </ScrollArea>
                       </div>

@@ -20,7 +20,7 @@ type DailyPlansCardProps = {
 export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCardProps = {}) {
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
-  const { data: rows, status } = useAsyncData(
+  const { data: rows, status, reload } = useAsyncData(
     (db) => db.getDailyPlans(dateString),
     [dateString],
     { events: ['task-progress'] }
@@ -37,6 +37,7 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
           completed: completed ? 1 : 0,
           updated_at: new Date().toISOString(),
         });
+        reload({ silent: true });
         return;
       }
       if (action.kind === 'add') {
@@ -51,11 +52,13 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
           created_at: now,
           updated_at: now,
         });
+        reload({ silent: true });
         return;
       }
       if (action.kind === 'delete') {
         const { id } = action.payload as { id: string };
         db.delete('act_daily_plans', id);
+        reload({ silent: true });
       }
     },
     { eventType: 'task-progress' }

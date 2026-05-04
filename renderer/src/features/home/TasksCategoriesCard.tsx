@@ -282,8 +282,7 @@ function TaskRowFrame({
   return (
     <li
       className={cn(
-          'group/task relative isolate flex min-h-11 items-center overflow-hidden border rounded-lg transition-[background-color,border-color,opacity] duration-aura-base ease-aura lg:min-h-8 lg:flex-1',
-          'lg:flex lg:items-stretch lg:rounded-xl lg:block',
+          'group/task relative isolate flex flex-1 items-center overflow-hidden border rounded-lg transition-[background-color,border-color,opacity] duration-aura-base ease-aura',
           'border-border/40 bg-muted/35',
           satisfied ? 'border-foreground/15' : 'hover:border-border/70',
           disabled && 'opacity-45'
@@ -656,7 +655,7 @@ export function TasksCategoriesCard() {
     const rt = String(ritualType);
     const kind = rt === 'sunset' ? 'evening' : 'morning';
     try {
-      sessionStorage.setItem(STORAGE_KEYS.RITUALS_KIND, kind);
+      localStorage.setItem(STORAGE_KEYS.RITUALS_KIND, kind);
     } catch {
       /* ignore */
     }
@@ -1119,7 +1118,7 @@ export function TasksCategoriesCard() {
                   {tasks.length === 0 ? (
                     <p className="text-muted-foreground/50 px-3 text-center text-xs sm:px-4">—</p>
                   ) : (
-                    <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain mt-1 px-2 pb-3 pt-0 text-sm sm:gap-2 sm:px-4 sm:pb-3 lg:px-3 lg:overflow-hidden lg:pb-2">
+                    <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain mt-1 px-2 pb-3 pt-0 text-sm sm:gap-2 sm:px-4 sm:pb-3">
                       {tasks.map((t) => renderTaskLine(t, catId))}
                     </ul>
                   )}
