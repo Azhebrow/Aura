@@ -135,7 +135,7 @@ export function HomeOverviewPage() {
   ].filter(Boolean) as Array<{ id: 'tasks' | 'tx' | 'plans' | 'chart'; label: string; Icon: typeof ListTodo; content: ReactNode }>;
 
   const desktopGrid = (sampleRows = false) => (
-    <div className="flex min-h-0 flex-1 flex-col divide-y divide-border/60 aura-content-fade-in">
+    <div className="flex min-h-0 flex-1 flex-col divide-y divide-border/60 aura-content-fade-in h-full">
       {showTasks ? (
         <section
           className={cn(
@@ -151,7 +151,7 @@ export function HomeOverviewPage() {
         </section>
       ) : null}
       {visibleBottomPanels > 0 ? (
-        <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden h-full">
           <div
             className={cn(
               'flex min-h-0 flex-1 overflow-hidden divide-border/60',
@@ -161,7 +161,7 @@ export function HomeOverviewPage() {
           >
             {showTx ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Финансы" />
@@ -172,7 +172,7 @@ export function HomeOverviewPage() {
             ) : null}
             {showPlans ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Планы" />
