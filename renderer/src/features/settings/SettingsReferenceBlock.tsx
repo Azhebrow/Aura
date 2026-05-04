@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, MapPin, Zap, Link2, Layers } from 'lucide-react';
+import { ChevronDown, MapPin, Zap, Link2, Layers, Sparkles } from 'lucide-react';
 import type { SettingsReference } from '@/features/settings/settings-references';
 import { SETTINGS_REFERENCES } from '@/features/settings/settings-references';
 import { cn } from '@/lib/utils';
@@ -12,112 +12,86 @@ type Props = {
 const FIELD_TYPE_LABELS: Record<string, string> = {
   text: 'Текст',
   number: 'Число',
-  select: 'Выбор',
+  select: 'Выбор из списка',
   color: 'Цвет',
-  checkbox: 'Флаг',
-  textarea: 'Текст (многострочный)',
-  json: 'JSON',
+  checkbox: 'Флажок',
+  textarea: 'Многострочный текст',
+  json: 'JSON-объект',
 };
 
+function SectionHeading({ icon: Icon, label, color }: { icon: React.ElementType; label: string; color: string }) {
+  return (
+    <div className={cn('flex items-center gap-2.5 pb-3 border-b', color)}>
+      <Icon className="size-4 shrink-0" aria-hidden />
+      <span className="text-xs font-semibold uppercase tracking-widest">{label}</span>
+    </div>
+  );
+}
+
 export function SettingsReferenceBlock({ reference, onNavigate }: Props) {
-  const [expandedFunctions, setExpandedFunctions] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
-  const toggleFunction = (index: number) => {
-    const next = new Set(expandedFunctions);
-    if (next.has(index)) {
-      next.delete(index);
-    } else {
-      next.add(index);
-    }
-    setExpandedFunctions(next);
-  };
-
-  const getFieldTypeLabel = (type: string): string => {
-    return FIELD_TYPE_LABELS[type] || type;
-  };
-
-  const handleNavClick = (sectionId: string) => {
-    onNavigate?.(sectionId);
-  };
+  const toggle = (i: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
 
   return (
-    <div className="space-y-8">
-      {/* Main info card */}
-      <div className="rounded-2xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 p-8">
-        {/* Header */}
-        <div className="flex items-start gap-5 mb-6">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-muted/80 to-muted/40">
-            <reference.icon className="size-7 text-foreground" aria-hidden />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-2xl font-bold text-foreground mb-2">{reference.title}</h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">{reference.definition}</p>
-          </div>
+    <div className="rounded-xl border border-border/30 overflow-hidden">
+
+      {/* ── Header ── */}
+      <div className="flex items-start gap-4 px-6 py-5 bg-muted/20">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-background border border-border/30">
+          <reference.icon className="size-5 text-foreground/70" aria-hidden />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Справочник</p>
+          <h3 className="text-base font-semibold text-foreground">{reference.title}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{reference.definition}</p>
         </div>
       </div>
 
-      {/* Where it's used */}
+      {/* ── Where used ── */}
       {reference.usedOn.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-blue-500/15">
-              <MapPin className="size-4 text-blue-600" aria-hidden />
-            </div>
-            <h4 className="text-sm font-bold text-foreground">Где используется</h4>
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {reference.usedOn.map((usage, idx) => {
-              const isClickable = usage.isNavLink && usage.sectionId;
-              return isClickable ? (
+        <div className="px-6 py-5 border-t border-border/20">
+          <SectionHeading icon={MapPin} label="Где используется" color="text-blue-500 border-blue-500/20" />
+          <div className="mt-4 flex flex-wrap gap-2">
+            {reference.usedOn.map((usage, i) =>
+              usage.isNavLink && usage.sectionId ? (
                 <button
-                  key={idx}
-                  onClick={() => usage.sectionId && handleNavClick(usage.sectionId)}
-                  className={cn(
-                    'group rounded-lg border border-blue-500/20 bg-blue-50/5 px-4 py-3 text-left transition-all duration-200 cursor-pointer',
-                    'hover:border-blue-500/40 hover:bg-blue-50/10 active:bg-blue-50/15'
-                  )}
+                  key={i}
+                  onClick={() => onNavigate?.(usage.sectionId!)}
+                  className="flex items-center gap-1.5 rounded-md border border-blue-400/30 bg-blue-500/8 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-500/15 hover:border-blue-400/50 transition-colors"
                 >
-                  <p className="text-xs font-bold text-blue-600 group-hover:text-blue-700 uppercase tracking-wide mb-1">
-                    {usage.page}
-                  </p>
-                  <p className="text-sm font-medium text-foreground group-hover:text-foreground/90">
-                    {usage.section}
-                  </p>
+                  <span className="opacity-60">{usage.page}</span>
+                  <span className="opacity-40">›</span>
+                  <span>{usage.section}</span>
                 </button>
               ) : (
-                <div
-                  key={idx}
-                  className="rounded-lg border border-blue-500/20 bg-blue-50/5 px-4 py-3 text-left"
+                <span
+                  key={i}
+                  className="flex items-center gap-1.5 rounded-md border border-border/30 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground"
                 >
-                  <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1">
-                    {usage.page}
-                  </p>
-                  <p className="text-sm font-medium text-foreground">
-                    {usage.section}
-                  </p>
-                </div>
-              );
-            })}
+                  <span className="font-medium text-foreground/70">{usage.page}</span>
+                  <span className="opacity-40">›</span>
+                  <span>{usage.section}</span>
+                </span>
+              )
+            )}
           </div>
         </div>
       )}
 
-      {/* Impacts */}
+      {/* ── Impacts ── */}
       {reference.impacts && reference.impacts.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-amber-500/15">
-              <Zap className="size-4 text-amber-600" aria-hidden />
-            </div>
-            <h4 className="text-sm font-bold text-foreground">На что влияет</h4>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {reference.impacts.map((impact, idx) => (
-              <div
-                key={idx}
-                className="rounded-lg border border-amber-500/20 bg-amber-50/5 p-4"
-              >
-                <p className="text-sm font-semibold text-amber-700 mb-1">{impact.title}</p>
+        <div className="px-6 py-5 border-t border-border/20">
+          <SectionHeading icon={Zap} label="На что влияет" color="text-amber-500 border-amber-500/20" />
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {reference.impacts.map((impact, i) => (
+              <div key={i} className="rounded-lg border border-amber-500/15 bg-amber-500/5 p-3.5">
+                <p className="text-xs font-semibold text-amber-700 mb-1.5">{impact.title}</p>
                 <p className="text-xs leading-relaxed text-muted-foreground">{impact.description}</p>
               </div>
             ))}
@@ -125,95 +99,62 @@ export function SettingsReferenceBlock({ reference, onNavigate }: Props) {
         </div>
       )}
 
-      {/* Fields */}
+      {/* ── Fields ── */}
       {reference.fields.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-green-500/15">
-              <Layers className="size-4 text-green-600" aria-hidden />
-            </div>
-            <h4 className="text-sm font-bold text-foreground">Структура полей</h4>
-          </div>
-          <div className="rounded-xl border border-border/20 overflow-hidden bg-card/40">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border/20 bg-muted/20">
-                    <th className="px-4 py-3 text-left font-bold text-foreground">Имя поля</th>
-                    <th className="px-4 py-3 text-left font-bold text-foreground">Тип</th>
-                    <th className="px-4 py-3 text-center font-bold text-foreground">Требуется</th>
-                    <th className="px-4 py-3 text-left font-bold text-foreground">Описание</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reference.fields.map((field, idx) => (
-                    <tr
-                      key={idx}
-                      className={cn(
-                        'border-b border-border/10 transition-colors',
-                        idx % 2 === 0 ? 'bg-muted/5' : 'bg-transparent'
+        <div className="px-6 py-5 border-t border-border/20">
+          <SectionHeading icon={Layers} label="Поля" color="text-green-600 border-green-500/20" />
+          <div className="mt-4 rounded-lg border border-border/20 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/25 border-b border-border/20">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-foreground">Поле</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-foreground">Тип</th>
+                  <th className="px-3 py-2.5 text-center text-xs font-semibold text-foreground w-24">Обязательно</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-foreground">Описание</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reference.fields.map((field, i) => (
+                  <tr key={i} className={cn('border-b border-border/10 last:border-0', i % 2 === 1 && 'bg-muted/10')}>
+                    <td className="px-4 py-3 text-xs font-medium text-foreground whitespace-nowrap">{field.name}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex rounded bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                        {FIELD_TYPE_LABELS[field.type] ?? field.type}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      {field.required ? (
+                        <span className="inline-flex size-5 items-center justify-center rounded bg-green-500/15 text-xs font-bold text-green-700">✓</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/40">—</span>
                       )}
-                    >
-                      <td className="px-4 py-3">
-                        <span className={cn('font-semibold', field.required ? 'text-foreground' : 'text-muted-foreground')}>
-                          {field.name}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex rounded-md bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                          {getFieldTypeLabel(field.type)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {field.required ? (
-                          <span className="inline-flex size-5 items-center justify-center rounded-md bg-green-500/20 text-xs font-bold text-green-700">
-                            ✓
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/50">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                          {field.description}
-                        </p>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs leading-relaxed text-muted-foreground">{field.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Related settings */}
+      {/* ── Related ── */}
       {reference.relatedSettings.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-purple-500/15">
-              <Link2 className="size-4 text-purple-600" aria-hidden />
-            </div>
-            <h4 className="text-sm font-bold text-foreground">Связанные разделы</h4>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {reference.relatedSettings.map((related, idx) => {
-              const relatedRef = SETTINGS_REFERENCES[related.sectionId];
+        <div className="px-6 py-5 border-t border-border/20">
+          <SectionHeading icon={Link2} label="Связанные разделы" color="text-purple-500 border-purple-500/20" />
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {reference.relatedSettings.map((rel, i) => {
+              const ref = SETTINGS_REFERENCES[rel.sectionId];
               return (
                 <button
-                  key={idx}
-                  onClick={() => handleNavClick(related.sectionId)}
-                  className={cn(
-                    'group rounded-lg border border-purple-500/20 bg-purple-50/5 p-4 text-left transition-all duration-200',
-                    'hover:border-purple-500/40 hover:bg-purple-50/10 active:bg-purple-50/15'
-                  )}
+                  key={i}
+                  onClick={() => onNavigate?.(rel.sectionId)}
+                  className="rounded-lg border border-purple-400/20 bg-purple-500/5 p-3.5 text-left hover:bg-purple-500/10 hover:border-purple-400/35 transition-colors group"
                 >
-                  <p className="text-sm font-bold text-purple-700 group-hover:text-purple-800 mb-1">
-                    {relatedRef?.title || related.sectionId}
+                  <p className="text-xs font-semibold text-purple-700 group-hover:text-purple-800 mb-1">
+                    {ref?.title ?? rel.sectionId}
                   </p>
-                  <p className="text-xs leading-relaxed text-muted-foreground group-hover:text-muted-foreground/90">
-                    {related.reason}
-                  </p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">{rel.reason}</p>
                 </button>
               );
             })}
@@ -221,49 +162,44 @@ export function SettingsReferenceBlock({ reference, onNavigate }: Props) {
         </div>
       )}
 
-      {/* Additional functions */}
+      {/* ── Additional functions ── */}
       {reference.additionalFunctions.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="text-sm font-bold text-foreground">Дополнительные возможности</h4>
-          <div className="flex flex-col gap-2">
-            {reference.additionalFunctions.map((func, idx) => {
-              const isExpanded = expandedFunctions.has(idx);
+        <div className="px-6 py-5 border-t border-border/20">
+          <SectionHeading icon={Sparkles} label="Дополнительные возможности" color="text-foreground/60 border-border/40" />
+          <div className="mt-4 flex flex-col divide-y divide-border/15 rounded-lg border border-border/20 overflow-hidden">
+            {reference.additionalFunctions.map((func, i) => {
+              const isOpen = expanded.has(i);
               return (
-                <button
-                  key={idx}
-                  onClick={() => toggleFunction(idx)}
-                  className={cn(
-                    'rounded-lg border transition-all duration-200',
-                    isExpanded
-                      ? 'border-border/40 bg-muted/20'
-                      : 'border-border/20 bg-muted/10 hover:bg-muted/15'
-                  )}
-                >
-                  <div className="px-4 py-3 flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-foreground text-left">{func.name}</p>
+                <div key={i} className={cn('transition-colors', isOpen ? 'bg-muted/15' : 'bg-transparent')}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggle(i)}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggle(i)}
+                    className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/20 transition-colors select-none"
+                  >
+                    <span className="text-sm font-medium text-foreground">{func.name}</span>
                     <ChevronDown
-                      className={cn('size-4 shrink-0 text-muted-foreground transition-transform', {
-                        'rotate-180': isExpanded,
-                      })}
+                      className={cn('size-4 shrink-0 text-muted-foreground/60 transition-transform duration-200', isOpen && 'rotate-180')}
                       aria-hidden
                     />
                   </div>
-
-                  {isExpanded && (
-                    <div className="border-t border-border/20 px-4 py-3 space-y-3 bg-muted/5">
-                      <p className="text-sm leading-relaxed text-muted-foreground">{func.description}</p>
-                      <div className="rounded-md border border-border/20 bg-muted/20 p-3">
-                        <p className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wide mb-2">Пример</p>
-                        <p className="text-xs leading-relaxed text-muted-foreground">{func.example}</p>
+                  {isOpen && (
+                    <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/15">
+                      <p className="text-sm leading-relaxed text-muted-foreground pt-3">{func.description}</p>
+                      <div className="rounded-md bg-muted/25 border border-border/20 px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">Пример</p>
+                        <p className="text-sm leading-relaxed text-muted-foreground">{func.example}</p>
                       </div>
                     </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
       )}
+
     </div>
   );
 }

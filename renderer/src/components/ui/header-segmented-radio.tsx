@@ -56,6 +56,9 @@ export function UniversalRadioGroup<T extends string>({
     >
       {options.map(({ value: optionValue, label, Icon, icon }) => {
         const selected = optionValue === value;
+        if (options.length === 2) {
+          console.log(`[RadioButton] optionValue=${optionValue}, value=${value}, selected=${selected}`);
+        }
         const iconNode = icon ?? (Icon ? <Icon className="size-3.5 shrink-0" /> : null);
         return (
           <Button
