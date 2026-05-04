@@ -155,8 +155,8 @@ export function HomeOverviewPage() {
           <div
             className={cn(
               'flex min-h-0 flex-1 h-full overflow-hidden',
-              visibleBottomPanels === 1 && 'flex-col divide-y divide-border/40',
-              visibleBottomPanels >= 2 && 'flex-row divide-x divide-border/40'
+              visibleBottomPanels === 1 && 'flex-col divide-y divide-border/60',
+              visibleBottomPanels >= 2 && 'flex-row divide-x divide-border/60'
             )}
           >
             {showTx ? (
@@ -165,7 +165,7 @@ export function HomeOverviewPage() {
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Финансы" />
-                <TransactionsCard contentClassName="min-h-0 flex-1 gap-1 p-3 pr-0.5" />
+                <TransactionsCard contentClassName="min-h-0 flex-1 gap-1 p-3" />
               </div>
             ) : null}
             {showPlans ? (
@@ -174,7 +174,7 @@ export function HomeOverviewPage() {
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Планы" />
-                <DailyPlansCard contentClassName="min-h-0 flex-1 gap-1.5 p-3 pr-0.5" />
+                <DailyPlansCard contentClassName="min-h-0 flex-1 gap-1.5 p-3" />
               </div>
             ) : null}
             {showChart ? (

@@ -134,7 +134,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                   })}
                 </div>
               ) : null}
-              <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain">
+              <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain pr-2">
                 {rows.map((t) => {
                   const id = String(t.id);
                   const r = resolveTransactionRow(db, t);
