@@ -85,7 +85,7 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                 const id = String(p.id);
                 const done = p.completed === 1 || p.completed === true;
                 const label = String(p.title ?? '');
-                
+
                 const idx = rowsList.findIndex(r => String(r.id) === id);
                 const isFirst = idx === 0;
                 const isLast = idx === rowsList.length - 1;
@@ -111,9 +111,11 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                   </li>
                 );
               })}
+              <li>
+                <AddListButton onClick={() => setAddOpen(true)} disabled={status === 'loading'} />
+              </li>
             </ul>
           )}
-          <AddListButton onClick={() => setAddOpen(true)} disabled={status === 'loading'} className="mt-auto" />
         </div>
       </div>
       <Dialog open={addOpen} onOpenChange={setAddOpen}>

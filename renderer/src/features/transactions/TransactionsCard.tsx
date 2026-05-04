@@ -174,18 +174,19 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                       </li>
                     );
                   })}
+                  <li>
+                    <AddListButton
+                      onClick={() => {
+                        setEditingTransaction(null);
+                        setAddOpen(true);
+                      }}
+                      disabled={status === 'loading' || !db}
+                    />
+                  </li>
                 </ul>
               )}
             </>
           )}
-          <AddListButton
-            onClick={() => {
-              setEditingTransaction(null);
-              setAddOpen(true);
-            }}
-            disabled={status === 'loading' || !db}
-            className="mt-auto"
-          />
         </div>
       </div>
       {db ? (
