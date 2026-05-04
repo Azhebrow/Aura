@@ -154,9 +154,9 @@ export function HomeOverviewPage() {
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden h-full">
           <div
             className={cn(
-              'flex min-h-0 flex-1 overflow-hidden divide-border/60',
-              visibleBottomPanels === 1 && 'flex-col divide-y',
-              visibleBottomPanels >= 2 && 'flex-row divide-x'
+              'flex min-h-0 flex-1 h-full overflow-hidden',
+              visibleBottomPanels === 1 && 'flex-col divide-y divide-border/60',
+              visibleBottomPanels >= 2 && 'flex-row divide-x divide-border'
             )}
           >
             {showTx ? (
@@ -172,7 +172,7 @@ export function HomeOverviewPage() {
             ) : null}
             {showPlans ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full"
+                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full border-l border-border"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Планы" />
@@ -183,7 +183,7 @@ export function HomeOverviewPage() {
             ) : null}
             {showChart ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full border-l border-border"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Прогресс" />
