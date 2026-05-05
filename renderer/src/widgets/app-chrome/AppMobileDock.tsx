@@ -38,12 +38,9 @@ function DockPageButton({ page, active, onSelect }: { page: NavPageDefinition; a
 
 export function AppMobileDock() {
   const { activePageId, setActivePageId, navOrder } = useShell();
-  const { mainPages, settingsPage } = useMemo(() => {
-    const pages = getNavPagesInOrder(navOrder);
-    return {
-      mainPages: pages.filter((p) => p.id !== 'settings' && p.id !== 'calendar'),
-      settingsPage: pages.find((p) => p.id === 'settings'),
-    };
+  const pages = useMemo(() => {
+    const allPages = getNavPagesInOrder(navOrder);
+    return allPages.filter((p) => p.id !== 'stats' && p.id !== 'ranks' && p.id !== 'calendar');
   }, [navOrder]);
 
   return (
@@ -51,9 +48,9 @@ export function AppMobileDock() {
       className="aura-mobile-dock bg-background shrink-0 border-t border-border/40 px-4 pb-[calc(env(safe-area-inset-bottom,0)+0.7rem)] pt-2 md:hidden"
       aria-label="Мобильная навигация"
     >
-      <div className="mx-auto flex w-full max-w-md items-stretch gap-1 rounded-lg border border-border/60 bg-card/95 p-1 shadow-sm">
+      <div className="mx-auto flex w-full items-stretch gap-1 rounded-lg border border-border/60 bg-card/95 p-1 shadow-sm">
         <div className="flex min-w-0 flex-1 flex-row items-stretch gap-1" role="group" aria-label="Разделы приложения">
-          {mainPages.map((page) => (
+          {pages.map((page) => (
             <DockPageButton
               key={page.id}
               page={page}
@@ -62,18 +59,6 @@ export function AppMobileDock() {
             />
           ))}
         </div>
-        {settingsPage ? (
-          <>
-            <div className="bg-border/70 my-1 w-px shrink-0 self-stretch opacity-80" aria-hidden />
-            <div className="flex w-12 shrink-0 flex-col justify-center" role="none">
-              <DockPageButton
-                page={settingsPage}
-                active={activePageId === settingsPage.id}
-                onSelect={() => setActivePageId(settingsPage.id)}
-              />
-            </div>
-          </>
-        ) : null}
       </div>
     </nav>
   );

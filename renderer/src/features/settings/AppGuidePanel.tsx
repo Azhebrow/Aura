@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
 import {
+  Activity,
+  Ban,
   BarChart3,
   BookHeart,
   BookOpen,
@@ -174,12 +176,12 @@ function RankRow({ n, name, pts, next }: { n: number; name: string; pts: string;
 
 export function AppGuidePanel() {
   return (
-    <div className="space-y-0 pb-6">
+    <div className="space-y-0 pb-6 max-w-full">
 
       {/* ── Hero ── */}
-      <div className="rounded-xl border border-border/25 bg-muted/10 p-6">
+      <div className="rounded-xl border border-border/25 bg-muted/8 p-6">
         <div className="flex items-start gap-4 mb-5">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/50 border border-border/25">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted/40 border border-border/20">
             <Sparkles className="size-6 text-foreground/60" aria-hidden />
           </div>
           <div className="min-w-0">
@@ -193,15 +195,15 @@ export function AppGuidePanel() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-2.5 sm:grid-cols-4">
           {([
             { icon: CheckSquare, label: 'Задачи и ритуалы' },
             { icon: BookHeart,   label: 'Дневник' },
             { icon: PiggyBank,   label: 'Финансы' },
             { icon: BarChart3,   label: 'Статистика' },
           ] as const).map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-2 rounded-lg border border-border/20 bg-background/40 px-3 py-2">
-              <Icon className="size-3.5 shrink-0 text-muted-foreground/60" aria-hidden />
+            <div key={label} className="flex items-center gap-2 rounded-lg border border-border/20 bg-background/40 px-2.5 sm:px-3 py-2 min-w-0">
+              <Icon className="size-3 sm:size-3.5 shrink-0 text-muted-foreground/60" aria-hidden />
               <span className="text-xs text-muted-foreground truncate">{label}</span>
             </div>
           ))}
@@ -216,7 +218,7 @@ export function AppGuidePanel() {
           { title: 'Геймификация',       body: 'Каждое выполненное действие приносит % к дню. 100% = победа. Накопленные очки — твой ранг.' },
           { title: 'Без телефона',       body: 'Намеренно только для компьютера. Телефон отнимает внимание — AURA для осознанного времени за столом.' },
         ].map(({ title, body }) => (
-          <div key={title} className="rounded-xl border border-border/20 bg-muted/8 px-5 py-4">
+          <div key={title} className="rounded-xl border border-border/20 bg-muted/8 px-4 sm:px-5 py-3 sm:py-4 min-w-0">
             <p className="text-sm font-semibold text-foreground mb-2">{title}</p>
             <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>
           </div>
@@ -226,7 +228,7 @@ export function AppGuidePanel() {
       {/* ── Дневной ритм ── */}
       <SectionTitle>Дневной ритм</SectionTitle>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-border/25 bg-muted/8 px-5 py-5">
+        <div className="rounded-xl border border-border/25 bg-muted/8 px-4 sm:px-5 py-4 sm:py-5 min-w-0">
           <WorkflowStep
             icon={Sun}
             time="утро"
@@ -276,7 +278,7 @@ export function AppGuidePanel() {
         <div className="rounded-xl border border-border/25 bg-muted/8 p-5 space-y-3">
           <p className="text-sm font-semibold text-foreground">Как считаются очки</p>
           <p className="text-xs leading-relaxed text-muted-foreground">Каждый день получает оценку 0–100% на основе выполненных задач, ритуалов и активностей. Из процента вычисляется результат дня.</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2.5">
             <InfoTile label="100% = очки" value="+100" />
             <InfoTile label="50% = очки" value="0" />
             <InfoTile label="0% = очки" value="−100" />
@@ -291,7 +293,7 @@ export function AppGuidePanel() {
               { label: 'Нейтральный', range: '−50 — +50',  sub: '40–75% выполнено' },
               { label: 'Упущенный',  range: '−100 — −50', sub: 'менее 40%' },
             ].map(({ label, range, sub }) => (
-              <div key={label} className="flex items-center gap-3 rounded-lg border border-border/15 bg-muted/20 px-3.5 py-2.5">
+              <div key={label} className="flex items-center gap-3 rounded-lg border border-border/15 bg-muted/8 px-3.5 py-2.5">
                 <div className="flex-1">
                   <p className="text-xs font-semibold text-foreground">{label}</p>
                   <p className="text-[11px] text-muted-foreground/55">{sub}</p>
@@ -340,14 +342,16 @@ export function AppGuidePanel() {
       <SectionTitle>Категории задач</SectionTitle>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { emoji: '✨', name: 'Рутина',  hint: 'ритуалы / чекбоксы', desc: 'Ежедневные практики и привычки. Поддерживает основу дня.', types: 'Чекбокс, Число, Список, Ритуал' },
-          { emoji: '⏱',  name: 'Фокус',  hint: 'только таймер',        desc: 'Учёт времени глубокой работы. Только тип «Таймер».', types: 'Только Таймер' },
-          { emoji: '💪', name: 'Тонус',  hint: 'здоровье / питание',   desc: 'Физическое состояние: тренировки, питание, тело.', types: 'Чекбокс, Число, Список, Питание' },
-          { emoji: '🚫', name: 'Детокс', hint: 'только чекбокс',       desc: 'Ограничения и отказы. Победа — НЕ отметить галочку.', types: 'Только Чекбокс' },
-        ].map(({ emoji, name, hint, desc, types }) => (
+          { icon: Sparkles, name: 'Рутина',  hint: 'ритуалы / чекбоксы', desc: 'Ежедневные практики и привычки. Поддерживает основу дня.', types: 'Чекбокс, Число, Список, Ритуал' },
+          { icon: Timer,    name: 'Фокус',  hint: 'только таймер',        desc: 'Учёт времени глубокой работы. Только тип «Таймер».', types: 'Только Таймер' },
+          { icon: Activity, name: 'Тонус',  hint: 'здоровье / питание',   desc: 'Физическое состояние: тренировки, питание, тело.', types: 'Чекбокс, Число, Список, Питание' },
+          { icon: Ban,      name: 'Детокс', hint: 'только чекбокс',       desc: 'Ограничения и отказы. Победа — НЕ отметить галочку.', types: 'Только Чекбокс' },
+        ].map(({ icon: Icon, name, hint, desc, types }) => (
           <div key={name} className="rounded-xl border border-border/20 bg-muted/8 p-4 space-y-2">
             <div className="flex items-center gap-2.5">
-              <span className="text-lg">{emoji}</span>
+              <div className="flex size-8 items-center justify-center rounded-lg bg-muted/40 border border-border/15 shrink-0">
+                <Icon className="size-4 text-foreground/55" aria-hidden />
+              </div>
               <div>
                 <p className="text-sm font-semibold text-foreground leading-tight">{name}</p>
                 <p className="text-[10px] text-muted-foreground/50">{hint}</p>

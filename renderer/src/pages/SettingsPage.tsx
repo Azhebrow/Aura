@@ -210,11 +210,13 @@ export function SettingsPage() {
                         <ScrollArea className="min-h-0 flex-1">
                           <div
                             key={active}
-                            className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.99] motion-safe:duration-200 motion-safe:ease-out motion-reduce:animate-none flex flex-col gap-3 pr-1 sm:gap-6 sm:pr-2"
+                            className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.99] motion-safe:duration-200 motion-safe:ease-out motion-reduce:animate-none flex flex-col gap-3 pr-1 sm:gap-6 sm:pr-2 max-w-full min-w-0"
                           >
-                            {panel}
+                            <div className="min-w-0">{panel}</div>
                             {reference ? (
-                              <SettingsReferenceBlock reference={reference} onNavigate={setActive} />
+                              <div className="min-w-0">
+                                <SettingsReferenceBlock reference={reference} onNavigate={setActive} />
+                              </div>
                             ) : null}
                           </div>
                         </ScrollArea>

@@ -12,7 +12,7 @@ export const MEGA_PANEL_HEADER_CN =
 
 export const MEGA_PANEL_MICRO_TITLE_CN = 'text-muted-foreground text-xs font-semibold uppercase tracking-wider';
 
-export const MEGA_PANEL_BODY_CN = 'min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4';
+export const MEGA_PANEL_BODY_CN = 'min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain p-4';
 
 export const MEGA_SECTION_INSET_CN = 'p-0 sm:px-4 sm:py-4';
 

@@ -59,7 +59,7 @@ export function MobileSectionTabs<T extends string>({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       className={cn(
-        'shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)] pt-2',
+        'shrink-0 px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)] pt-2',
         className
       )}
     >
@@ -99,7 +99,7 @@ type MobileSectionViewportProps = {
 
 export function MobileSectionViewport({ children, className, contentClassName }: MobileSectionViewportProps) {
   return (
-    <div className={cn('min-h-0 flex-1 overflow-hidden px-4 pt-3', className)}>
+    <div className={cn('min-h-0 flex-1 overflow-hidden px-3 sm:px-4 pt-3', className)}>
       <div className={cn('mobile-section-scroll flex flex-col h-full min-h-0 overflow-y-auto overscroll-y-contain pb-3', contentClassName)}>
         {children}
       </div>
