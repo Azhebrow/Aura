@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { flushSync } from 'react-dom';
 import { XIcon, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ export function ActModal({
   contentClassName,
   size = 'md',
 }: ActModalProps) {
+  const { t } = useTranslation('common');
   const Icon = icon;
   const handleKeyDownCapture = useCallback((event: React.KeyboardEvent<HTMLFormElement>) => {
     if (event.key !== 'Enter' || event.defaultPrevented || event.nativeEvent.isComposing) return;
@@ -79,7 +81,7 @@ export function ActModal({
                   className="border-border/60 bg-muted/70 text-muted-foreground hover:bg-muted/90 h-8 w-8 shrink-0 rounded-md border p-0"
                 >
                   <XIcon className="size-4" />
-                  <span className="sr-only">Close</span>
+                  <span className="sr-only">{t('action.close')}</span>
                 </Button>
               </DialogClose>
             </div>
@@ -346,17 +348,19 @@ type ActModalFooterProps = {
 };
 
 export function ActModalFooter({
-  cancelLabel = 'Отмена',
+  cancelLabel,
   submitLabel,
   onCancel,
   onSubmit,
   submitDisabled,
   submitVariant = 'default',
 }: ActModalFooterProps) {
+  const { t } = useTranslation('common');
+  const displayCancelLabel = cancelLabel ?? t('action.cancel');
   return (
     <div data-modal-footer="true" className="border-border/80 bg-background/95 grid shrink-0 grid-cols-2 gap-2 border-t px-4 py-3 sm:px-5">
       <Button data-modal-cancel="true" type="button" variant="outline" className="h-10 w-full rounded-md" onClick={onCancel}>
-        {cancelLabel}
+        {displayCancelLabel}
       </Button>
       <Button
         data-modal-default-action="true"
