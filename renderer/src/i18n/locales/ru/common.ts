@@ -140,6 +140,13 @@ export default {
     no_active: 'Нет активных ритуалов',
     no_active_hint: 'Нет активных ритуалов. Добавьте их в настройках.',
   },
+  macros: {
+    calories: 'Калории',
+    kcal: 'ккал',
+    proteins: 'Белки',
+    fats: 'Жиры',
+    carbs: 'Углеводы',
+  },
   aria: {
     move_up: 'Переместить вверх',
     move_down: 'Переместить вниз',

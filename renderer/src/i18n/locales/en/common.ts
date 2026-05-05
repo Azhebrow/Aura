@@ -140,6 +140,13 @@ export default {
     no_active: 'No active rituals',
     no_active_hint: 'No active rituals. Add them in settings.',
   },
+  macros: {
+    calories: 'Calories',
+    kcal: 'kcal',
+    proteins: 'Protein',
+    fats: 'Fat',
+    carbs: 'Carbs',
+  },
   aria: {
     move_up: 'Move up',
     move_down: 'Move down',

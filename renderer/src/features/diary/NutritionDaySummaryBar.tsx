@@ -1,5 +1,6 @@
 import { Droplet, Dumbbell, Flame, Wheat } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import type { NutritionTotals } from '@/shared/lib/nutrition-aggregate';
@@ -60,6 +61,7 @@ function MacroCell({
 
 /** Сводка КБЖУ: строгая сетка, нейтральная палитра токенов темы. */
 export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
+  const { t } = useTranslation('common');
   const kcalHas = targets.calories > 0;
   const kcalPct = pct(totals.calories, targets.calories);
 
@@ -72,7 +74,7 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
               <Flame className="size-4" strokeWidth={1.75} aria-hidden />
             </div>
             <div>
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Калории</p>
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{t('macros.calories')}</p>
               <p className="text-foreground font-mono text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">
                 {Math.round(totals.calories)}
                 {kcalHas ? (
@@ -81,7 +83,7 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
                     / {Math.round(targets.calories)}
                   </span>
                 ) : null}
-                <span className="text-muted-foreground ml-1 text-xs font-normal normal-case">ккал</span>
+                <span className="text-muted-foreground ml-1 text-xs font-normal normal-case">{t('macros.kcal')}</span>
               </p>
             </div>
           </div>
@@ -96,9 +98,9 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2">
-        <MacroCell Icon={Dumbbell} label="Белки" current={totals.proteins} target={targets.proteins} unit=" г" />
-        <MacroCell Icon={Droplet} label="Жиры" current={totals.fats} target={targets.fats} unit=" г" />
-        <MacroCell Icon={Wheat} label="Углеводы" current={totals.carbs} target={targets.carbs} unit=" г" />
+        <MacroCell Icon={Dumbbell} label={t('macros.proteins')} current={totals.proteins} target={targets.proteins} unit=" г" />
+        <MacroCell Icon={Droplet} label={t('macros.fats')} current={totals.fats} target={targets.fats} unit=" г" />
+        <MacroCell Icon={Wheat} label={t('macros.carbs')} current={totals.carbs} target={targets.carbs} unit=" г" />
       </div>
     </div>
   );
