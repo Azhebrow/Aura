@@ -306,21 +306,43 @@ function formatParamValue(value: unknown): string | null {
   return str.length > 0 ? str : null;
 }
 
+function calculatePresetNutrition(productsJson: unknown): { calories: number; protein: number; fats: number; carbs: number } | null {
+  try {
+    const products = typeof productsJson === 'string' ? JSON.parse(productsJson) : productsJson;
+    if (!Array.isArray(products)) return null;
+
+    let totalCal = 0, totalP = 0, totalF = 0, totalC = 0;
+    for (const p of products) {
+      const amount = Number(p.amount ?? 1);
+      const cal = Number(p.calories_per_100g ?? 0) * amount / 100;
+      const protein = Number(p.proteins_per_100g ?? 0) * amount / 100;
+      const fat = Number(p.fats_per_100g ?? 0) * amount / 100;
+      const carbs = Number(p.carbs_per_100g ?? 0) * amount / 100;
+      totalCal += cal;
+      totalP += protein;
+      totalF += fat;
+      totalC += carbs;
+    }
+    return { calories: Math.round(totalCal), protein: Math.round(totalP * 10) / 10, fats: Math.round(totalF * 10) / 10, carbs: Math.round(totalC * 10) / 10 };
+  } catch {
+    return null;
+  }
+}
+
 function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | undefined {
   const parts: string[] = [];
 
-  // Accounts: все параметры
+  // Accounts: все параметры (без номера)
   if (spec.table === 'cfg_accounts') {
     const type = getFieldOptionLabel(spec, 'type', row.type) ?? (String(row.type) === 'savings' ? 'Накопления' : 'Обычный');
     parts.push(type);
     if (row.home_visible === 1 || row.home_visible === true) parts.push('На главной');
     if (row.balance != null) parts.push(`Баланс: ${row.balance}`);
     if (row.target != null) parts.push(`Цель: ${row.target}`);
-    if (row.level != null) parts.push(`№ ${row.level}`);
   }
 
-  // Tasks: все параметры
-  if (spec.table === 'cfg_tasks' || spec.table === 'cfg_leisure_tasks') {
+  // Tasks (cfg_tasks): все параметры (без номера)
+  if (spec.table === 'cfg_tasks') {
     if (row.task_type) {
       const typeLabel = getFieldOptionLabel(spec, 'task_type', row.task_type) ?? String(row.task_type);
       parts.push(typeLabel);
@@ -337,10 +359,9 @@ function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | undefin
       const ritualLabel = getFieldOptionLabel(spec, 'ritual_type', row.ritual_type) ?? String(row.ritual_type);
       parts.push(`Ритуал: ${ritualLabel}`);
     }
-    if (row.level != null) parts.push(`№ ${row.level}`);
   }
 
-  // Leisure tasks: все параметры как для tasks
+  // Leisure tasks: все параметры (без номера)
   if (spec.table === 'cfg_leisure_tasks') {
     if (row.task_type) {
       const typeLabel = getFieldOptionLabel(spec, 'task_type', row.task_type) ?? String(row.task_type);
@@ -354,59 +375,47 @@ function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | undefin
     if (row.cfg_target_hours != null && Number(row.cfg_target_hours) > 0) {
       parts.push(`Таймер: ${row.cfg_target_hours}ч`);
     }
-    if (row.level != null) parts.push(`№ ${row.level}`);
   }
 
-  // Expenses: все параметры
+  // Expenses: все параметры (без номера)
   if (spec.table === 'cfg_expense_categories') {
     if (String(row.type ?? '') === 'compulsive') parts.push('Импульсивная');
-    if (row.level != null) parts.push(`№ ${row.level}`);
   }
 
-  // Income categories: все параметры
-  if (spec.table === 'cfg_income_categories') {
-    if (row.level != null) parts.push(`№ ${row.level}`);
-  }
-
-  // Rituals: все параметры
+  // Rituals: все параметры (без номера)
   if (spec.table === 'cfg_rituals') {
-    if (row.level != null) parts.push(`№ ${row.level}`);
     const desc = typeof row.description === 'string' ? row.description.trim() : '';
     if (desc) parts.push(desc.length > 60 ? `${desc.slice(0, 60).trimEnd()}…` : desc);
   }
 
-  // Moods: все параметры
-  if (spec.table === 'cfg_diary_moods') {
-    if (row.level != null) parts.push(`Уровень ${row.level}`);
-  }
-
-  // Diary entry presets: все параметры
+  // Diary entry presets: все параметры (без номера)
   if (spec.table === 'cfg_diary_entry_presets') {
     const prompt = typeof row.prompt === 'string' ? row.prompt.trim().replace(/\s+/g, ' ') : '';
     const description = typeof row.description === 'string' ? row.description.trim().replace(/\s+/g, ' ') : '';
     if (prompt) parts.push(prompt.length > 60 ? `${prompt.slice(0, 60).trimEnd()}…` : prompt);
     if (description) parts.push(description.length > 60 ? `${description.slice(0, 60).trimEnd()}…` : description);
     if (Number(row.active ?? 1) === 0) parts.push('Неактивная');
-    if (row.level != null) parts.push(`№ ${row.level}`);
   }
 
-  // Nutrition products: все параметры
+  // Nutrition products: все параметры (без номера)
   if (spec.table === 'cfg_nutrition_products') {
-    const group = formatParamValue(row.group);
-    if (group) parts.push(`Группа: ${group}`);
-    if (row.kcal != null) parts.push(`${row.kcal}ккал`);
-    if (row.protein != null) parts.push(`Б:${row.protein}г`);
-    if (row.fat != null) parts.push(`Ж:${row.fat}г`);
-    if (row.carbs != null) parts.push(`У:${row.carbs}г`);
-    if (row.level != null) parts.push(`№ ${row.level}`);
+    const groupLabel = getFieldOptionLabel(spec, 'group', row.group);
+    if (groupLabel) parts.push(`Группа: ${groupLabel}`);
+    if (row.calories_per_100g != null) parts.push(`${row.calories_per_100g}ккал`);
+    if (row.proteins_per_100g != null) parts.push(`Б:${row.proteins_per_100g}г`);
+    if (row.fats_per_100g != null) parts.push(`Ж:${row.fats_per_100g}г`);
+    if (row.carbs_per_100g != null) parts.push(`У:${row.carbs_per_100g}г`);
   }
 
-  // Nutrition presets: все параметры
+  // Nutrition presets: общее КБЖУ
   if (spec.table === 'cfg_nutrition_presets') {
-    if (row.level != null) parts.push(`№ ${row.level}`);
+    const nutrition = calculatePresetNutrition(row.products);
+    if (nutrition && (nutrition.calories > 0 || nutrition.protein > 0 || nutrition.fats > 0 || nutrition.carbs > 0)) {
+      parts.push(`${nutrition.calories}ккал · Б:${nutrition.protein}г · Ж:${nutrition.fats}г · У:${nutrition.carbs}г`);
+    }
   }
 
-  // Ambient music: все параметры
+  // Ambient music: все параметры (без номера)
   if (spec.table === 'cfg_ambient_music') {
     const file = formatParamValue(row.file_name);
     if (file) parts.push(`Файл: ${file}`);

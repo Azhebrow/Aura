@@ -38,7 +38,28 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
   {
     id: 'system',
     label: 'Основное',
-    items: [{ id: 'interface-data', title: 'Оформление и данные', icon: Settings2 }],
+    items: [
+      { id: 'app-guide', title: 'Как пользоваться AURA', icon: BookOpen },
+      { id: 'interface-data', title: 'Оформление и данные', icon: Settings2 },
+    ],
+  },
+  {
+    id: 'tasks',
+    label: 'Категории задач',
+    items: [
+      { id: 'tasks-rituals', title: TASK_CATEGORY_DEFAULT_META.rituals.title, icon: Sparkles },
+      { id: 'tasks-time', title: TASK_CATEGORY_DEFAULT_META.time.title, icon: ListTodo },
+      { id: 'tasks-body', title: TASK_CATEGORY_DEFAULT_META.body.title, icon: Activity },
+      { id: 'tasks-deps', title: TASK_CATEGORY_DEFAULT_META.deps.title, icon: Ban },
+    ],
+  },
+  {
+    id: 'leisure',
+    label: 'Досуг',
+    items: [
+      { id: 'leisure-filling', title: LEISURE_CATEGORY_META.filling.title, icon: Sparkles },
+      { id: 'leisure-escape', title: LEISURE_CATEGORY_META.escape.title, icon: Ghost },
+    ],
   },
   {
     id: 'rituals',
@@ -50,30 +71,12 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     ],
   },
   {
-    id: 'tasks',
-    label: 'Задачи',
-    items: [
-      { id: 'tasks-rituals', title: TASK_CATEGORY_DEFAULT_META.rituals.title, icon: Sparkles },
-      { id: 'tasks-time', title: TASK_CATEGORY_DEFAULT_META.time.title, icon: ListTodo },
-      { id: 'tasks-body', title: TASK_CATEGORY_DEFAULT_META.body.title, icon: Activity },
-      { id: 'tasks-deps', title: TASK_CATEGORY_DEFAULT_META.deps.title, icon: Ban },
-    ],
-  },
-  {
     id: 'finance',
     label: 'Финансы',
     items: [
       { id: 'finance-accounts', title: 'Счета', icon: PiggyBank },
       { id: 'finance-income', title: 'Доходы', icon: TrendingUp },
       { id: 'finance-expense', title: 'Расходы', icon: TrendingDown },
-    ],
-  },
-  {
-    id: 'leisure',
-    label: 'Досуг',
-    items: [
-      { id: 'leisure-filling', title: LEISURE_CATEGORY_META.filling.title, icon: Sparkles },
-      { id: 'leisure-escape', title: LEISURE_CATEGORY_META.escape.title, icon: Ghost },
     ],
   },
   {
@@ -91,11 +94,6 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     id: 'ambient',
     label: 'Медиа',
     items: [{ id: 'ambient-music', title: 'Фоновая музыка', icon: Music }],
-  },
-  {
-    id: 'about',
-    label: 'Справка',
-    items: [{ id: 'app-guide', title: 'Как пользоваться AURA', icon: BookOpen }],
   },
 ];
 
