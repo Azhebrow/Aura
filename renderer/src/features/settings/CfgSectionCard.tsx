@@ -292,15 +292,66 @@ function rowTitle(row: AuraRow, keys?: string[]): string {
   return String(row.id ?? '');
 }
 
+function getFieldOptionLabel(spec: CfgSectionSpec, fieldKey: string, value: unknown): string | undefined {
+  const field = spec.fields.find((f) => f.key === fieldKey);
+  if (!field?.options) return undefined;
+  const opt = field.options.find((o) => o.value === value);
+  return opt?.label;
+}
+
 function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | undefined {
+  const parts: string[] = [];
+
+  // Accounts: type + home_visible
+  if (spec.table === 'cfg_accounts') {
+    const type = getFieldOptionLabel(spec, 'type', row.type) ?? (String(row.type) === 'savings' ? 'Накопления' : 'Обычный');
+    parts.push(type);
+    if (row.home_visible === 1 || row.home_visible === true) parts.push('На главной');
+  }
+
+  // Tasks: task_type + is_optional
+  if (spec.table === 'cfg_tasks' || spec.table === 'cfg_leisure_tasks') {
+    if (row.task_type) {
+      const typeLabel = getFieldOptionLabel(spec, 'task_type', row.task_type) ?? String(row.task_type);
+      parts.push(typeLabel);
+    }
+    if (row.is_optional === 1 || row.is_optional === true) parts.push('Необязательная');
+  }
+
+  // Expenses: impulsive marker
+  if (spec.table === 'cfg_expense_categories') {
+    if (String(row.type ?? '') === 'compulsive') parts.push('Импульсивная');
+  }
+
+  // Rituals: level (order)
+  if (spec.table === 'cfg_rituals') {
+    if (row.level != null) parts.push(`№ ${row.level}`);
+  }
+
+  // Income categories: just show basic info if needed
+  if (spec.table === 'cfg_income_categories') {
+    if (row.level != null) parts.push(`№ ${row.level}`);
+  }
+
+  // Diary entry presets: prompt + description + active status
   if (spec.table === 'cfg_diary_entry_presets') {
     const prompt = typeof row.prompt === 'string' ? row.prompt.trim().replace(/\s+/g, ' ') : '';
     const description = typeof row.description === 'string' ? row.description.trim().replace(/\s+/g, ' ') : '';
-    const parts: string[] = [];
     if (prompt) parts.push(prompt.length > 96 ? `${prompt.slice(0, 96).trimEnd()}…` : prompt);
     if (description) parts.push(description.length > 72 ? `${description.slice(0, 72).trimEnd()}…` : description);
     if (Number(row.active ?? 1) === 0) parts.push('Неактивная');
-    if (parts.length > 0) return <span className="text-muted-foreground">{parts.join(' · ')}</span>;
+  }
+
+  if (parts.length > 0) {
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1">
+        {parts.map((part, idx) => (
+          <span key={idx} className="inline-flex items-center rounded-md bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            {part}
+          </span>
+        ))}
+      </div>
+    );
   }
   return undefined;
 }
