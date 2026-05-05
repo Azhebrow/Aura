@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddListButton } from '@/components/ui/add-list-button';
 import { ListItem } from '@/components/ui/list-item';
 import { Dialog } from '@/components/ui/dialog';
@@ -18,6 +19,7 @@ type DailyPlansCardProps = {
 };
 
 export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCardProps = {}) {
+  const { t } = useTranslation('common');
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
   const { data: rows, status, reload } = useAsyncData(
@@ -119,24 +121,24 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <ActModal
           icon={ClipboardList}
-          title="Новый пункт плана"
+          title={t('field.name')}
           footer={
             <ActModalFooter
               onCancel={() => setAddOpen(false)}
               onSubmit={add}
               submitDisabled={!title.trim()}
-              submitLabel="Добавить"
+              submitLabel={t('action.add')}
             />
           }
         >
           <ActTableBox>
             <ActFormTable>
-              <ActField id="daily-plan-title" label="Название">
+              <ActField id="daily-plan-title" label={t('field.name')}>
                 <Input
                   id="daily-plan-title"
                   autoFocus
                   className="h-10 text-sm"
-                  placeholder="Новый пункт…"
+                  placeholder={t('placeholder.new_item')}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />

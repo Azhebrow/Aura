@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bold,
   BookText,
@@ -72,10 +73,10 @@ const NUTRITION_GROUP_ICON: Record<string, string> = {
   carbs: 'wheat',
 };
 
-function diaryTextPreview(raw: unknown, max = 160) {
+function diaryTextPreview(raw: unknown, max = 160, emptyLabel = 'Empty entry') {
   const plain = typeof raw === 'string' ? raw.replace(/<[^>]*>/g, ' ') : '';
   const s = plain.trim().replace(/\s+/g, ' ');
-  if (!s) return 'Пустая запись';
+  if (!s) return emptyLabel;
   if (s.length <= max) return s;
   return `${s.slice(0, max).trimEnd()}…`;
 }
@@ -133,6 +134,7 @@ function shortenText(text: string, max = 42): string {
 }
 
 export function DiaryEditorPage() {
+  const { t } = useTranslation('common');
   const { dateString, setDateString } = useSelectedDate();
   const { db } = useAuraDb();
   const dayLocked = useDayLocked(db, Boolean(db), dateString);
@@ -229,7 +231,7 @@ export function DiaryEditorPage() {
       const mood = entry.mood_id ? moodById.get(String(entry.mood_id)) : undefined;
       const haystack = [
         String(entry.date ?? ''),
-        diaryTextPreview(entry.text, 250),
+        diaryTextPreview(entry.text, 250, t('diary.empty_entry')),
         cat ? String(cat.title ?? cat.id ?? '') : '',
         mood ? String(mood.title ?? mood.id ?? '') : '',
       ]
@@ -248,15 +250,15 @@ export function DiaryEditorPage() {
   const entryPresetTitle = useMemo(() => {
     const rawTitle = normalizeDiaryPresetText(activeEntryPreset?.title);
     const fallback = normalizeDiaryPresetText(activeEntryPreset?.prompt);
-    if (rawTitle && rawTitle !== 'Новая цитата') return rawTitle;
-    return fallback ? shortenText(fallback) : 'Запись';
-  }, [activeEntryPreset]);
+    if (rawTitle && rawTitle !== t('diary.new_quote')) return rawTitle;
+    return fallback ? shortenText(fallback) : t('diary.entry');
+  }, [activeEntryPreset, t]);
 
   const entryPresetPrompt = useMemo(() => {
     const prompt = normalizeDiaryPresetText(activeEntryPreset?.prompt);
-    if (!prompt) return 'Запись…';
+    if (!prompt) return `${t('diary.entry')}…`;
     return prompt.endsWith('…') || prompt.endsWith('...') ? prompt : `${prompt}…`;
-  }, [activeEntryPreset]);
+  }, [activeEntryPreset, t]);
 
   const isEntryEmpty = toPlainText(text).length === 0;
 
@@ -407,17 +409,17 @@ export function DiaryEditorPage() {
 
   const entryColumn = (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <MegaPanelHeader title={isEntryEmpty ? entryPresetTitle : 'Запись'} />
+      <MegaPanelHeader title={isEntryEmpty ? entryPresetTitle : t('diary.entry')} />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="border-border/60 border-b">
             <div className="grid grid-cols-1 items-center gap-3 py-2.5 px-3 sm:grid-cols-2 sm:gap-4 sm:px-4 sm:py-3">
               <div className="flex min-w-0 flex-col">
                 <Label htmlFor="diary-mood-slider" className="sr-only">
-                  Настроение
+                  {t('diary.mood')}
                 </Label>
                 {moods.length === 0 ? (
-                  <p className="text-muted-foreground text-xs">Нет cfg_diary_moods.</p>
+                  <p className="text-muted-foreground text-xs">{t('diary.no_moods')}</p>
                 ) : (
                   <div className="flex h-9 min-h-9 items-center gap-2.5 sm:h-10 sm:min-h-10">
                     <IconWithBadge
@@ -437,8 +439,8 @@ export function DiaryEditorPage() {
                           '[&_[data-slot=slider-range]]:bg-foreground/65',
                           '[&_[data-slot=slider-thumb]]:size-[18px] [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:bg-background [&_[data-slot=slider-thumb]]:shadow'
                         )}
-                        aria-label="Настроение"
-                        aria-valuetext={activeMood?.id != null ? `Уровень ${moodIdx + 1}` : undefined}
+                        aria-label={t('diary.mood')}
+                        aria-valuetext={activeMood?.id != null ? t('diary.mood_level', { level: moodIdx + 1 }) : undefined}
                         onValueChange={(vals) => {
                           const idx = Math.min(moods.length - 1, Math.max(0, Math.round(Number(vals[0]) ?? 0)));
                           const m = moods[idx];
@@ -451,7 +453,7 @@ export function DiaryEditorPage() {
               </div>
               <div className="flex min-w-0 flex-col">
                 <Label htmlFor="diary-category" className="sr-only">
-                  Категория
+                  {t('diary.category')}
                 </Label>
                 <div className="flex h-9 min-h-9 w-full items-center sm:h-10 sm:min-h-10">
                   <Select
@@ -464,11 +466,11 @@ export function DiaryEditorPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectLabel>Категории</SelectLabel>
+                        <SelectLabel>{t('diary.category')}</SelectLabel>
                         <SelectItem value={DIARY_NO_CATEGORY_VALUE}>
                           <span className="flex items-center gap-2">
                             <CircleOff className="size-4 shrink-0" />
-                            <span className="truncate">Без категории</span>
+                            <span className="truncate">{t('diary.no_category')}</span>
                           </span>
                         </SelectItem>
                         {categories.map((c) => (
@@ -497,8 +499,8 @@ export function DiaryEditorPage() {
                         e.preventDefault();
                         applyEditorCommand('bold');
                       }}
-                      title="Жирный"
-                      aria-label="Жирный"
+                      title={t('formatting.bold')}
+                      aria-label={t('formatting.bold')}
                     >
                       <Bold className="size-3.5" />
                     </Button>
@@ -511,8 +513,8 @@ export function DiaryEditorPage() {
                         e.preventDefault();
                         applyEditorCommand('italic');
                       }}
-                      title="Курсив"
-                      aria-label="Курсив"
+                      title={t('formatting.italic')}
+                      aria-label={t('formatting.italic')}
                     >
                       <Italic className="size-3.5" />
                     </Button>
@@ -525,8 +527,8 @@ export function DiaryEditorPage() {
                         e.preventDefault();
                         applyEditorCommand('underline');
                       }}
-                      title="Подчеркнутый"
-                      aria-label="Подчеркнутый"
+                      title={t('formatting.underline')}
+                      aria-label={t('formatting.underline')}
                     >
                       <Underline className="size-3.5" />
                     </Button>
@@ -539,8 +541,8 @@ export function DiaryEditorPage() {
                         e.preventDefault();
                         applyEditorCommand('strikeThrough');
                       }}
-                      title="Зачеркнутый"
-                      aria-label="Зачеркнутый"
+                      title={t('formatting.strikethrough')}
+                      aria-label={t('formatting.strikethrough')}
                     >
                       <Strikethrough className="size-3.5" />
                     </Button>
@@ -553,8 +555,8 @@ export function DiaryEditorPage() {
                         e.preventDefault();
                         applyEditorCommand('formatBlock', 'H2');
                       }}
-                      title="Заголовок"
-                      aria-label="Заголовок"
+                      title={t('formatting.heading')}
+                      aria-label={t('formatting.heading')}
                     >
                       <Heading2 className="size-3.5" />
                     </Button>
@@ -567,8 +569,8 @@ export function DiaryEditorPage() {
                         e.preventDefault();
                         applyEditorCommand('insertUnorderedList');
                       }}
-                      title="Маркированный список"
-                      aria-label="Маркированный список"
+                      title={t('formatting.bullet_list')}
+                      aria-label={t('formatting.bullet_list')}
                     >
                       <List className="size-3.5" />
                     </Button>
@@ -581,8 +583,8 @@ export function DiaryEditorPage() {
                         e.preventDefault();
                         applyEditorCommand('insertOrderedList');
                       }}
-                      title="Нумерованный список"
-                      aria-label="Нумерованный список"
+                      title={t('formatting.numbered_list')}
+                      aria-label={t('formatting.numbered_list')}
                     >
                       <ListOrdered className="size-3.5" />
                     </Button>
@@ -595,8 +597,8 @@ export function DiaryEditorPage() {
                         e.preventDefault();
                         applyEditorCommand('formatBlock', 'BLOCKQUOTE');
                       }}
-                      title="Цитата"
-                      aria-label="Цитата"
+                      title={t('formatting.quote')}
+                      aria-label={t('formatting.quote')}
                     >
                       <BookText className="size-3.5" />
                     </Button>
@@ -610,8 +612,8 @@ export function DiaryEditorPage() {
                         applyEditorCommand('removeFormat');
                         applyEditorCommand('formatBlock', 'P');
                       }}
-                      title="Очистить формат"
-                      aria-label="Очистить формат"
+                      title={t('formatting.clear_format')}
+                      aria-label={t('formatting.clear_format')}
                     >
                       <Eraser className="size-3.5" />
                     </Button>
@@ -624,8 +626,8 @@ export function DiaryEditorPage() {
                         id="diary-spellcheck"
                         checked={spellcheckEnabled}
                         onCheckedChange={setSpellcheckEnabled}
-                        aria-label="Включить орфографическое выделение"
-                        title="Орфография"
+                        aria-label={t('spellcheck.enabled')}
+                        title={t('spellcheck.title')}
                         className="shrink-0"
                       />
                     </div>
@@ -637,7 +639,7 @@ export function DiaryEditorPage() {
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
-              data-placeholder={isEntryEmpty ? entryPresetPrompt : 'Запись'}
+              data-placeholder={isEntryEmpty ? entryPresetPrompt : t('diary.entry')}
               className="text-foreground empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)] min-h-0 h-full flex-1 overflow-y-auto bg-transparent px-3 py-3 pb-7 text-base leading-relaxed outline-none sm:px-4 [&_h2]:my-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:leading-tight [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-border/70 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_blockquote]:italic"
               spellCheck={spellcheckEnabled}
               onInput={(e) => setText((e.currentTarget as HTMLDivElement).innerHTML)}
@@ -716,7 +718,7 @@ export function DiaryEditorPage() {
                   sourceRow && typeof sourceRow.color === 'string' && String(sourceRow.color).trim()
                     ? String(sourceRow.color)
                     : 'var(--primary)';
-                const title = sourceRow != null ? String(sourceRow.title ?? sourceRow.id ?? 'Запись') : 'Запись';
+                const title = sourceRow != null ? String(sourceRow.title ?? sourceRow.id ?? t('diary.entry')) : t('diary.entry');
                 const kcal = Math.round(Number(e.total_calories) || 0);
                 const p = Math.round(Number(e.total_proteins) || 0);
                 const f = Math.round(Number(e.total_fats) || 0);
@@ -787,9 +789,9 @@ export function DiaryEditorPage() {
               <Input
                 value={entriesSearch}
                 onChange={(e) => setEntriesSearch(e.target.value)}
-                placeholder="Поиск по записям"
+                placeholder={t('diary.search_placeholder')}
                 className="h-8 w-full"
-                aria-label="Поиск по записям"
+                aria-label={t('diary.search_placeholder')}
               />
               <div className="grid min-w-0 grid-flow-col auto-cols-fr gap-1.5 overflow-x-auto">
                 <Button
@@ -798,8 +800,8 @@ export function DiaryEditorPage() {
                   size="icon-sm"
                   className="w-full rounded-md active:scale-100"
                   onClick={() => setEntriesCategoryFilters([])}
-                  title="Все категории"
-                  aria-label="Все категории"
+                  title={t('diary.all_categories')}
+                  aria-label={t('diary.all_categories')}
                 >
                   <CircleOff className="size-3.5" aria-hidden />
                 </Button>
@@ -831,8 +833,8 @@ export function DiaryEditorPage() {
           </SectionControlCard>
           {filteredDiaryEntries.length === 0 ? (
             <EmptyState
-              title="Записи не найдены."
-              hint="Попробуйте очистить поиск или переключить категорию."
+              title={t('diary.entries_not_found')}
+              hint={t('diary.search_hint')}
               compact
             />
           ) : (
@@ -845,8 +847,8 @@ export function DiaryEditorPage() {
                     <ListItem
                       mode="diary"
                       title={String(e.date)}
-                      amount={cat ? String(cat.title ?? cat.id ?? '') : 'Без категории'}
-                      description={diaryTextPreview(e.text)}
+                      amount={cat ? String(cat.title ?? cat.id ?? '') : t('diary.no_category')}
+                      description={diaryTextPreview(e.text, 160, t('diary.empty_entry'))}
                       categoryIcon={cat && typeof cat.icon === 'string' ? cat.icon : null}
                       moodLevel={Number(mood?.level ?? 0)}
                       moodLevelsTotal={moods.length}
@@ -877,16 +879,16 @@ export function DiaryEditorPage() {
   if (!showEntry && !showNutrition && !showEntries) {
     return (
       <PageFrame>
-        <p className="text-muted-foreground text-sm">Включите секции в настройках приложения.</p>
+        <p className="text-muted-foreground text-sm">{t('diary.enable_sections')}</p>
       </PageFrame>
     );
   }
 
   const bothColumns = showEntry && (showNutrition || showEntries);
   const mobileSections = [
-    showEntry ? { id: 'entry' as const, label: 'Запись', Icon: BookText, content: entryColumn } : null,
-    showNutrition ? { id: 'nutrition' as const, label: 'Питание', Icon: UtensilsCrossed, content: rightColumn } : null,
-    showEntries ? { id: 'entries' as const, label: 'Записи', Icon: List, content: rightColumn } : null,
+    showEntry ? { id: 'entry' as const, label: t('diary.entry'), Icon: BookText, content: entryColumn } : null,
+    showNutrition ? { id: 'nutrition' as const, label: t('diary.nutrition'), Icon: UtensilsCrossed, content: rightColumn } : null,
+    showEntries ? { id: 'entries' as const, label: t('diary.entries'), Icon: List, content: rightColumn } : null,
   ].filter(Boolean) as Array<{ id: 'entry' | 'nutrition' | 'entries'; label: string; Icon: typeof BookText; content: ReactNode }>;
 
 

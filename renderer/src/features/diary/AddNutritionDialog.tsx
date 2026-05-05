@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import {
@@ -43,6 +44,7 @@ const NUTRITION_GROUP_ICON: Record<string, string> = {
 };
 
 export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry, open, onOpenChange, trigger }: Props) {
+  const { t } = useTranslation('common');
   const [internalOpen, setInternalOpen] = useState(false);
   const [kind, setKind] = useState<'product' | 'preset'>('product');
   const [itemId, setItemId] = useState<string>('');
@@ -286,38 +288,38 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
         <DialogTrigger asChild>
           {trigger ?? (
             <Button type="button" size="sm">
-              Добавить
+              {t('action.add')}
             </Button>
           )}
         </DialogTrigger>
       ) : null}
       <ActModal
         icon={UtensilsCrossed}
-        title={isEditMode ? 'Редактирование приёма пищи' : 'Питание'}
+        title={isEditMode ? t('dialog_nutrition.edit_meal') : t('dialog_nutrition.add_meal')}
         contentClassName="shadow-none ring-1 ring-border/60"
         footer={
           <ActModalFooter
             onCancel={() => setDialogOpen(false)}
             onSubmit={save}
             submitDisabled={!itemId}
-            submitLabel={isEditMode ? 'Обновить' : 'Сохранить'}
+            submitLabel={isEditMode ? t('action.update') : t('action.save')}
           />
         }
       >
         <div className="flex flex-col gap-4">
           <ActFormTable>
-            <ActField label="Режим">
+            <ActField label={t('label.timer_mode')}>
               <ActModeSwitch
                 value={kind}
                 onValueChange={(v) => setKind(v as 'product' | 'preset')}
                 options={[
-                  { value: 'product', label: 'Продукт', icon: Apple },
-                  { value: 'preset', label: 'Блюдо', icon: UtensilsCrossed },
+                  { value: 'product', label: t('nutrition.product'), icon: Apple },
+                  { value: 'preset', label: t('nutrition.preset'), icon: UtensilsCrossed },
                 ]}
               />
             </ActField>
 
-            <ActField label={kind === 'product' ? 'Продукт' : 'Блюдо'}>
+            <ActField label={kind === 'product' ? t('nutrition.product') : t('nutrition.preset')}>
               <Select
                 value={itemId}
                 onValueChange={(v) => {
@@ -325,12 +327,12 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
                 }}
               >
                 <SelectTrigger className="h-9 w-full min-w-0 justify-center rounded-md text-center">
-                  <SelectValue placeholder="Выберите…" />
+                  <SelectValue placeholder={t('placeholder.select_category')} />
                 </SelectTrigger>
                 <SelectContent>
                   {kind === 'product' ? (
                     <SelectGroup>
-                      <SelectLabel>Продукты</SelectLabel>
+                      <SelectLabel>{t('nutrition.product')}</SelectLabel>
                       {products.map((p) => {
                         const iconName = NUTRITION_GROUP_ICON[String(p.group ?? 'proteins')] ?? 'apple';
                         const tint = typeof p.color === 'string' && p.color.trim() ? String(p.color) : undefined;
@@ -354,7 +356,7 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
                     </SelectGroup>
                   ) : (
                     <SelectGroup>
-                      <SelectLabel>Блюда</SelectLabel>
+                      <SelectLabel>{t('nutrition.preset')}</SelectLabel>
                       {presets.map((p) => {
                         const iconName = typeof p.icon === 'string' ? p.icon : null;
                         const tint = typeof p.color === 'string' && p.color.trim() ? String(p.color) : undefined;
@@ -383,10 +385,10 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
 
             {kind === 'product' ? (
               <>
-                <ActField label="Порции">
+                <ActField label={t('nutrition.portions')}>
                   <ActAffixValueField
                     id="nutrition-portions"
-                    ariaLabel="Порции"
+                    ariaLabel={t('nutrition.portions')}
                     value={portions}
                     suffix="порц"
                     inputKind="number"
@@ -401,10 +403,10 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
                     }}
                   />
                 </ActField>
-                <ActField label="Граммы">
+                <ActField label={t('nutrition.grams')}>
                   <ActAffixValueField
                     id="nutrition-grams"
-                    ariaLabel="Граммы"
+                    ariaLabel={t('nutrition.grams')}
                     value={grams}
                     suffix="г"
                     inputKind="number"
@@ -422,7 +424,7 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
               </>
             ) : null}
 
-            <ActField label="Предпросмотр">
+            <ActField label={t('nutrition.preview')}>
               {preview ? (
                 <div className="text-muted-foreground flex w-full flex-col gap-1.5 text-sm">
                   <p className="text-foreground text-base font-medium tracking-tight">
@@ -440,12 +442,12 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-xs">В блюде пока нет состава.</p>
+                      <p className="text-xs">{t('nutrition_error.empty_preset')}</p>
                     )
                   ) : null}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-sm">Выберите продукт/блюдо и порцию.</p>
+                <p className="text-muted-foreground text-sm">{t('nutrition_error.select_item')}</p>
               )}
             </ActField>
           </ActFormTable>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -68,6 +69,7 @@ export function AddTransactionDialog({
   onSaved,
   initialTransaction,
 }: Props) {
+  const { t } = useTranslation('common');
   const { db } = useAuraDb();
   const dataTick = useAuraDataRefresh({ types: ['transaction'] });
   const [type, setType] = useState<TxType>('expense');
@@ -165,34 +167,34 @@ export function AddTransactionDialog({
       window.alert(message);
     };
     if (!db) {
-      fail('База данных недоступна');
+      fail(t('error.database_unavailable'));
       return;
     }
     const value = parseFloat(amount.replace(',', '.'));
     if (!Number.isFinite(value) || value <= 0) {
-      fail('Введите сумму больше 0');
+      fail(t('error.amount_required'));
       return;
     }
     if (type === 'transfer') {
       if (accounts.length < 2) {
-        fail('Для перевода нужно минимум 2 счёта');
+        fail(t('error.min_accounts_transfer'));
         return;
       }
       if (!fromAccountId || !toAccountId) {
-        fail('Выберите счёт отправления и счёт получения');
+        fail(t('error.select_accounts'));
         return;
       }
       if (fromAccountId === toAccountId) {
-        fail('Счета перевода должны отличаться');
+        fail(t('error.accounts_different'));
         return;
       }
     } else {
       if (!categoryId) {
-        fail('Выберите категорию');
+        fail(t('error.select_category'));
         return;
       }
       if (!accountId) {
-        fail('Выберите счёт');
+        fail(t('error.select_account'));
         return;
       }
     }
@@ -223,7 +225,8 @@ export function AddTransactionDialog({
       const available = availableForSpend(accountId);
       if (value > available + 1e-9) {
         const label = readAccountLabel(accountId);
-        fail(`Недостаточно средств на счёте «${label}». Доступно: ${formatAmount(available, currencyCode)}.`);
+        const amount = formatAmount(available, currencyCode);
+        fail(t('error.insufficient_funds', { label, amount }));
         return;
       }
     }
@@ -231,7 +234,8 @@ export function AddTransactionDialog({
       const available = availableForSpend(fromAccountId);
       if (value > available + 1e-9) {
         const label = readAccountLabel(fromAccountId);
-        fail(`Недостаточно средств для перевода со счёта «${label}». Доступно: ${formatAmount(available, currencyCode)}.`);
+        const amount = formatAmount(available, currencyCode);
+        fail(t('error.insufficient_funds_transfer', { label, amount }));
         return;
       }
     }
@@ -263,7 +267,7 @@ export function AddTransactionDialog({
       onOpenChange(false);
       onSaved();
     } catch (e) {
-      fail(e instanceof Error ? e.message : 'Ошибка сохранения');
+      fail(e instanceof Error ? e.message : t('error.save_error'));
     } finally {
       setBusy(false);
     }
@@ -283,45 +287,45 @@ export function AddTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <ActModal
         icon={HandCoins}
-        title={isEditMode ? 'Редактирование транзакции' : 'Транзакция'}
+        title={isEditMode ? t('dialog.edit_transaction') : t('dialog.add_transaction')}
         footer={
           <ActModalFooter
             onCancel={() => onOpenChange(false)}
             onSubmit={() => void submit()}
             submitDisabled={busy || !db}
-            submitLabel={isEditMode ? 'Обновить' : 'Сохранить'}
+            submitLabel={isEditMode ? t('action.update') : t('action.save')}
           />
         }
       >
         <ActTableBox>
           <ActFormTable>
-            <ActField label="Тип">
+            <ActField label={t('label_transaction.type')}>
             <ActModeSwitch
               value={type}
               onValueChange={(v) => setType(v as TxType)}
               options={[
-                { value: 'expense', label: 'Расход', icon: TrendingDown },
-                { value: 'income', label: 'Доход', icon: TrendingUp },
-                { value: 'transfer', label: 'Перевод', icon: ArrowRightLeft },
+                { value: 'expense', label: t('transaction.expense'), icon: TrendingDown },
+                { value: 'income', label: t('transaction.income'), icon: TrendingUp },
+                { value: 'transfer', label: t('transaction.transfer'), icon: ArrowRightLeft },
               ]}
             />
             </ActField>
-            <ActField id="tx-amount" label="Сумма">
+            <ActField id="tx-amount" label={t('label_transaction.amount')}>
               <ActAffixValueField
                 id="tx-amount"
                 value={amount}
                 suffix={currencySymbol(currencyCode)}
                 inputKind="number"
-                ariaLabel="Сумма"
+                ariaLabel={t('label_transaction.amount')}
                 autoStartEditKey={open ? openSeq : null}
                 onCommit={setAmount}
               />
             </ActField>
             {type === 'transfer' ? (
-              <ActField label="Откуда">
+              <ActField label={t('label_transaction.from')}>
                 <Select value={fromAccountId} onValueChange={setFromAccountId}>
                   <SelectTrigger className="h-9 w-full min-w-0 justify-center text-center">
-                    <SelectValue placeholder="Счёт отправления" />
+                    <SelectValue placeholder={t('placeholder.select_source')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -350,10 +354,10 @@ export function AddTransactionDialog({
                 </Select>
               </ActField>
             ) : (
-              <ActField label="Счёт">
+              <ActField label={t('label_transaction.account')}>
                 <Select value={accountId} onValueChange={setAccountId}>
                   <SelectTrigger className="h-9 w-full min-w-0 justify-center text-center">
-                    <SelectValue placeholder="Счёт" />
+                    <SelectValue placeholder={t('label_transaction.account')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -383,10 +387,10 @@ export function AddTransactionDialog({
               </ActField>
             )}
             {type === 'transfer' ? (
-              <ActField label="Куда">
+              <ActField label={t('label_transaction.to')}>
                 <Select value={toAccountId} onValueChange={setToAccountId}>
                   <SelectTrigger className="h-9 w-full min-w-0 justify-center text-center">
-                    <SelectValue placeholder="Счёт получения" />
+                    <SelectValue placeholder={t('placeholder.select_destination')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -416,10 +420,10 @@ export function AddTransactionDialog({
               </ActField>
             ) : null}
             {type !== 'transfer' ? (
-              <ActField label="Категория">
+              <ActField label={t('label_transaction.category')}>
                 <Select value={categoryId} onValueChange={setCategoryId}>
                   <SelectTrigger className="h-9 w-full min-w-0 justify-center text-center">
-                    <SelectValue placeholder="Категория" />
+                    <SelectValue placeholder={t('label_transaction.category')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -441,7 +445,7 @@ export function AddTransactionDialog({
                                 {isCompulsiveCategory(c) ? (
                                   <span
                                     className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200"
-                                    title="Импульсивная категория"
+                                    title={t('hint.impulsive_category')}
                                   >
                                     <AlertTriangle className="size-3" aria-hidden />
                                   </span>
@@ -469,12 +473,13 @@ export function AddTransactionDialogTrigger({
   currencyCode,
   onSaved,
 }: Omit<Props, 'open' | 'onOpenChange'>) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   return (
     <>
       <Button type="button" size="sm" variant="secondary" onClick={() => setOpen(true)}>
         <Plus data-icon="inline-start" />
-        Добавить
+        {t('action.add')}
       </Button>
       <AddTransactionDialog
         dateString={dateString}

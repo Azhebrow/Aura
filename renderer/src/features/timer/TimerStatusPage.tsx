@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Clock, ListTodo, Timer, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { AddListButton } from '@/components/ui/add-list-button';
@@ -139,6 +140,7 @@ function timerTaskDailyProgressPct(t: Pick<TimerTaskRow, 'cfg_target_hours' | 'c
 }
 
 export function TimerStatusPage() {
+  const { t } = useTranslation('common');
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
   const dataTick = useAuraDataRefresh({ types: ['timer'] });
@@ -453,7 +455,7 @@ export function TimerStatusPage() {
           ) : null}
             {/* Задачи */}
             <section className={cn('h-full min-h-0 min-w-0 flex-col', mobileSection === 'tasks' ? 'flex' : 'hidden', 'lg:flex', ANIM.enterFade)}>
-              <MegaPanelHeader title="Задачи" locked={dayLocked} />
+              <MegaPanelHeader title={t('field.task')} locked={dayLocked} />
               <div className={cn(MEGA_PANEL_BODY_CN, 'relative')}>
                 {dayLocked ? <div className="absolute inset-0 z-20 bg-background/30 backdrop-blur-[1px]" aria-hidden /> : null}
                 {!db ? (
@@ -475,8 +477,8 @@ export function TimerStatusPage() {
                           </div>
                           {tasks.length === 0 ? (
                             <EmptyState
-                              title="В этой группе пока нет задач."
-                              hint="Добавьте задачу в настройках, и она появится здесь."
+                              title={t('hint.no_tasks')}
+                              hint={t('hint.add_task_settings')}
                               className="mx-auto w-full max-w-sm"
                               compact
                             />
@@ -692,13 +694,13 @@ export function TimerStatusPage() {
 
             {/* Сессии за день */}
             <section className={cn('h-full min-h-0 min-w-0 flex-col', mobileSection === 'sessions' ? 'flex' : 'hidden', 'lg:flex', ANIM.enterFade)}>
-              <MegaPanelHeader title="Сессии за день" locked={dayLocked} />
+              <MegaPanelHeader title={t('label.sessions_per_day')} locked={dayLocked} />
               <div className={cn(MEGA_PANEL_BODY_CN, 'relative')}>
                 {dayLocked ? <div className="absolute inset-0 z-20 bg-background/30 backdrop-blur-[1px]" aria-hidden /> : null}
                 {sessions.length === 0 ? (
                   <EmptyState
-                    title="Пока нет записей."
-                    hint="Запустите таймер, чтобы здесь появились сессии за день."
+                    title={t('placeholder.no_items')}
+                    hint={t('hint.run_timer')}
                     compact
                   />
                 ) : (
@@ -774,13 +776,13 @@ export function TimerStatusPage() {
               onCancel={() => setSessionDialogOpen(false)}
               onSubmit={saveSession}
               submitDisabled={dayLocked}
-              submitLabel="Сохранить"
+              submitLabel={t('action.save')}
             />
           }
         >
           <ActTableBox>
             <ActFormTable>
-              <ActField label="Тип">
+              <ActField label={t('field.type')}>
               <ActModeSwitch
                 value={formTimerType}
                 onValueChange={(next) => setFormTimerType(next as 'timer' | 'stopwatch')}
@@ -790,10 +792,10 @@ export function TimerStatusPage() {
                 ]}
               />
               </ActField>
-              <ActField id="sess-task" label="Задача">
+              <ActField id="sess-task" label={t('field.task')}>
               <Select value={formTaskId} onValueChange={setFormTaskId}>
                 <SelectTrigger id="sess-task" className="h-9 w-full min-w-0 justify-center text-center">
-                  <SelectValue placeholder="Выберите задачу" />
+                  <SelectValue placeholder={t('placeholder.select_task')} />
                 </SelectTrigger>
                 <SelectContent>
                   {pickerGroupOrder.map((g) => {
@@ -816,13 +818,13 @@ export function TimerStatusPage() {
                 </SelectContent>
               </Select>
               </ActField>
-              <ActField id="sess-min" label="Длительность (мин)">
+              <ActField id="sess-min" label={t('field.duration_min')}>
                 <ActAffixValueField
                   id="sess-min"
                   value={formMinutes}
-                  suffix="мин"
+                  suffix={t('label.minutes')}
                   inputKind="integer"
-                  ariaLabel="Длительность"
+                  ariaLabel={t('field.duration')}
                   onCommit={setFormMinutes}
                 />
               </ActField>
@@ -831,7 +833,7 @@ export function TimerStatusPage() {
           {formError ? (
             <ActTableBox>
               <ActFormTable>
-                <ActField label="Ошибка">
+                <ActField label={t('field.error')}>
                   <p className="text-destructive text-sm text-center">{formError}</p>
                 </ActField>
               </ActFormTable>
@@ -843,20 +845,20 @@ export function TimerStatusPage() {
       <Dialog open={deleteTarget != null} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <ActModal
           icon={Trash2}
-          title="Удалить сессию?"
+          title={t('dialog.delete_session')}
           footer={
             <ActModalFooter
               onCancel={() => setDeleteTarget(null)}
               onSubmit={confirmDelete}
               submitDisabled={dayLocked}
               submitVariant="destructive"
-              submitLabel="Удалить"
+              submitLabel={t('action.delete')}
             />
           }
         >
           <ActTableBox>
             <ActFormTable>
-              <ActField label="Запись">
+              <ActField label={t('field.entry')}>
                 <p className="text-sm">Подтвердите удаление выбранной сессии.</p>
               </ActField>
             </ActFormTable>

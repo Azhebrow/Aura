@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lock, Moon, Sunrise } from 'lucide-react';
 import { ListItem } from '@/components/ui/list-item';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
@@ -20,6 +21,7 @@ import { useAsyncData } from '@/shared/hooks/use-async-data';
 import { useFormMutation } from '@/shared/hooks/use-form-mutation';
 
 export function RitualsChecklistPanel() {
+  const { t } = useTranslation('common');
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
   const { activePageId } = useShell();
@@ -141,22 +143,22 @@ export function RitualsChecklistPanel() {
   const orderedSections: Array<{ kind: RitualKind; title: string; rituals: AuraRow[]; done: Set<string> }> =
     priorityKind === 'morning'
       ? [
-          { kind: 'morning', title: 'Утро', rituals: morningRituals, done: morningDone },
-          { kind: 'evening', title: 'Вечер', rituals: eveningRituals, done: eveningDone },
+          { kind: 'morning', title: t('rituals.morning'), rituals: morningRituals, done: morningDone },
+          { kind: 'evening', title: t('rituals.evening'), rituals: eveningRituals, done: eveningDone },
         ]
       : [
-          { kind: 'evening', title: 'Вечер', rituals: eveningRituals, done: eveningDone },
-          { kind: 'morning', title: 'Утро', rituals: morningRituals, done: morningDone },
+          { kind: 'evening', title: t('rituals.evening'), rituals: eveningRituals, done: eveningDone },
+          { kind: 'morning', title: t('rituals.morning'), rituals: morningRituals, done: morningDone },
         ];
   const desktopRituals = useMemo(() => (kind === 'morning' ? morningRituals : eveningRituals), [kind, morningRituals, eveningRituals]);
   const desktopDone = useMemo(() => (kind === 'morning' ? morningDone : eveningDone), [kind, morningDone, eveningDone]);
 
   const modeOptions = useMemo(
     () => [
-      { value: 'morning' as const, label: 'Утро', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Sunrise className="size-3.5 shrink-0" aria-hidden /> },
-      { value: 'evening' as const, label: 'Вечер', icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Moon className="size-3.5 shrink-0" aria-hidden /> },
+      { value: 'morning' as const, label: t('rituals.morning'), icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Sunrise className="size-3.5 shrink-0" aria-hidden /> },
+      { value: 'evening' as const, label: t('rituals.evening'), icon: dayLocked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Moon className="size-3.5 shrink-0" aria-hidden /> },
     ],
-    [dayLocked]
+    [dayLocked, t]
   );
 
   return (
@@ -166,7 +168,7 @@ export function RitualsChecklistPanel() {
           <ModeSwitchHeader
             value={kind}
             onValueChange={handleKindChange}
-            ariaLabel="Режим ритуалов"
+            ariaLabel={t('rituals.mode')}
             locked={dayLocked}
             options={modeOptions}
           />
@@ -175,12 +177,12 @@ export function RitualsChecklistPanel() {
           {status === 'loading' ? (
             <LoadingShell />
           ) : orderedSections.every((section) => section.rituals.length === 0) ? (
-            <p className="text-muted-foreground text-sm">Нет активных ритуалов. Добавьте их в настройках.</p>
+            <p className="text-muted-foreground text-sm">{t('rituals.no_active_hint')}</p>
           ) : (
             <>
               <div className="hidden lg:block">
                 {desktopRituals.length === 0 ? (
-                  <p className="text-muted-foreground px-1 text-xs">Нет активных ритуалов</p>
+                  <p className="text-muted-foreground px-1 text-xs">{t('rituals.no_active')}</p>
                 ) : (
                   <ul className={cn(LIST_CONTENT_CN, 'sm:gap-2', dayLocked && 'pointer-events-none opacity-55')}>
                     {desktopRituals.map((r) => {
@@ -222,7 +224,7 @@ export function RitualsChecklistPanel() {
                       {section.title}
                     </p>
                     {section.rituals.length === 0 ? (
-                      <p className="text-muted-foreground px-1 text-xs">Нет активных ритуалов</p>
+                      <p className="text-muted-foreground px-1 text-xs">{t('rituals.no_active')}</p>
                     ) : (
                       <ul className={cn(LIST_CONTENT_CN, 'sm:gap-2', dayLocked && 'pointer-events-none opacity-55')}>
                         {section.rituals.map((r) => {
