@@ -299,54 +299,124 @@ function getFieldOptionLabel(spec: CfgSectionSpec, fieldKey: string, value: unkn
   return opt?.label;
 }
 
+function formatParamValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
+  const str = String(value).trim();
+  return str.length > 0 ? str : null;
+}
+
 function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | undefined {
   const parts: string[] = [];
 
-  // Accounts: type + home_visible
+  // Accounts: все параметры
   if (spec.table === 'cfg_accounts') {
     const type = getFieldOptionLabel(spec, 'type', row.type) ?? (String(row.type) === 'savings' ? 'Накопления' : 'Обычный');
     parts.push(type);
     if (row.home_visible === 1 || row.home_visible === true) parts.push('На главной');
+    if (row.balance != null) parts.push(`Баланс: ${row.balance}`);
+    if (row.target != null) parts.push(`Цель: ${row.target}`);
+    if (row.level != null) parts.push(`№ ${row.level}`);
   }
 
-  // Tasks: task_type + is_optional
+  // Tasks: все параметры
   if (spec.table === 'cfg_tasks' || spec.table === 'cfg_leisure_tasks') {
     if (row.task_type) {
       const typeLabel = getFieldOptionLabel(spec, 'task_type', row.task_type) ?? String(row.task_type);
       parts.push(typeLabel);
     }
     if (row.is_optional === 1 || row.is_optional === true) parts.push('Необязательная');
-  }
-
-  // Expenses: impulsive marker
-  if (spec.table === 'cfg_expense_categories') {
-    if (String(row.type ?? '') === 'compulsive') parts.push('Импульсивная');
-  }
-
-  // Rituals: level (order)
-  if (spec.table === 'cfg_rituals') {
+    if (row.cfg_target_value != null && Number(row.cfg_target_value) > 0) {
+      const unit = String(row.cfg_unit ?? '');
+      parts.push(`Цель: ${row.cfg_target_value}${unit ? ' ' + unit : ''}`);
+    }
+    if (row.cfg_target_hours != null && Number(row.cfg_target_hours) > 0) {
+      parts.push(`Таймер: ${row.cfg_target_hours}ч`);
+    }
+    if (row.ritual_type) {
+      const ritualLabel = getFieldOptionLabel(spec, 'ritual_type', row.ritual_type) ?? String(row.ritual_type);
+      parts.push(`Ритуал: ${ritualLabel}`);
+    }
     if (row.level != null) parts.push(`№ ${row.level}`);
   }
 
-  // Income categories: just show basic info if needed
+  // Leisure tasks: все параметры как для tasks
+  if (spec.table === 'cfg_leisure_tasks') {
+    if (row.task_type) {
+      const typeLabel = getFieldOptionLabel(spec, 'task_type', row.task_type) ?? String(row.task_type);
+      parts.push(typeLabel);
+    }
+    if (row.is_optional === 1 || row.is_optional === true) parts.push('Необязательная');
+    if (row.cfg_target_value != null && Number(row.cfg_target_value) > 0) {
+      const unit = String(row.cfg_unit ?? '');
+      parts.push(`Цель: ${row.cfg_target_value}${unit ? ' ' + unit : ''}`);
+    }
+    if (row.cfg_target_hours != null && Number(row.cfg_target_hours) > 0) {
+      parts.push(`Таймер: ${row.cfg_target_hours}ч`);
+    }
+    if (row.level != null) parts.push(`№ ${row.level}`);
+  }
+
+  // Expenses: все параметры
+  if (spec.table === 'cfg_expense_categories') {
+    if (String(row.type ?? '') === 'compulsive') parts.push('Импульсивная');
+    if (row.level != null) parts.push(`№ ${row.level}`);
+  }
+
+  // Income categories: все параметры
   if (spec.table === 'cfg_income_categories') {
     if (row.level != null) parts.push(`№ ${row.level}`);
   }
 
-  // Diary entry presets: prompt + description + active status
+  // Rituals: все параметры
+  if (spec.table === 'cfg_rituals') {
+    if (row.level != null) parts.push(`№ ${row.level}`);
+    const desc = typeof row.description === 'string' ? row.description.trim() : '';
+    if (desc) parts.push(desc.length > 60 ? `${desc.slice(0, 60).trimEnd()}…` : desc);
+  }
+
+  // Moods: все параметры
+  if (spec.table === 'cfg_diary_moods') {
+    if (row.level != null) parts.push(`Уровень ${row.level}`);
+  }
+
+  // Diary entry presets: все параметры
   if (spec.table === 'cfg_diary_entry_presets') {
     const prompt = typeof row.prompt === 'string' ? row.prompt.trim().replace(/\s+/g, ' ') : '';
     const description = typeof row.description === 'string' ? row.description.trim().replace(/\s+/g, ' ') : '';
-    if (prompt) parts.push(prompt.length > 96 ? `${prompt.slice(0, 96).trimEnd()}…` : prompt);
-    if (description) parts.push(description.length > 72 ? `${description.slice(0, 72).trimEnd()}…` : description);
+    if (prompt) parts.push(prompt.length > 60 ? `${prompt.slice(0, 60).trimEnd()}…` : prompt);
+    if (description) parts.push(description.length > 60 ? `${description.slice(0, 60).trimEnd()}…` : description);
     if (Number(row.active ?? 1) === 0) parts.push('Неактивная');
+    if (row.level != null) parts.push(`№ ${row.level}`);
+  }
+
+  // Nutrition products: все параметры
+  if (spec.table === 'cfg_nutrition_products') {
+    const group = formatParamValue(row.group);
+    if (group) parts.push(`Группа: ${group}`);
+    if (row.kcal != null) parts.push(`${row.kcal}ккал`);
+    if (row.protein != null) parts.push(`Б:${row.protein}г`);
+    if (row.fat != null) parts.push(`Ж:${row.fat}г`);
+    if (row.carbs != null) parts.push(`У:${row.carbs}г`);
+    if (row.level != null) parts.push(`№ ${row.level}`);
+  }
+
+  // Nutrition presets: все параметры
+  if (spec.table === 'cfg_nutrition_presets') {
+    if (row.level != null) parts.push(`№ ${row.level}`);
+  }
+
+  // Ambient music: все параметры
+  if (spec.table === 'cfg_ambient_music') {
+    const file = formatParamValue(row.file_name);
+    if (file) parts.push(`Файл: ${file}`);
   }
 
   if (parts.length > 0) {
     return (
-      <div className="flex flex-wrap gap-1.5 mt-1">
+      <div className="flex flex-wrap gap-1.5 mt-1.5">
         {parts.map((part, idx) => (
-          <span key={idx} className="inline-flex items-center rounded-md bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          <span key={idx} className="inline-flex items-center rounded-md bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground/80">
             {part}
           </span>
         ))}
