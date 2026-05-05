@@ -159,13 +159,13 @@ function RankRow({ n, name, pts, next }: { n: number; name: string; pts: string;
   const isMax = n === 10;
   return (
     <div className={cn(
-      'flex items-center gap-3 px-4 py-2.5 border-b border-border/10 last:border-0',
+      'flex items-center gap-2 px-4 py-2.5 border-b border-border/10 last:border-0 min-w-0',
       isMax && 'bg-muted/15'
     )}>
       <span className="font-mono text-xs text-muted-foreground/40 w-4 shrink-0 text-right">{n}</span>
-      <span className={cn('text-xs font-semibold flex-1', isMax ? 'text-foreground' : 'text-foreground/80')}>{name}</span>
-      <span className="font-mono text-[11px] text-muted-foreground/60 w-16 text-right">{pts}</span>
-      <span className="font-mono text-[11px] text-muted-foreground/35 w-16 text-right">{next === '—' ? <span className="text-foreground/40">пик</span> : `→ ${next}`}</span>
+      <span className={cn('text-xs font-semibold flex-1 min-w-0', isMax ? 'text-foreground' : 'text-foreground/80')}>{name}</span>
+      <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 text-right">{pts}</span>
+      <span className="font-mono text-[11px] text-muted-foreground/35 shrink-0 text-right hidden sm:block">{next === '—' ? <span className="text-foreground/40">пик</span> : `→ ${next}`}</span>
     </div>
   );
 }
@@ -308,22 +308,22 @@ export function AppGuidePanel() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-border/25 bg-muted/8 overflow-hidden">
           <div className="px-4 py-3 border-b border-border/15">
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-              <span className="w-4">#</span>
-              <span className="flex-1 pl-3">Ранг</span>
-              <span className="w-16 text-right">От</span>
-              <span className="w-16 text-right">До</span>
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 min-w-0">
+              <span className="w-4 shrink-0">#</span>
+              <span className="flex-1 min-w-0">Ранг</span>
+              <span className="shrink-0 text-right">От</span>
+              <span className="shrink-0 text-right hidden sm:block">До</span>
             </div>
           </div>
           {RANKS.slice(0, 5).map((r) => <RankRow key={r.n} {...r} />)}
         </div>
         <div className="rounded-xl border border-border/25 bg-muted/8 overflow-hidden">
           <div className="px-4 py-3 border-b border-border/15">
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-              <span className="w-4">#</span>
-              <span className="flex-1 pl-3">Ранг</span>
-              <span className="w-16 text-right">От</span>
-              <span className="w-16 text-right">До</span>
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 min-w-0">
+              <span className="w-4 shrink-0">#</span>
+              <span className="flex-1 min-w-0">Ранг</span>
+              <span className="shrink-0 text-right">От</span>
+              <span className="shrink-0 text-right hidden sm:block">До</span>
             </div>
           </div>
           {RANKS.slice(5).map((r) => <RankRow key={r.n} {...r} />)}
