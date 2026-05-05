@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { IconWithBadge } from '@/components/ui/icon-with-badge';
@@ -59,6 +60,8 @@ export function ListItem({
   className,
   isDone,
 }: ListItemProps) {
+  const { t } = useTranslation('common');
+
   const handleMainClick = () => {
     if (mode === 'checkbox' || mode === 'checkbox-delete') {
       onCheckedChange?.(!checked);
@@ -103,7 +106,7 @@ export function ListItem({
               <span className="text-muted-foreground/60 text-xs" aria-hidden>
                 •
               </span>
-              <div className="text-muted-foreground truncate text-xs font-medium">{metaLabel ?? 'Запись'}</div>
+              <div className="text-muted-foreground truncate text-xs font-medium">{metaLabel ?? t('aria.entry')}</div>
             </div>
             {description && <div className="text-muted-foreground/80 mt-1.5 text-xs leading-relaxed">{description}</div>}
           </div>
@@ -139,7 +142,7 @@ export function ListItem({
             checked={checked || false}
             onCheckedChange={(c) => onCheckedChange?.(!!c)}
             onClick={(e) => e.stopPropagation()}
-            aria-label="Переключить"
+            aria-label={t('aria.toggle')}
           />
         </div>
       )}
@@ -208,7 +211,7 @@ export function ListItem({
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
                   onMoveUp ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
                 )}
-                aria-label="Переместить вверх"
+                aria-label={t('aria.move_up')}
                 disabled={!onMoveUp}
                 aria-disabled={!onMoveUp}
               >
@@ -226,7 +229,7 @@ export function ListItem({
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
                   onMoveDown ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
                 )}
-                aria-label="Переместить вниз"
+                aria-label={t('aria.move_down')}
                 disabled={!onMoveDown}
                 aria-disabled={!onMoveDown}
               >
@@ -244,7 +247,7 @@ export function ListItem({
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
                   'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
                 )}
-                aria-label="Удалить"
+                aria-label={t('aria.delete_item')}
               >
                 <Trash2 className="size-4" />
               </button>
@@ -259,7 +262,7 @@ export function ListItem({
               checked={checked || false}
               onCheckedChange={(c) => onCheckedChange?.(!!c)}
               onClick={(e) => e.stopPropagation()}
-              aria-label="Переключить"
+              aria-label={t('aria.toggle')}
             />
           </div>
         )}
@@ -278,7 +281,7 @@ export function ListItem({
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
                   'text-muted-foreground hover:text-foreground hover:bg-muted/20'
                 )}
-                aria-label="Переместить вверх"
+                aria-label={t('aria.move_up')}
               >
                 <ChevronUp className="size-4" />
               </button>
@@ -294,7 +297,7 @@ export function ListItem({
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
                   'text-muted-foreground hover:text-foreground hover:bg-muted/20'
                 )}
-                aria-label="Переместить вниз"
+                aria-label={t('aria.move_down')}
               >
                 <ChevronDown className="size-4" />
               </button>
@@ -310,7 +313,7 @@ export function ListItem({
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
                   'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
                 )}
-                aria-label="Удалить"
+                aria-label={t('aria.delete_item')}
               >
                 <Trash2 className="size-4" />
               </button>

@@ -30,9 +30,9 @@ export function ModeSwitchHeader<T extends string>({
     () =>
       locked
         ? options.map((opt) => ({
-            ...opt,
+            value: opt.value,
+            label: opt.label,
             icon: <Lock className="size-3.5 shrink-0" />,
-            Icon: undefined,
           }))
         : options,
     [locked, options]

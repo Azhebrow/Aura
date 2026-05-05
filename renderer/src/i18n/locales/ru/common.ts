@@ -22,6 +22,7 @@ export default {
     toggle: 'Переключить',
     open_menu: 'Открыть меню',
     close_menu: 'Закрыть меню',
+    entry: 'Запись',
   },
   status: {
     empty_title: 'Пока нет записей.',

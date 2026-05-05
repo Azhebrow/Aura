@@ -22,6 +22,7 @@ export default {
     toggle: 'Toggle',
     open_menu: 'Open menu',
     close_menu: 'Close menu',
+    entry: 'Entry',
   },
   status: {
     empty_title: 'No records yet.',

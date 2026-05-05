@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -12,9 +13,11 @@ type AddListButtonProps = {
 export function AddListButton({
   onClick,
   disabled = false,
-  label = 'Добавить',
+  label,
   className,
 }: AddListButtonProps) {
+  const { t } = useTranslation('common');
+  const displayLabel = label ?? t('action.add');
   return (
     <Button
       type="button"
@@ -30,7 +33,7 @@ export function AddListButton({
       )}
     >
       <Plus className="size-3.5 shrink-0 opacity-80" />
-      <span>{label}</span>
+      <span>{displayLabel}</span>
     </Button>
   );
 }
