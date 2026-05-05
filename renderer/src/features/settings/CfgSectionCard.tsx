@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, FolderOpen, ListPlus, Music2, Palette, Pencil, Settings, Trash2, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddListButton } from '@/components/ui/add-list-button';
@@ -50,6 +51,7 @@ import { CfgSelectOptionIcon } from '@/shared/lib/cfg-select-icons';
 import { TASK_CATEGORY_PALETTE } from '@/shared/design/aura-palette';
 import { TASK_CATEGORY_DEFAULT_META } from '@/shared/config/domain-taxonomy';
 import type { CfgFieldDef, CfgSectionSpec } from '@/features/settings/cfg-section-types';
+import { translateCfgSectionSpec } from '@/features/settings/cfg-section-translator';
 import type { AuraRow } from '@/types/aura';
 import { cn } from '@/lib/utils';
 import { useSettingsTabActions } from '@/features/settings/settings-tab-actions-context';
@@ -293,7 +295,7 @@ function rowTitle(row: AuraRow, keys?: string[]): string {
 }
 
 function getFieldOptionLabel(spec: CfgSectionSpec, fieldKey: string, value: unknown): string | undefined {
-  const field = spec.fields.find((f) => f.key === fieldKey);
+  const field = translatedSpec.fields.find((f) => f.key === fieldKey);
   if (!field?.options) return undefined;
   const opt = field.options.find((o) => o.value === value);
   return opt?.label;
@@ -473,7 +475,7 @@ function isTaskDependentFieldKey(spec: CfgSectionSpec, fieldKey: string): boolea
 }
 
 function taskTypeLabel(spec: CfgSectionSpec, taskType: string): string {
-  const field = spec.fields.find((f) => f.key === 'task_type');
+  const field = translatedSpec.fields.find((f) => f.key === 'task_type');
   const opt = field?.options?.find((o) => o.value === taskType);
   return opt?.label ?? taskType;
 }
@@ -757,7 +759,7 @@ function buildPayloadFromForm(
     Object.assign(out, spec.filter ?? {}, spec.createExtra ?? {});
   }
   if (mode === 'edit' && editId != null) out.id = editId;
-  for (const f of spec.fields) {
+  for (const f of translatedSpec.fields) {
     if (spec.sectionId === 'finance-expense' && f.key === 'type') {
       out[f.key] = form[f.key] === '1' ? 'compulsive' : '';
     } else {
@@ -770,6 +772,8 @@ function buildPayloadFromForm(
 type Props = { spec: CfgSectionSpec };
 
 export function CfgSectionCard({ spec }: Props) {
+  const { t } = useTranslation();
+  const translatedSpec = useMemo(() => translateCfgSectionSpec(spec, t), [spec, t]);
   const { db } = useAuraDb();
   const setTabActions = useSettingsTabActions();
   const [rows, setRows] = useState<AuraRow[]>([]);
@@ -781,24 +785,24 @@ export function CfgSectionCard({ spec }: Props) {
   const restrictedColorPresets = useMemo(() => sectionColorPresets(spec.sectionId), [spec.sectionId]);
   const baseVisibleFields = useMemo(
     () =>
-      spec.fields.filter(
+      translatedSpec.fields.filter(
         (f) =>
           f.key !== 'level' &&
-          !(spec.hideFormKeys ?? []).includes(f.key) &&
-          !isTaskDependentFieldKey(spec, f.key)
+          !(translatedSpec.hideFormKeys ?? []).includes(f.key) &&
+          !isTaskDependentFieldKey(translatedSpec, f.key)
       ),
-    [spec.fields, spec.hideFormKeys, spec]
+    [translatedSpec.fields, translatedSpec.hideFormKeys, translatedSpec]
   );
   const conditionalVisibleFields = useMemo(
     () =>
-      spec.fields.filter(
+      translatedSpec.fields.filter(
         (f) =>
           f.key !== 'level' &&
-          !(spec.hideFormKeys ?? []).includes(f.key) &&
-          isTaskDependentFieldKey(spec, f.key) &&
-          isTaskConditionalFieldVisible(spec, f.key, currentTaskType)
+          !(translatedSpec.hideFormKeys ?? []).includes(f.key) &&
+          isTaskDependentFieldKey(translatedSpec, f.key) &&
+          isTaskConditionalFieldVisible(translatedSpec, f.key, currentTaskType)
       ),
-    [spec.fields, spec.hideFormKeys, spec, currentTaskType]
+    [translatedSpec.fields, translatedSpec.hideFormKeys, translatedSpec, currentTaskType]
   );
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
@@ -858,7 +862,7 @@ export function CfgSectionCard({ spec }: Props) {
     setRows(sortRows(list, spec.sortBy));
   }, [db, spec.filter, spec.sortBy, spec.table]);
 
-  const canReorder = spec.sortBy === 'level' && spec.fields.some((f) => f.key === 'level');
+  const canReorder = spec.sortBy === 'level' && translatedSpec.fields.some((f) => f.key === 'level');
   const hideRowReorder = spec.sectionId.startsWith('finance-') || spec.sectionId.startsWith('nutrition-');
 
   const refreshAmbientMusicFiles = useCallback(() => {
@@ -1003,16 +1007,16 @@ export function CfgSectionCard({ spec }: Props) {
     setCfgIconField(null);
     setDialogError(null);
     const init: Record<string, string> = {};
-    for (const f of spec.fields) {
+    for (const f of translatedSpec.fields) {
       if (f.kind === 'checkbox') init[f.key] = '0';
       else if (f.kind === 'number') init[f.key] = String(f.min ?? 0);
       else init[f.key] = '';
     }
     for (const [k, v] of Object.entries(spec.createExtra ?? {})) {
-      if (spec.fields.some((f) => f.key === k)) init[k] = String(v);
+      if (translatedSpec.fields.some((f) => f.key === k)) init[k] = String(v);
     }
     const maxLv = rows.reduce((m, r) => Math.max(m, Number(r.level) || 0), -1);
-    if (spec.fields.some((f) => f.key === 'level')) {
+    if (translatedSpec.fields.some((f) => f.key === 'level')) {
       init.level = String(maxLv + 1);
     }
     if (spec.table === 'cfg_tasks') {
@@ -1023,7 +1027,7 @@ export function CfgSectionCard({ spec }: Props) {
     if (spec.table === 'cfg_leisure_tasks') {
       init.task_type = 'timer';
     }
-    if (spec.fields.some((x) => x.key === 'type' && x.options?.some((o) => o.value === '__ordinary__'))) {
+    if (translatedSpec.fields.some((x) => x.key === 'type' && x.options?.some((o) => o.value === '__ordinary__'))) {
       init.type = '__ordinary__';
     }
     if (spec.table === 'cfg_rituals_morning' || spec.table === 'cfg_rituals_evening') {
@@ -1070,7 +1074,7 @@ export function CfgSectionCard({ spec }: Props) {
     setDialogError(null);
     const id = String(row.id);
     const init: Record<string, string> = {};
-    for (const f of spec.fields) {
+    for (const f of translatedSpec.fields) {
       init[f.key] = formValueFromRow(f, row, spec.sectionId);
     }
     if (spec.table === 'cfg_nutrition_presets') {
@@ -1154,7 +1158,7 @@ export function CfgSectionCard({ spec }: Props) {
     }
   };
 
-  const dialogTitle = spec.title;
+  const dialogTitle = translatedSpec.title;
 
   const renderFieldControl = (f: CfgFieldDef) => {
     const fid = `cfg-${spec.sectionId}-${f.key}`;

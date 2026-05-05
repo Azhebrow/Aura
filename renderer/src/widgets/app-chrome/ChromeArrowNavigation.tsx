@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useShell } from '@/app/navigation/shell-context';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
-import { getNavPagesInOrder, type PageId } from '@/shared/config/nav-model';
+import { getNavPageIds, type PageId } from '@/shared/config/nav-model';
 
 function isArrowNavigationBlocked(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -21,7 +21,7 @@ function isArrowNavigationBlocked(target: EventTarget | null): boolean {
 
 /** Порядок страниц для ↑/↓: календарь исключаем, чтобы он не попадал в циклический список. */
 function pageIdsForVerticalNav(navOrder: readonly PageId[]): PageId[] {
-  const ordered = getNavPagesInOrder(navOrder).map((p) => p.id);
+  const ordered = getNavPageIds(navOrder);
   const main = ordered.filter((id) => id !== 'settings' && id !== 'calendar');
   const hasSettings = ordered.includes('settings');
   return hasSettings ? [...main, 'settings'] : main;

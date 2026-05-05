@@ -6,6 +6,7 @@ import {
   Flame,
   Gem,
   Heart,
+  Languages,
   Leaf,
   Moon,
   MoonStar,
@@ -21,6 +22,8 @@ import { UniversalRadioGroup, type UniversalRadioOption } from '@/components/ui/
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { getAuraAccentPresetColors } from '@/features/theme/apply-theme-dom';
 import { useAuraTheme } from '@/features/theme/ThemeContext';
+import { useAuraLanguage } from '@/features/language/LanguageContext';
+import type { AuraLanguage } from '@/i18n/language-constants';
 import type { AuraAccentPreset, AuraThemeMode } from '@/features/theme/theme-constants';
 import { AURA_FONT_CHOICES, AURA_FONT_STANDARD, isAuraFontFamily } from '@/features/theme/font-constants';
 import type { AuraRow } from '@/types/aura';
@@ -77,7 +80,13 @@ function saveAppSettings(db: ReturnType<typeof useAuraDb>['db'], patch: Partial<
 export function AppearanceSettingsCard() {
   const { db } = useAuraDb();
   const { theme, setTheme, accentPreset, setAccentPreset, fontFamily, setFontFamily } = useAuraTheme();
+  const { language, setLanguage } = useAuraLanguage();
   const [appScale, setAppScale] = useState('1');
+
+  const LANGUAGE_OPTIONS: UniversalRadioOption<AuraLanguage>[] = [
+    { value: 'ru', label: 'Русский', Icon: Languages },
+    { value: 'en', label: 'English', Icon: Languages },
+  ];
 
   useEffect(() => {
     if (!db) return;
@@ -191,6 +200,21 @@ export function AppearanceSettingsCard() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Язык</p>
+          <UniversalRadioGroup
+            value={language}
+            onValueChange={(v) => { setLanguage(v); window.dispatchEvent(new Event('settings-saved')); }}
+            options={LANGUAGE_OPTIONS}
+            ariaLabel="Язык"
+            fullWidth
+            className="bg-muted/25 h-12 min-h-12 rounded-xl p-1"
+            optionClassName="rounded-lg px-3 text-xs"
+            selectedOptionClassName="bg-background text-foreground shadow-sm ring-1 ring-border"
+            unselectedOptionClassName="text-muted-foreground"
+          />
         </div>
       </div>
     </SettingsSectionCard>

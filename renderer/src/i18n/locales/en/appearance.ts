@@ -1,0 +1,48 @@
+export default {
+  card: {
+    title: 'Appearance',
+  },
+  section: {
+    theme: 'Theme',
+    accent: 'Accent',
+    scale: 'Scale',
+    font: 'Font',
+    language: 'Language',
+  },
+  theme: {
+    light: 'Light',
+    dim: 'Dim',
+    dark: 'Dark',
+  },
+  accent: {
+    slate: 'Slate',
+    stone: 'Stone',
+    gray: 'Gray',
+    purple: 'Purple',
+    indigo: 'Indigo',
+    blue: 'Blue',
+    cyan: 'Cyan',
+    teal: 'Teal',
+    emerald: 'Emerald',
+    green: 'Green',
+    lime: 'Lime',
+    yellow: 'Yellow',
+    amber: 'Amber',
+    orange: 'Orange',
+    red: 'Red',
+    rose: 'Rose',
+    pink: 'Pink',
+    violet: 'Violet',
+  },
+  scale: {
+    compact: 'Compact',
+    standard: 'Standard',
+    spacious: 'Spacious',
+  },
+  font: {
+    standard: 'Standard',
+    sans: 'Sans',
+    serif: 'Serif',
+    mono: 'Monospace',
+  },
+} as const;

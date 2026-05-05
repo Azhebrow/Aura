@@ -288,7 +288,7 @@ export function CalendarPage() {
                         title={status === 'open' ? 'Ячейка открыта для редактирования' : status === 'locked' ? 'Ячейка закрыта' : 'Будущая дата недоступна'}
                       >
                         <span
-                          className="calendar-water-fill pointer-events-none absolute inset-x-0 bottom-0 rounded-b-md"
+                          className={cn('calendar-water-fill pointer-events-none absolute inset-x-0 bottom-0 rounded-b-md', status === 'locked' && 'opacity-40')}
                           style={
                             {
                               ['--calendar-water-level' as string]: `${fill}%`,
@@ -297,7 +297,11 @@ export function CalendarPage() {
                           }
                         />
                         <span className="relative z-[1] inline-flex items-center gap-1.5">
-                          <span className="font-mono text-xs font-semibold tabular-nums">{d.getDate()}</span>
+                          {status === 'locked' ? (
+                            <Lock className="size-4 text-foreground" aria-hidden />
+                          ) : (
+                            <span className="font-mono text-xs font-semibold tabular-nums">{d.getDate()}</span>
+                          )}
                           {isToday && <ColoredAuraIcon name="sparkles" tint="var(--primary)" size={12} className="opacity-80" />}
                         </span>
                         <span className="relative z-[1] flex flex-1 flex-col items-center justify-center text-center">

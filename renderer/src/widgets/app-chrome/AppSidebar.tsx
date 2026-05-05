@@ -1,40 +1,43 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useShell } from '@/app/navigation/shell-context';
-import { getNavPagesInOrder, type NavPageDefinition } from '@/shared/config/nav-model';
+import { getNavPageIds, type PageId } from '@/shared/config/nav-model';
 import { PAGE_ICONS } from '@/shared/config/page-icons';
 import { ShellNavItem } from '@/widgets/app-chrome/ShellNavItem';
 import { SidebarDaySnapshot } from '@/widgets/app-chrome/SidebarDaySnapshot';
 import { AuraBrandIcon } from '@/widgets/app-chrome/AuraBrandIcon';
 
 function NavPageButton({
-  page,
+  pageId,
   isActive,
   onSelect,
   className,
 }: {
-  page: NavPageDefinition;
+  pageId: PageId;
   isActive: boolean;
   onSelect: () => void;
   className?: string;
 }) {
-  const Icon = PAGE_ICONS[page.id];
+  const { t } = useTranslation('nav');
+  const Icon = PAGE_ICONS[pageId];
   return (
     <ShellNavItem icon={Icon} isActive={isActive} onClick={onSelect} className={className}>
-      {page.label}
+      {t(pageId)}
     </ShellNavItem>
   );
 }
 
 export function AppSidebar() {
+  const { t } = useTranslation(['nav', 'common']);
   const { activePageId, setActivePageId, toggleCalendar, navOrder } = useShell();
   const [isBrandHovered, setIsBrandHovered] = useState(false);
   const { mainPages, settingsPage } = useMemo(() => {
-    const pages = getNavPagesInOrder(navOrder);
+    const pages = getNavPageIds(navOrder);
     return {
-      mainPages: pages.filter((p) => p.id !== 'settings' && p.id !== 'calendar'),
-      settingsPage: pages.find((p) => p.id === 'settings'),
+      mainPages: pages.filter((id) => id !== 'settings' && id !== 'calendar'),
+      settingsPage: pages.find((id) => id === 'settings'),
     };
   }, [navOrder]);
 
@@ -54,12 +57,12 @@ export function AppSidebar() {
                 'border-border inline-flex h-8 w-full items-center justify-between gap-1.5 rounded-lg border px-2 text-xs font-medium outline-none aura-tx-interactive',
                 'bg-primary/15 text-primary shadow-sm focus-visible:ring-2 focus-visible:ring-ring/70'
               )}
-              aria-label="Вернуться назад"
-              title="Вернуться назад"
+              aria-label={t('common:action.back')}
+              title={t('common:action.back')}
             >
               <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
                 <CalendarDays className="size-3.5 shrink-0" />
-                <span className="truncate">Календарь</span>
+                <span className="truncate">{t('calendar')}</span>
               </span>
               <ChevronDown className="size-3.5 shrink-0 rotate-180" />
             </button>
@@ -71,8 +74,8 @@ export function AppSidebar() {
                 'inline-flex h-8 w-full items-center gap-2 rounded-lg px-1.5 text-left outline-none aura-tx-colors focus-visible:ring-2 focus-visible:ring-ring',
                 'text-foreground'
               )}
-              aria-label="Перейти на домашнюю страницу"
-              title="Домашняя страница"
+              aria-label={t('home')}
+              title={t('home')}
             >
               <AuraBrandIcon className="size-[1.05rem] shrink-0 text-foreground" />
               <span className="font-heading text-lg font-semibold tracking-tight text-foreground">AURA</span>
@@ -86,14 +89,14 @@ export function AppSidebar() {
       <div className="shrink-0 hidden [@media(min-height:720px)]:block">
         <SidebarDaySnapshot compact={false} />
       </div>
-      <nav className="flex min-h-0 flex-1 flex-col overflow-hidden pt-0.5" aria-label="Основная навигация">
+      <nav className="flex min-h-0 flex-1 flex-col overflow-hidden pt-0.5" aria-label={t('common:nav.title')}>
         <div className="flex min-h-0 flex-1 flex-col gap-1 py-1">
-          {mainPages.map((page) => (
-            <div key={page.id} className="flex min-h-0 flex-1">
+          {mainPages.map((pageId) => (
+            <div key={pageId} className="flex min-h-0 flex-1">
               <NavPageButton
-                page={page}
-                isActive={activePageId === page.id}
-                onSelect={() => setActivePageId(page.id)}
+                pageId={pageId}
+                isActive={activePageId === pageId}
+                onSelect={() => setActivePageId(pageId)}
                 className="h-full"
               />
             </div>
@@ -103,9 +106,9 @@ export function AppSidebar() {
         {settingsPage ? (
           <div className="mt-auto shrink-0 pt-2">
             <NavPageButton
-              page={settingsPage}
-              isActive={activePageId === settingsPage.id}
-              onSelect={() => setActivePageId(settingsPage.id)}
+              pageId={settingsPage}
+              isActive={activePageId === settingsPage}
+              onSelect={() => setActivePageId(settingsPage)}
             />
           </div>
         ) : null}

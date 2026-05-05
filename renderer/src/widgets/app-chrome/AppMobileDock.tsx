@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useShell } from '@/app/navigation/shell-context';
-import { getNavPagesInOrder, type NavPageDefinition } from '@/shared/config/nav-model';
+import { getNavPageIds, type PageId } from '@/shared/config/nav-model';
 import { PAGE_ICONS } from '@/shared/config/page-icons';
 
-function DockPageButton({ page, active, onSelect }: { page: NavPageDefinition; active: boolean; onSelect: () => void }) {
-  const Icon = PAGE_ICONS[page.id];
+function DockPageButton({ pageId, active, onSelect }: { pageId: PageId; active: boolean; onSelect: () => void }) {
+  const { t } = useTranslation('nav');
+  const Icon = PAGE_ICONS[pageId];
   return (
     <button
       type="button"
@@ -24,7 +26,7 @@ function DockPageButton({ page, active, onSelect }: { page: NavPageDefinition; a
         strokeWidth={active ? 2.2 : 1.9}
         aria-hidden
       />
-      <span className="sr-only">{page.label}</span>
+      <span className="sr-only">{t(pageId)}</span>
       <span
         className={cn(
           'h-0.5 w-3.5 rounded-full aura-tx-interactive',
@@ -39,8 +41,8 @@ function DockPageButton({ page, active, onSelect }: { page: NavPageDefinition; a
 export function AppMobileDock() {
   const { activePageId, setActivePageId, navOrder } = useShell();
   const pages = useMemo(() => {
-    const allPages = getNavPagesInOrder(navOrder);
-    return allPages.filter((p) => p.id !== 'stats' && p.id !== 'ranks' && p.id !== 'calendar');
+    const allPages = getNavPageIds(navOrder);
+    return allPages.filter((id) => id !== 'stats' && id !== 'ranks' && id !== 'calendar');
   }, [navOrder]);
 
   return (
@@ -50,12 +52,12 @@ export function AppMobileDock() {
     >
       <div className="mx-auto flex w-full items-stretch gap-1 rounded-lg border border-border/60 bg-card/95 p-1 shadow-sm">
         <div className="flex min-w-0 flex-1 flex-row items-stretch gap-1" role="group" aria-label="Разделы приложения">
-          {pages.map((page) => (
+          {pages.map((pageId) => (
             <DockPageButton
-              key={page.id}
-              page={page}
-              active={activePageId === page.id}
-              onSelect={() => setActivePageId(page.id)}
+              key={pageId}
+              pageId={pageId}
+              active={activePageId === pageId}
+              onSelect={() => setActivePageId(pageId)}
             />
           ))}
         </div>

@@ -1,0 +1,48 @@
+export default {
+  card: {
+    title: 'Оформление',
+  },
+  section: {
+    theme: 'Тема',
+    accent: 'Акцент',
+    scale: 'Масштаб',
+    font: 'Шрифт',
+    language: 'Язык',
+  },
+  theme: {
+    light: 'Светлая',
+    dim: 'Тихая',
+    dark: 'Тёмная',
+  },
+  accent: {
+    slate: 'Сланец',
+    stone: 'Камень',
+    gray: 'Графит',
+    purple: 'Фиолетовый',
+    indigo: 'Индиго',
+    blue: 'Синий',
+    cyan: 'Голубой',
+    teal: 'Бирюзовый',
+    emerald: 'Изумруд',
+    green: 'Зелёный',
+    lime: 'Лайм',
+    yellow: 'Жёлтый',
+    amber: 'Янтарь',
+    orange: 'Оранжевый',
+    red: 'Красный',
+    rose: 'Роза',
+    pink: 'Розовый',
+    violet: 'Фиолетовый',
+  },
+  scale: {
+    compact: 'Компактный',
+    standard: 'Стандартный',
+    spacious: 'Просторный',
+  },
+  font: {
+    standard: 'Стандартный',
+    sans: 'Sans',
+    serif: 'Serif',
+    mono: 'Monospace',
+  },
+} as const;

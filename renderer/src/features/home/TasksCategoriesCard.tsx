@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import {
   Check,
   Flame,
+  Lock,
   Moon,
   Sun,
   Sunrise,
@@ -1077,7 +1078,8 @@ export function TasksCategoriesCard() {
                   key={catId}
                   className={cn(
                     'flex min-h-[13rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-card/80 px-0 py-0 shadow-sm lg:min-h-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none',
-                    idx !== 3 && 'lg:border-r lg:border-border/40'
+                    idx !== 3 && 'lg:border-r lg:border-border/40',
+                    dayLocked && 'pointer-events-none opacity-50'
                   )}
                 >
                   <div className="flex flex-col gap-2 px-3.5 py-3 sm:px-4 sm:py-3">
@@ -1088,7 +1090,11 @@ export function TasksCategoriesCard() {
                     >
                       <div className="min-w-0 flex items-center gap-2">
                         <div className="flex size-8 shrink-0 items-center justify-center" aria-hidden>
-                          <ColoredAuraIcon name={headerIcon} size={17} tint={accent} className="shrink-0" />
+                          {dayLocked ? (
+                            <Lock size={17} className="shrink-0 text-foreground" />
+                          ) : (
+                            <ColoredAuraIcon name={headerIcon} size={17} tint={accent} className="shrink-0" />
+                          )}
                         </div>
                         <h3
                           className="min-w-0 truncate text-sm font-bold leading-none tracking-[0.08em] uppercase sm:text-[18px] sm:font-extrabold sm:tracking-[0.05em]"

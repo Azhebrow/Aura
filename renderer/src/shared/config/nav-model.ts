@@ -19,20 +19,23 @@ export type PageId = (typeof DEFAULT_NAV_ORDER)[number];
 
 export type NavPageDefinition = {
   id: PageId;
-  label: string;
 };
 
 export const NAV_PAGE_DEFINITIONS: Record<PageId, NavPageDefinition> = {
-  home: { id: 'home', label: 'Домашняя' },
-  rituals: { id: 'rituals', label: 'Ритуалы' },
-  diary: { id: 'diary', label: 'Дневник' },
-  timer: { id: 'timer', label: 'Таймер' },
-  stats: { id: 'stats', label: 'Статистика' },
-  ranks: { id: 'ranks', label: 'Ранги' },
-  calendar: { id: 'calendar', label: 'Календарь' },
-  settings: { id: 'settings', label: 'Настройки' },
+  home: { id: 'home' },
+  rituals: { id: 'rituals' },
+  diary: { id: 'diary' },
+  timer: { id: 'timer' },
+  stats: { id: 'stats' },
+  ranks: { id: 'ranks' },
+  calendar: { id: 'calendar' },
+  settings: { id: 'settings' },
 };
 
-export function getNavPagesInOrder(order: readonly PageId[] = DEFAULT_NAV_ORDER): NavPageDefinition[] {
-  return order.map((id) => NAV_PAGE_DEFINITIONS[id]);
+export function getNavPageIds(order: readonly PageId[] = DEFAULT_NAV_ORDER): PageId[] {
+  return order.map((id) => id);
 }
+
+// For components to get translated labels, use useTranslation hook:
+// const { t } = useTranslation('nav');
+// const label = t(pageId); // e.g., t('home') → "Home" / "Домашняя"

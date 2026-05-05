@@ -565,6 +565,7 @@ export function TimerStatusPage() {
                 value={timer.model.timerType}
                 onValueChange={(v) => timer.setTimerType(v)}
                 disabled={timer.model.isRunning}
+                locked={dayLocked}
                 ariaLabel="Режим таймера"
                 options={[
                   { value: 'timer', label: 'Таймер', Icon: Timer },
