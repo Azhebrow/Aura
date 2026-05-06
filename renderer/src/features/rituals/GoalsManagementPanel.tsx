@@ -560,9 +560,8 @@ export function GoalsManagementPanel() {
     if (ritualsBootstrap?.goals?.length) {
       return [...ritualsBootstrap.goals].sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0));
     }
-    if (preferBootstrap && ritualsBootstrap === null) return [] as AuraRow[];
     return (dbx.getAllGoals() ?? []).sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0));
-  }, [dbx, preferBootstrap, ritualsBootstrap, tick]);
+  }, [dbx, ritualsBootstrap?.goals, tick]);
 
   const stagesByGoal = useMemo(() => {
     const out = new Map<string, AuraRow[]>();
@@ -574,14 +573,13 @@ export function GoalsManagementPanel() {
       }
       return out;
     }
-    if (preferBootstrap && ritualsBootstrap === null) return out;
     for (const g of goals) {
       const gid = String(g.id);
       const stages = (dbx.getStagesByGoal(gid) ?? []).sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
       out.set(gid, stages);
     }
     return out;
-  }, [dbx, preferBootstrap, goals, ritualsBootstrap, tick]);
+  }, [dbx, goals, ritualsBootstrap?.stagesByGoal, tick]);
 
   const tasksByStage = useMemo(() => {
     const out = new Map<string, AuraRow[]>();
@@ -593,7 +591,6 @@ export function GoalsManagementPanel() {
       }
       return out;
     }
-    if (preferBootstrap && ritualsBootstrap === null) return out;
     for (const stages of stagesByGoal.values()) {
       for (const s of stages) {
         const sid = String(s.id);
@@ -602,7 +599,7 @@ export function GoalsManagementPanel() {
       }
     }
     return out;
-  }, [dbx, preferBootstrap, ritualsBootstrap?.tasksByStage, stagesByGoal, tick]);
+  }, [dbx, ritualsBootstrap?.tasksByStage, stagesByGoal, tick]);
 
   const goalTaskProgressById = useMemo(() => {
     const out = new Map<string, AuraRow | null | undefined>();
@@ -611,14 +608,13 @@ export function GoalsManagementPanel() {
     const rows =
       ritualsBootstrap?.goalProgressRows ??
       (dbx.getGoalTasksProgressByDate ? dbx.getGoalTasksProgressByDate(GOALS_GLOBAL_SCOPE_DATE) ?? [] : []);
-    if (preferBootstrap && ritualsBootstrap === null) return out;
     for (const row of rows) {
       const taskId = String(row.task_id ?? '');
       if (!taskId) continue;
       out.set(taskId, row);
     }
     return out;
-  }, [dbx, preferBootstrap, ritualsBootstrap, tasksByStage, tick]);
+  }, [dbx, ritualsBootstrap?.goalProgressRows, tasksByStage, tick]);
 
   const goalProgress = useMemo(() => {
     const out = new Map<string, { completed: number; total: number; percent: number }>();
