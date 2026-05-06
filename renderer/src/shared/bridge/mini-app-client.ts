@@ -133,11 +133,14 @@ export async function fetchBootstrap(
     try {
       const db = typeof window !== 'undefined' && typeof window.getDB === 'function' ? window.getDB() : null;
       if (!db) {
+        console.warn(`[fetchBootstrap] Database not available for screen: ${screen}`);
         return {};
       }
 
       if (screen === 'rituals') {
         const goals = (db as any).getAllGoals?.() ?? [];
+        console.log(`[fetchBootstrap] Loaded ${goals.length} goals for screen: ${screen}`);
+
         const stagesByGoal: Record<string, unknown[]> = {};
         const tasksByStage: Record<string, unknown[]> = {};
         const goalProgressRows: unknown[] = [];
@@ -159,6 +162,7 @@ export async function fetchBootstrap(
 
         const data = { goals, stagesByGoal, tasksByStage, goalProgressRows };
         bootstrapCache.set(key, { ts: Date.now(), data });
+        console.log(`[fetchBootstrap] Bootstrap data ready:`, { goalsCount: goals.length, stagesCount: Object.keys(stagesByGoal).length });
         return data;
       }
 
