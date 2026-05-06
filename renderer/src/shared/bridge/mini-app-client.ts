@@ -183,5 +183,8 @@ export async function fetchBootstrap(
 
 export function invalidateBootstrapCache() {
   bootstrapCache.clear();
-  inflightBootstrap.clear();
+  // Note: do NOT clear inflightBootstrap here. If a fetch is in-flight,
+  // let it complete and update the cache. This prevents race conditions
+  // when multiple rapid mutations happen - they'll reuse the same
+  // in-flight promise instead of creating duplicate requests.
 }
