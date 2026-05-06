@@ -560,9 +560,9 @@ export function GoalsManagementPanel() {
     if (ritualsBootstrap?.goals?.length) {
       return [...ritualsBootstrap.goals].sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0));
     }
-    if (preferBootstrap) return [] as AuraRow[];
+    if (preferBootstrap && ritualsBootstrap === null) return [] as AuraRow[];
     return (dbx.getAllGoals() ?? []).sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0));
-  }, [dbx, preferBootstrap, ritualsBootstrap?.goals, tick]);
+  }, [dbx, preferBootstrap, ritualsBootstrap, tick]);
 
   const stagesByGoal = useMemo(() => {
     const out = new Map<string, AuraRow[]>();
@@ -574,14 +574,14 @@ export function GoalsManagementPanel() {
       }
       return out;
     }
-    if (preferBootstrap) return out;
+    if (preferBootstrap && ritualsBootstrap === null) return out;
     for (const g of goals) {
       const gid = String(g.id);
       const stages = (dbx.getStagesByGoal(gid) ?? []).sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
       out.set(gid, stages);
     }
     return out;
-  }, [dbx, preferBootstrap, goals, ritualsBootstrap?.stagesByGoal, tick]);
+  }, [dbx, preferBootstrap, goals, ritualsBootstrap, tick]);
 
   const tasksByStage = useMemo(() => {
     const out = new Map<string, AuraRow[]>();
@@ -593,7 +593,7 @@ export function GoalsManagementPanel() {
       }
       return out;
     }
-    if (preferBootstrap) return out;
+    if (preferBootstrap && ritualsBootstrap === null) return out;
     for (const stages of stagesByGoal.values()) {
       for (const s of stages) {
         const sid = String(s.id);
@@ -611,14 +611,14 @@ export function GoalsManagementPanel() {
     const rows =
       ritualsBootstrap?.goalProgressRows ??
       (dbx.getGoalTasksProgressByDate ? dbx.getGoalTasksProgressByDate(GOALS_GLOBAL_SCOPE_DATE) ?? [] : []);
-    if (preferBootstrap && !ritualsBootstrap?.goalProgressRows) return out;
+    if (preferBootstrap && ritualsBootstrap === null) return out;
     for (const row of rows) {
       const taskId = String(row.task_id ?? '');
       if (!taskId) continue;
       out.set(taskId, row);
     }
     return out;
-  }, [dbx, preferBootstrap, ritualsBootstrap?.goalProgressRows, tasksByStage, tick]);
+  }, [dbx, preferBootstrap, ritualsBootstrap, tasksByStage, tick]);
 
   const goalProgress = useMemo(() => {
     const out = new Map<string, { completed: number; total: number; percent: number }>();
