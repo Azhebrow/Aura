@@ -38,11 +38,6 @@ const inflightBootstrap = new Map<string, Promise<unknown>>();
 const bootstrapCache = new Map<string, BootstrapCacheEntry>();
 let flushTimer: number | null = null;
 
-function getApiBase() {
-  if (typeof window === 'undefined') return '';
-  if (window.location.protocol === 'file:') return 'http://127.0.0.1:8787';
-  return '';
-}
 
 function stableKey(method: string, args: unknown[]) {
   return `${method}:${JSON.stringify(args ?? [])}`;
@@ -57,29 +52,26 @@ async function flushBatch() {
   flushTimer = null;
   if (!chunk.length) return;
 
-  const operations: BatchOp[] = chunk.map((entry) => ({ method: entry.method, args: entry.args }));
-  let payload: { ok: boolean; results?: BatchResult[]; error?: string };
   try {
-    const response = await fetch(`${getApiBase()}/api/db/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ operations }),
-    });
-    if (!response.ok) throw new Error(`Batch HTTP ${response.status}`);
-    payload = (await response.json()) as { ok: boolean; results?: BatchResult[]; error?: string };
+    const db = typeof window !== 'undefined' && typeof window.getDB === 'function' ? window.getDB() : null;
+    if (!db) {
+      throw new Error('Database not available: window.getDB() is not initialized');
+    }
+
+    for (const [index, pending] of chunk.entries()) {
+      try {
+        const dbMethod = (db as any)[pending.method];
+        if (typeof dbMethod !== 'function') {
+          throw new Error(`DB method not found: ${pending.method}`);
+        }
+        const result = dbMethod.apply(db, pending.args);
+        pending.resolve(result);
+      } catch (error) {
+        pending.reject(error);
+      }
+    }
   } catch (error) {
     chunk.forEach((entry) => entry.reject(error));
-    return;
-  }
-
-  const results = Array.isArray(payload.results) ? payload.results : [];
-  for (const [index, pending] of chunk.entries()) {
-    const row = results[index];
-    if (!row || !row.ok) {
-      pending.reject(new Error(row?.error || payload.error || 'Batch DB call failed'));
-    } else {
-      pending.resolve(row.result);
-    }
   }
 }
 
@@ -132,26 +124,51 @@ export async function fetchBootstrap(
   if (cached && now - cached.ts < ttl) {
     return cached.data;
   }
+
   if (inflightBootstrap.has(key)) {
     return inflightBootstrap.get(key)!;
   }
 
   const promise = (async () => {
-    const response = await fetch(`${getApiBase()}/api/bootstrap/${screen}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body ?? {}),
-    });
-    if (!response.ok) {
-      throw new Error(`Bootstrap HTTP ${response.status} for ${screen}`);
+    try {
+      const db = typeof window !== 'undefined' && typeof window.getDB === 'function' ? window.getDB() : null;
+      if (!db) {
+        return {};
+      }
+
+      if (screen === 'rituals') {
+        const goals = (db as any).getAllGoals?.() ?? [];
+        const stagesByGoal: Record<string, unknown[]> = {};
+        const tasksByStage: Record<string, unknown[]> = {};
+        const goalProgressRows: unknown[] = [];
+
+        for (const goal of goals) {
+          const goalId = String(goal.id);
+          stagesByGoal[goalId] = (db as any).getStagesByGoal?.(goalId) ?? [];
+          for (const stage of stagesByGoal[goalId]) {
+            const stageId = String(stage.id);
+            tasksByStage[stageId] = (db as any).getTasksByStage?.(stageId) ?? [];
+          }
+        }
+
+        const date = String(body.date ?? '');
+        if (date && (db as any).getGoalTasksProgressByDate) {
+          const rows = (db as any).getGoalTasksProgressByDate(date) ?? [];
+          goalProgressRows.push(...rows);
+        }
+
+        const data = { goals, stagesByGoal, tasksByStage, goalProgressRows };
+        bootstrapCache.set(key, { ts: Date.now(), data });
+        return data;
+      }
+
+      return {};
+    } catch (error) {
+      console.error(`[fetchBootstrap] Error loading ${screen}:`, error);
+      return {};
     }
-    const payload = (await response.json()) as { ok: boolean; data?: unknown; error?: string };
-    if (!payload.ok) {
-      throw new Error(payload.error || `Bootstrap failed: ${screen}`);
-    }
-    bootstrapCache.set(key, { ts: Date.now(), data: payload.data });
-    return payload.data;
   })();
+
   inflightBootstrap.set(key, promise);
   try {
     return await promise;

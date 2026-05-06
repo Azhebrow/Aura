@@ -29,12 +29,6 @@ const SAFE_NULL_METHODS = new Set(['getDiaryEntry', 'getAppSettings']);
 const SAFE_ZERO_METHODS = new Set(['getCategoryProgress']);
 const SAFE_EMPTY_OBJECT_METHODS = new Set(['getCategoryProgresses']);
 
-function getApiBase() {
-  if (typeof window === 'undefined') return '';
-  if (window.location.protocol === 'file:') return 'http://127.0.0.1:8787';
-  return '';
-}
-
 const readCache = new Map<string, unknown>();
 const MOBILE_READ_CACHE_TTL_MS = 5000;
 const DESKTOP_READ_CACHE_TTL_MS = 2500;
@@ -241,28 +235,26 @@ function callDbSync(method: string, args: unknown[]): unknown {
     }
   }
 
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', `${getApiBase()}/api/db/call`, false);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.send(JSON.stringify({ method, args }));
-
   try {
-    if (xhr.status < 200 || xhr.status >= 300) {
-      throw new Error(`DB bridge HTTP ${xhr.status}`);
+    const db = typeof window !== 'undefined' && typeof window.getDB === 'function' ? window.getDB() : null;
+    if (!db) {
+      throw new Error('Database not available: window.getDB() is not initialized');
     }
 
-    const payload = JSON.parse(xhr.responseText) as DbCallResponse;
-    if (!payload.ok) {
-      throw new Error(payload.error || `DB method failed: ${method}`);
+    const dbMethod = (db as any)[method];
+    if (typeof dbMethod !== 'function') {
+      throw new Error(`DB method not found: ${method}`);
     }
+
+    const result = dbMethod.apply(db, args as any[]);
 
     if (isMutationMethod) {
       clearReadCache();
       invalidateBootstrapCache();
     } else {
-      readCache.set(cacheKey, { value: payload.result, ts: Date.now() });
+      readCache.set(cacheKey, { value: result, ts: Date.now() });
     }
-    return payload.result;
+    return result;
   } catch (error) {
     bridgeAuditState.totalErrors += 1;
     methodStat.errors += 1;
@@ -276,59 +268,36 @@ function callDbSync(method: string, args: unknown[]): unknown {
   }
 }
 
-function getAvailableMethodsSync(): Set<string> {
-  const xhr = new XMLHttpRequest();
-  xhr.open('GET', `${getApiBase()}/api/db/methods`, false);
-  xhr.send();
 
-  if (xhr.status < 200 || xhr.status >= 300) {
-    return new Set();
-  }
-
-  const payload = JSON.parse(xhr.responseText) as DbMethodsResponse;
-  const methods = Array.isArray(payload.methods) ? payload.methods : [];
-  return new Set(methods);
-}
-
-function createWebDbProxy(availableMethods: Set<string>): AuraDatabase {
-  return new Proxy(
-    {},
-    {
-      get(_target, prop) {
-        if (typeof prop !== 'string') return undefined;
-        if (!availableMethods.has(prop)) {
-          if (SAFE_EMPTY_ARRAY_METHODS.has(prop)) return () => [];
-          if (SAFE_NULL_METHODS.has(prop)) return () => null;
-          if (SAFE_ZERO_METHODS.has(prop)) return () => 0;
-          if (SAFE_EMPTY_OBJECT_METHODS.has(prop)) return () => ({});
-          return undefined;
-        }
-        return (...args: unknown[]) => callDbSync(prop, args);
-      },
-    }
-  ) as AuraDatabase;
-}
 
 export function initWebDbBridge() {
   if (typeof window === 'undefined') return;
   if (typeof window.getDB === 'function') return;
 
-  const availableMethods = getAvailableMethodsSync();
-  availableMethods.add('getAll');
-  const proxyDb = createWebDbProxy(availableMethods);
-  const bridgeApi = {
-    snapshot: getBridgeAuditSnapshot,
-    reset: resetBridgeAudit,
-    markPage: markBridgePage,
+  // Wait for Electron main process to inject window.getDB
+  const checkDbReady = () => {
+    const db = typeof window !== 'undefined' && typeof window.getDB === 'function' ? window.getDB() : null;
+    if (!db) {
+      console.log('[Bridge] Waiting for database to be ready...');
+      setTimeout(checkDbReady, 100);
+      return;
+    }
+
+    console.log('[Bridge] ✅ Database ready, initializing bridge');
+    const bridgeApi = {
+      snapshot: getBridgeAuditSnapshot,
+      reset: resetBridgeAudit,
+      markPage: markBridgePage,
+    };
+    const miniApi = {
+      callDbBatched,
+      fetchBootstrap,
+      invalidateBootstrapCache,
+    };
+    (window as Window & { __auraDbBridgeAudit?: typeof bridgeApi }).__auraDbBridgeAudit = bridgeApi;
+    (window as Window & { __auraMiniApi?: typeof miniApi }).__auraMiniApi = miniApi;
+    markBridgePage('bootstrap');
   };
-  const miniApi = {
-    callDbBatched,
-    fetchBootstrap,
-    invalidateBootstrapCache,
-  };
-  (window as Window & { __auraDbBridgeAudit?: typeof bridgeApi }).__auraDbBridgeAudit = bridgeApi;
-  (window as Window & { __auraMiniApi?: typeof miniApi }).__auraMiniApi = miniApi;
-  window.getDB = () => proxyDb;
-  markBridgePage('bootstrap');
-  window.dispatchEvent(new CustomEvent('aura-db-ready'));
+
+  checkDbReady();
 }

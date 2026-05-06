@@ -448,11 +448,21 @@ export function TasksCategoriesCard() {
   }, [nutritionTargets.calories, nutritionTotals.calories]);
 
   const allCfgTasks = useMemo(() => {
-    if (homeBootstrap?.cfgTasks?.length) return homeBootstrap.cfgTasks;
-    if (preferBootstrap) return [] as AuraRow[];
-    if (!db) return [] as AuraRow[];
-    return db.getAll('cfg_tasks');
-  }, [db, homeBootstrap?.cfgTasks, preferBootstrap]);
+    // Try to use bootstrap data if available
+    if (homeBootstrap?.cfgTasks?.length) {
+      console.log('[TasksCategoriesCard] allCfgTasks from homeBootstrap:', homeBootstrap.cfgTasks.length);
+      return homeBootstrap.cfgTasks;
+    }
+
+    // Fall back to direct database access if bootstrap data is not available
+    if (!db) {
+      console.log('[TasksCategoriesCard] db not available');
+      return [] as AuraRow[];
+    }
+    const tasks = db.getAll('cfg_tasks');
+    console.log('[TasksCategoriesCard] allCfgTasks from db.getAll():', tasks.length, tasks);
+    return tasks;
+  }, [db, homeBootstrap?.cfgTasks]);
 
   const activeRitualIds = useMemo(() => {
     if (!db) return { morning: new Set<string>(), evening: new Set<string>() };
@@ -515,6 +525,7 @@ export function TasksCategoriesCard() {
     const m: Record<string, AuraRow[]> = {};
     CATEGORY_IDS.forEach((c) => {
       m[c] = tasksForCategory(allCfgTasks, c);
+      console.log(`[TasksCategoriesCard] tasks for category ${c}:`, m[c].length, m[c]);
     });
     return m;
   }, [allCfgTasks, db]);

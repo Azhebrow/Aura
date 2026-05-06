@@ -12,7 +12,14 @@ type Props = {
 };
 
 function iconUrl(fileBase: string): string {
-  return `${getAppBaseUrl()}icons/${encodeURIComponent(fileBase)}.svg`;
+  const base = getAppBaseUrl();
+  // In production (Electron with file://), use the full path to app.asar resources
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    // app.asar is in Contents/Resources/, and we need to reference renderer-build/icons
+    const appPath = window.location.pathname.split('/app.asar')[0];
+    return `file://${appPath}/app.asar/renderer-build/icons/${encodeURIComponent(fileBase)}.svg`;
+  }
+  return `${base}icons/${encodeURIComponent(fileBase)}.svg`;
 }
 
 /** Иконка из тех же SVG, что и legacy (`public/icons`). Работает с `file://` при `base: './'`. */

@@ -294,7 +294,7 @@ function rowTitle(row: AuraRow, keys?: string[]): string {
   return String(row.id ?? '');
 }
 
-function getFieldOptionLabel(spec: CfgSectionSpec, fieldKey: string, value: unknown): string | undefined {
+function getFieldOptionLabel(translatedSpec: CfgSectionSpec, fieldKey: string, value: unknown): string | undefined {
   const field = translatedSpec.fields.find((f) => f.key === fieldKey);
   if (!field?.options) return undefined;
   const opt = field.options.find((o) => o.value === value);
@@ -474,7 +474,7 @@ function isTaskDependentFieldKey(spec: CfgSectionSpec, fieldKey: string): boolea
   );
 }
 
-function taskTypeLabel(spec: CfgSectionSpec, taskType: string): string {
+function taskTypeLabel(translatedSpec: CfgSectionSpec, taskType: string): string {
   const field = translatedSpec.fields.find((f) => f.key === 'task_type');
   const opt = field?.options?.find((o) => o.value === taskType);
   return opt?.label ?? taskType;
@@ -773,9 +773,12 @@ type Props = { spec: CfgSectionSpec };
 
 export function CfgSectionCard({ spec }: Props) {
   const { t } = useTranslation();
-  const translatedSpec = useMemo(() => translateCfgSectionSpec(spec, t), [spec, t]);
   const { db } = useAuraDb();
   const setTabActions = useSettingsTabActions();
+
+  // MUST be first useMemo - used by helper functions
+  const translatedSpec = useMemo(() => translateCfgSectionSpec(spec, t), [spec, t]);
+
   const [rows, setRows] = useState<AuraRow[]>([]);
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'create' | 'edit'>('create');
@@ -1661,7 +1664,7 @@ export function CfgSectionCard({ spec }: Props) {
                         className="border-input bg-background hover:bg-muted/40 flex h-8 w-full items-center justify-between rounded-md border px-2.5 text-xs font-medium aura-tx-colors"
                         onClick={() => setAdvancedOpen((v) => !v)}
                       >
-                        <span>Параметры типа: {taskTypeLabel(spec, currentTaskType)}</span>
+                        <span>Параметры типа: {taskTypeLabel(translatedSpec, currentTaskType)}</span>
                         <span className="text-muted-foreground">{advancedOpen ? 'Свернуть' : 'Развернуть'}</span>
                       </button>
                       {advancedOpen ? (

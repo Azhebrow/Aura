@@ -168,6 +168,14 @@ export default {
     add_task: 'Добавить задачу',
     add_stage: 'Добавить этап',
   },
+  vows: {
+    title: 'Обеты',
+    no_vows: 'Нет обетов.',
+    description_empty: 'Описание не задано.',
+    prev_vow: 'Предыдущий обет',
+    next_vow: 'Следующий обет',
+    goto_vow: 'Перейти к обету {n}',
+  },
   aria: {
     move_up: 'Переместить вверх',
     move_down: 'Переместить вниз',

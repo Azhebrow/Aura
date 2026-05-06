@@ -3,7 +3,8 @@ import { getAppBaseUrl } from '@/shared/lib/base-url';
 
 /** URL SVG из `public/icons` (как в `AuraPublicIcon`). */
 export function getAuraPublicIconUrl(fileBase: string): string {
-  return `${getAppBaseUrl()}icons/${encodeURIComponent(fileBase)}.svg`;
+  // Use relative path that works with file:// protocol in Electron
+  return `icons/${encodeURIComponent(fileBase)}.svg`;
 }
 
 export function getAuraPublicIconUrlFromName(name: string | null | undefined): string | null {

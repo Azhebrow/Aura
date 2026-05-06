@@ -33,7 +33,6 @@ let trayUpdateInterval = null;
 let devToolsTabShortcut = null;
 let isQuitting = false;
 const macTrayMode = process.env.AURA_MAC_TRAY_MODE || (process.platform === 'darwin' ? 'icon' : 'text');
-const LOCAL_API_URL = 'http://127.0.0.1:8787';
 
 function isWindowValid() {
   return mainWindow && !mainWindow.isDestroyed();
@@ -735,7 +734,8 @@ function createTray() {
 app.whenReady()
   .then(async () => {
     Menu.setApplicationMenu(null);
-    await ensureLocalApiServer();
+    // API сервер не требуется - приложение работает оффлайн с локальной БД
+    // await ensureLocalApiServer();
     createWindow();
     createTray();
   })
@@ -751,6 +751,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Handle Cmd+Q on macOS
+app.on('before-quit', (event) => {
+  isQuitting = true;
 });
 
 app.on('activate', () => {

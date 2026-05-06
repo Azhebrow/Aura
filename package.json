@@ -10,6 +10,8 @@
     "desktop": "node scripts/cleanup-ports.js && concurrently -k \"ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron server-mini-app/index.js\" \"node ./node_modules/vite/bin/vite.js --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && AURA_USE_VITE=1 ./node_modules/.bin/electron .\"",
     "build": "echo '🔨 Сборка renderer + Electron…' && vite build && electron-builder --dir",
     "build:mac": "echo '🍎 Создание установщика AURA для macOS...' && vite build && electron-builder --mac",
+    "build:mac:arm64": "echo '🍎 ARM Создание установщика AURA для Apple Silicon...' && vite build && electron-builder --mac --arm64",
+    "build:mac:universal": "echo '🍎 Universal Создание универсального установщика для всех macOS...' && vite build && electron-builder --mac -p always",
     "clear-db": "echo '🗑️  Очистка базы данных...' && node scripts/clear-db-standalone.js"
   },
   "devDependencies": {
@@ -56,12 +58,19 @@
         {
           "target": "dmg",
           "arch": [
-            "x64",
             "arm64"
           ]
         }
       ],
-      "identity": null
+      "identity": null,
+      "signIgnore": [
+        "**/*.node"
+      ],
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "artifactName": "${productName}-${version}.${ext}"
     }
   },
   "dependencies": {

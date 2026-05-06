@@ -158,6 +158,14 @@ export default {
     add_task: 'Add task',
     add_stage: 'Add stage',
   },
+  vows: {
+    title: 'Vows',
+    no_vows: 'No vows.',
+    description_empty: 'Description not set.',
+    prev_vow: 'Previous vow',
+    next_vow: 'Next vow',
+    goto_vow: 'Go to vow {n}',
+  },
   dialog: {
     delete_session: 'Delete session?',
     edit_transaction: 'Edit transaction',
