@@ -102,7 +102,7 @@ function getMethodStat(method: string): BridgeMethodStat {
   return bridgeAuditState.byMethod[method];
 }
 
-function clearReadCache() {
+export function clearReadCache() {
   readCache.clear();
 }
 

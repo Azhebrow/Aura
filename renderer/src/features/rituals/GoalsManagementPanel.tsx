@@ -40,6 +40,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
 import { invalidateBootstrapCache } from '@/shared/bridge/mini-app-client';
+import { clearReadCache } from '@/shared/bridge/init-web-db-bridge';
 import { ColorPickerPanel } from '@/features/settings/color-picker-panel';
 import { IconPickerPanel } from '@/features/settings/icon-picker-panel';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
@@ -707,6 +708,7 @@ export function GoalsManagementPanel() {
   }, [filteredGoals.length, goalIndex]);
 
   const refresh = useCallback(() => {
+    clearReadCache();
     invalidateBootstrapCache();
     setTick((t) => t + 1);
   }, []);
