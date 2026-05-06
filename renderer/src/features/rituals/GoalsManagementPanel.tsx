@@ -38,7 +38,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
-import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
+import { useBootstrapData, clearBootstrapDataCache } from '@/shared/hooks/use-bootstrap-data';
 import { invalidateBootstrapCache } from '@/shared/bridge/mini-app-client';
 import { clearReadCache } from '@/shared/bridge/init-web-db-bridge';
 import { ColorPickerPanel } from '@/features/settings/color-picker-panel';
@@ -709,6 +709,7 @@ export function GoalsManagementPanel() {
 
   const refresh = useCallback(() => {
     clearReadCache();
+    clearBootstrapDataCache();
     invalidateBootstrapCache();
     setTick((t) => t + 1);
   }, []);

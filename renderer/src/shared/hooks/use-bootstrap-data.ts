@@ -155,3 +155,8 @@ export function useBootstrapData<T>(
 
   return { data, loading, error };
 }
+
+export function clearBootstrapDataCache() {
+  bootstrapCache.clear();
+  inFlightBootstrap.clear();
+}
