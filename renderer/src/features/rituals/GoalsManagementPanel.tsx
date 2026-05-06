@@ -553,10 +553,6 @@ export function GoalsManagementPanel() {
     goalProgressRows?: AuraRow[];
   }>('rituals', bootstrapParams, [tick], { enabled: Boolean(db), keepStaleOnError: true });
 
-  useEffect(() => {
-    console.log('[GoalsManagementPanel]', { preferBootstrap, dbExists: Boolean(db), canManage, bootstrapGoals: ritualsBootstrap?.goals?.length, filteredGoals: goals.length });
-  }, [preferBootstrap, db, ritualsBootstrap?.goals, goals]);
-
   const canManage = Boolean(dbx?.getAllGoals && dbx?.getStagesByGoal && dbx?.getTasksByStage);
 
   const goals = useMemo(() => {
