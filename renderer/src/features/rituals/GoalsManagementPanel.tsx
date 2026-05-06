@@ -41,6 +41,7 @@ import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useBootstrapData, clearBootstrapDataCache } from '@/shared/hooks/use-bootstrap-data';
 import { invalidateBootstrapCache } from '@/shared/bridge/mini-app-client';
 import { clearReadCache } from '@/shared/bridge/init-web-db-bridge';
+import { dispatchAuraDataChanged } from '@/shared/lib/aura-data-events';
 import { ColorPickerPanel } from '@/features/settings/color-picker-panel';
 import { IconPickerPanel } from '@/features/settings/icon-picker-panel';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
@@ -605,18 +606,17 @@ export function GoalsManagementPanel() {
 
   const goalTaskProgressById = useMemo(() => {
     const out = new Map<string, AuraRow | null | undefined>();
-    if (!dbx) return out;
-
-    const rows =
-      ritualsBootstrap?.goalProgressRows ??
-      (dbx.getGoalTasksProgressByDate ? dbx.getGoalTasksProgressByDate(GOALS_GLOBAL_SCOPE_DATE) ?? [] : []);
+    if (!dbx || !dbx.getGoalTasksProgressByDate) return out;
+    // Always read directly from DB (synchronous) — never from bootstrap cache.
+    // Bootstrap data lags behind mutations; direct DB calls are always fresh.
+    const rows = dbx.getGoalTasksProgressByDate(GOALS_GLOBAL_SCOPE_DATE) ?? [];
     for (const row of rows) {
       const taskId = String(row.task_id ?? '');
       if (!taskId) continue;
       out.set(taskId, row);
     }
     return out;
-  }, [dbx, ritualsBootstrap?.goalProgressRows, tasksByStage, tick]);
+  }, [dbx, tick]);
 
   const goalProgress = useMemo(() => {
     const out = new Map<string, { completed: number; total: number; percent: number }>();
@@ -711,6 +711,7 @@ export function GoalsManagementPanel() {
     clearReadCache();
     clearBootstrapDataCache();
     invalidateBootstrapCache();
+    dispatchAuraDataChanged('goals');
     setTick((t) => t + 1);
   }, []);
 

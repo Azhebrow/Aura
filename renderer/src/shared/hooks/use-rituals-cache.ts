@@ -13,7 +13,7 @@ interface RitualsCacheEntry {
   at: number;
 }
 
-const TTL_MS = 5 * 60 * 1000; // 5 минут
+const TTL_MS = 30 * 1000; // 30 секунд
 const MAX_ENTRIES = 14; // не больше двух недель в памяти
 
 const globalRitualsCache = new Map<string, RitualsCacheEntry>();
