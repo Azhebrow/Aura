@@ -13,8 +13,10 @@ node_modules/
 *.log
 .npm
 .runtime/
-.claude/settings.local.json
-renderer/.claude/settings.local.json
-renderer/.claude/worktrees/
+.claude/
+.cursor/
+.codex/
+renderer/.claude/
+renderer/.cursor/
 renderer/.codex/
 .tools/**/*.tgz
