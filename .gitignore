@@ -12,3 +12,9 @@ node_modules/
 # Логи и временные файлы
 *.log
 .npm
+.runtime/
+.claude/settings.local.json
+renderer/.claude/settings.local.json
+renderer/.claude/worktrees/
+renderer/.codex/
+.tools/**/*.tgz
