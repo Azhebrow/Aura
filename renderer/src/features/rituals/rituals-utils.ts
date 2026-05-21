@@ -35,7 +35,8 @@ export const CFG_DIALOG_INPUT_CN =
 export const CFG_DIALOG_ICON_TRIGGER_CN =
   `border-input bg-background hover:bg-muted/30 flex h-9 w-full min-w-0 flex-row items-center justify-center gap-2 rounded-md border px-3 text-center aura-tx-colors shadow-xs ${RAW_BUTTON_FOCUS_CN}`;
 /** Icon-кнопки в панели целей ритуалов: один вариант и размер на цели / этапы / задачи. */
-export const GOALS_RITUALS_ICON_BTN_CN = 'shrink-0 rounded-md';
+export const GOALS_RITUALS_ICON_BTN_CN =
+  'aura-action-icon disabled:pointer-events-none disabled:opacity-[var(--aura-disabled-opacity)]';
 export const GOALS_RITUALS_TOOLBAR_ROW_CN = 'flex flex-wrap items-center justify-end gap-1';
 export const GOALS_GLOBAL_SCOPE_DATE = '__goals_global__';
 
@@ -140,40 +141,45 @@ export function getStageStateClasses(state: StageVisualState): {
   meta: string;
   progressTrack: string;
   progressFill: string;
+  opacity: string;
 } {
   if (state === 'completed') {
     return {
-      shell: 'border-transparent',
-      title: 'text-foreground',
-      meta: 'text-muted-foreground',
-      progressTrack: 'bg-muted',
-      progressFill: 'bg-primary',
+      shell: '',
+      title: 'text-[var(--aura-text-subtle)]',
+      meta: 'text-[var(--aura-text-disabled)]',
+      progressTrack: 'bg-[var(--aura-surface-control)]',
+      progressFill: 'bg-primary/50',
+      opacity: 'opacity-70',
     };
   }
   if (state === 'current') {
     return {
-      shell: 'border-transparent',
+      shell: '',
       title: 'text-foreground',
-      meta: 'text-muted-foreground',
-      progressTrack: 'bg-muted',
+      meta: 'text-[var(--aura-text-muted)]',
+      progressTrack: 'bg-[var(--aura-surface-control)]',
       progressFill: 'bg-primary',
+      opacity: '',
     };
   }
   if (state === 'frozen') {
     return {
-      shell: 'border-transparent',
-      title: 'text-foreground/85',
-      meta: 'text-muted-foreground',
-      progressTrack: 'bg-muted/80',
-      progressFill: 'bg-muted-foreground/45',
+      shell: '',
+      title: 'text-[var(--aura-text-disabled)]',
+      meta: 'text-[var(--aura-text-disabled)]',
+      progressTrack: 'bg-[var(--aura-surface-control)]',
+      progressFill: 'bg-[var(--aura-text-disabled)]',
+      opacity: 'opacity-50',
     };
   }
   return {
-    shell: 'border-transparent',
+    shell: '',
     title: 'text-foreground',
-    meta: 'text-muted-foreground',
-    progressTrack: 'bg-muted',
+    meta: 'text-[var(--aura-text-muted)]',
+    progressTrack: 'bg-[var(--aura-surface-control)]',
     progressFill: 'bg-primary',
+    opacity: '',
   };
 }
 

@@ -8,27 +8,6 @@ type DbCallResponse = {
   error?: string;
 };
 
-type DbMethodsResponse = {
-  ok: boolean;
-  methods?: string[];
-};
-
-const SAFE_EMPTY_ARRAY_METHODS = new Set([
-  'getAll',
-  'getRitualsMorning',
-  'getRitualsEvening',
-  'getTimerSessions',
-  'getNutritionEntries',
-  'getAllGoals',
-  'getStagesByGoal',
-  'getTasksByStage',
-  'getGoalTasksProgressByDate',
-]);
-
-const SAFE_NULL_METHODS = new Set(['getDiaryEntry', 'getAppSettings']);
-const SAFE_ZERO_METHODS = new Set(['getCategoryProgress']);
-const SAFE_EMPTY_OBJECT_METHODS = new Set(['getCategoryProgresses']);
-
 const readCache = new Map<string, unknown>();
 const MOBILE_READ_CACHE_TTL_MS = 5000;
 const DESKTOP_READ_CACHE_TTL_MS = 2500;
@@ -39,6 +18,30 @@ function isStickyRead(method: string, args: unknown[]) {
   if (method !== 'getAll') return false;
   const tableName = typeof args[0] === 'string' ? String(args[0]) : '';
   return tableName.startsWith('cfg_');
+}
+
+function mutationDetailFromMethod(method: string, args: unknown[]) {
+  const first = args[0] as Record<string, unknown> | undefined;
+  const second = args[1] as Record<string, unknown> | undefined;
+  const date =
+    typeof first?.date === 'string'
+      ? first.date
+      : typeof second?.date === 'string'
+        ? second.date
+        : typeof args[0] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(args[0])
+          ? args[0]
+          : typeof args[1] === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(args[1])
+            ? args[1]
+            : undefined;
+
+  if (/TimerSession/i.test(method)) return { type: 'timer', date, entityId: String(first?.task_id ?? second?.task_id ?? '') };
+  if (/Ritual/i.test(method)) return { type: 'ritual', date };
+  if (/Nutrition/i.test(method)) return { type: 'nutrition', date };
+  if (/Transaction/i.test(method)) return { type: 'transaction', date };
+  if (/Diary/i.test(method)) return { type: 'diary', date };
+  if (/Goal|Stage|TaskCompletedAt/i.test(method)) return { type: 'goals', date };
+  if (/TaskProgress/i.test(method)) return { type: 'task-progress', date };
+  return undefined;
 }
 
 type BridgeMethodStat = {
@@ -218,86 +221,124 @@ function getCacheTtlMs(method: string, args: unknown[]) {
   return base;
 }
 
-function callDbSync(method: string, args: unknown[]): unknown {
-  const isMutationMethod = /^(add|create|update|save|delete|clear|reload|move|set)/i.test(method);
-  const cacheKey = `${method}:${JSON.stringify(args ?? [])}`;
-  const methodStat = getMethodStat(method);
-  const callStart = performance.now();
+// Creates an HTTP-backed proxy for window.getDB() in web mode.
+// Uses synchronous XHR so all existing sync db.method() calls work unchanged.
+// This is intentional for local dev use — sync XHR blocks the thread but is
+// invisible at localhost latency (<1ms per call).
+function createSyncHttpProxy(): AuraDatabase {
+  return new Proxy({} as AuraDatabase, {
+    get(_target, prop: string) {
+      if (typeof prop !== 'string' || prop === 'then') return undefined;
+      return (...args: unknown[]) => {
+        const isMutationMethod = /^(add|create|update|save|delete|clear|reload|move|set)/i.test(prop);
+        const cacheKey = `${prop}:${JSON.stringify(args ?? [])}`;
 
-  if (!isMutationMethod) {
-    const cached = readCache.get(cacheKey) as { value: unknown; ts: number } | undefined;
-    if (cached && (isStickyRead(method, args) || Date.now() - cached.ts < getCacheTtlMs(method, args))) {
-      bridgeAuditState.totalCalls += 1;
-      bridgeAuditState.cacheHits += 1;
-      methodStat.calls += 1;
-      methodStat.cacheHits += 1;
-      return cached.value;
-    }
-  }
+        if (!isMutationMethod) {
+          const cached = readCache.get(cacheKey) as { value: unknown; ts: number } | undefined;
+          if (cached && (isStickyRead(prop, args) || Date.now() - cached.ts < getCacheTtlMs(prop, args))) {
+            const methodStat = getMethodStat(prop);
+            bridgeAuditState.totalCalls += 1;
+            bridgeAuditState.cacheHits += 1;
+            methodStat.calls += 1;
+            methodStat.cacheHits += 1;
+            return cached.value;
+          }
+        }
 
-  try {
-    const db = typeof window !== 'undefined' && typeof window.getDB === 'function' ? window.getDB() : null;
-    if (!db) {
-      throw new Error('Database not available: window.getDB() is not initialized');
-    }
+        const methodStat = getMethodStat(prop);
+        const callStart = performance.now();
+        try {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/db/call', false); // synchronous=false would be async
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.send(JSON.stringify({ method: prop, args }));
 
-    const dbMethod = (db as any)[method];
-    if (typeof dbMethod !== 'function') {
-      throw new Error(`DB method not found: ${method}`);
-    }
+          if (xhr.status !== 200) throw new Error(`HTTP ${xhr.status} for ${prop}`);
+          const response: DbCallResponse = JSON.parse(xhr.responseText);
+          if (!response.ok) throw new Error(response.error || `DB error: ${prop}`);
 
-    const result = dbMethod.apply(db, args as any[]);
-
-    if (isMutationMethod) {
-      clearReadCache();
-      invalidateBootstrapCache();
-    } else {
-      readCache.set(cacheKey, { value: result, ts: Date.now() });
-    }
-    return result;
-  } catch (error) {
-    bridgeAuditState.totalErrors += 1;
-    methodStat.errors += 1;
-    throw error;
-  } finally {
-    const elapsed = Math.max(0, performance.now() - callStart);
-    bridgeAuditState.totalCalls += 1;
-    bridgeAuditState.totalMs += elapsed;
-    methodStat.calls += 1;
-    methodStat.totalMs += elapsed;
-  }
+          const result = response.result;
+          if (isMutationMethod) {
+            const detail = mutationDetailFromMethod(prop, args);
+            clearReadCache();
+            invalidateBootstrapCache(detail);
+          } else {
+            readCache.set(cacheKey, { value: result, ts: Date.now() });
+          }
+          return result;
+        } catch (error) {
+          bridgeAuditState.totalErrors += 1;
+          methodStat.errors += 1;
+          throw error;
+        } finally {
+          const elapsed = Math.max(0, performance.now() - callStart);
+          bridgeAuditState.totalCalls += 1;
+          bridgeAuditState.totalMs += elapsed;
+          methodStat.calls += 1;
+          methodStat.totalMs += elapsed;
+        }
+      };
+    },
+  });
 }
 
+function setupBridgeAuditGlobals() {
+  const bridgeApi = {
+    snapshot: getBridgeAuditSnapshot,
+    reset: resetBridgeAudit,
+    markPage: markBridgePage,
+  };
+  const miniApi = {
+    callDbBatched,
+    fetchBootstrap,
+    invalidateBootstrapCache,
+  };
+  (window as Window & { __auraDbBridgeAudit?: typeof bridgeApi }).__auraDbBridgeAudit = bridgeApi;
+  (window as Window & { __auraMiniApi?: typeof miniApi }).__auraMiniApi = miniApi;
+  markBridgePage('bootstrap');
+}
 
+/** True when running inside an Electron renderer process (nodeIntegration=true). */
+function isElectronRenderer(): boolean {
+  return (
+    typeof process !== 'undefined' &&
+    typeof (process as NodeJS.Process & { versions?: Record<string, string> }).versions?.electron === 'string'
+  );
+}
 
 export function initWebDbBridge() {
   if (typeof window === 'undefined') return;
-  if (typeof window.getDB === 'function') return;
 
-  // Wait for Electron main process to inject window.getDB
-  const checkDbReady = () => {
-    const db = typeof window !== 'undefined' && typeof window.getDB === 'function' ? window.getDB() : null;
-    if (!db) {
-      console.log('[Bridge] Waiting for database to be ready...');
-      setTimeout(checkDbReady, 100);
-      return;
-    }
+  const hasGetDB = typeof (window as Window & { getDB?: unknown }).getDB === 'function';
 
-    console.log('[Bridge] ✅ Database ready, initializing bridge');
-    const bridgeApi = {
-      snapshot: getBridgeAuditSnapshot,
-      reset: resetBridgeAudit,
-      markPage: markBridgePage,
-    };
-    const miniApi = {
-      callDbBatched,
-      fetchBootstrap,
-      invalidateBootstrapCache,
-    };
-    (window as Window & { __auraDbBridgeAudit?: typeof bridgeApi }).__auraDbBridgeAudit = bridgeApi;
-    (window as Window & { __auraMiniApi?: typeof miniApi }).__auraMiniApi = miniApi;
-    markBridgePage('bootstrap');
-  };
+  // Pure web mode: no Electron process globals and no getDB yet →
+  // create the synchronous XHR proxy that routes DB calls to the
+  // local mini-app-server (port 8787 / Vite proxy).
+  if (!hasGetDB && !isElectronRenderer()) {
+    (window as Window & { __auraWebMode?: boolean }).__auraWebMode = true;
+    const proxy = createSyncHttpProxy();
+    (window as Window & { getDB: () => AuraDatabase }).getDB = () => proxy;
+    window.dispatchEvent(new Event('aura-db-ready'));
+    setupBridgeAuditGlobals();
+    return;
+  }
 
-  checkDbReady();
+  // Electron mode: window.getDB is injected asynchronously by the main
+  // process via executeJavaScript on 'did-finish-load' — it is NOT yet
+  // available when this module loads.  Wait for 'aura-db-ready' (dispatched
+  // by the same executeJavaScript block right after setting window.getDB)
+  // so that setupBridgeAuditGlobals() runs in the same synchronous tick,
+  // before waitForAuraDatabase()'s promise resolves in useAuraDb.
+  if (!hasGetDB) {
+    window.addEventListener('aura-db-ready', () => setupBridgeAuditGlobals(), { once: true });
+    return;
+  }
+
+  // getDB already set (e.g. Vite HMR re-run after first load).
+  const db = (window as Window & { getDB: () => unknown }).getDB();
+  if (db) {
+    setupBridgeAuditGlobals();
+  } else {
+    window.addEventListener('aura-db-ready', () => setupBridgeAuditGlobals(), { once: true });
+  }
 }

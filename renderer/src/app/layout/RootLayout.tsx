@@ -3,93 +3,119 @@ import { AppHeader } from '@/widgets/app-chrome/AppHeader';
 import { AppSidebar } from '@/widgets/app-chrome/AppSidebar';
 import { AppMainArea } from '@/widgets/app-chrome/AppMainArea';
 import { AppMobileDock } from '@/widgets/app-chrome/AppMobileDock';
+import { AppearanceScaleSync } from '@/features/theme/AppearanceScaleSync';
+import { OnboardingWizard } from '@/features/onboarding/OnboardingWizard';
+import { useAuraDb } from '@/shared/hooks/use-aura-db';
+
+type Stage = 'idle' | 'sidebar' | 'header' | 'content';
+
+const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+// Delays for each stage (ms from mount)
+const T_SIDEBAR = 120;
+const T_HEADER  = 480;
+const T_CONTENT = 780;
+
+function isOnboardingComplete(value: unknown) {
+  return value === true || value === 1 || value === '1';
+}
 
 export function RootLayout() {
-  const [startupReady, setStartupReady] = useState(false);
-  const [stage, setStage] = useState<'idle' | 'sidebar' | 'header' | 'content'>('idle');
-  const stageTransitionCn = 'transition-all duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)] transform-gpu will-change-transform';
+  const { db, ready } = useAuraDb();
+  const [stage, setStage] = useState<Stage>('idle');
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const onReady = () => setStartupReady(true);
-    window.addEventListener('aura-startup-done', onReady);
-    const fallback = window.setTimeout(onReady, 15000);
-    return () => {
-      window.removeEventListener('aura-startup-done', onReady);
-      window.clearTimeout(fallback);
-    };
-  }, []);
+    if (!ready) return;
+    const settings = db?.getAppSettings?.() as Record<string, unknown> | null | undefined;
+    setOnboardingDone(isOnboardingComplete(settings?.onboarding_complete));
+  }, [db, ready]);
 
   useEffect(() => {
-    if (!startupReady) return;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) {
-      setStage('content');
-      return;
-    }
-    setStage('sidebar');
-    const t1 = window.setTimeout(() => setStage('header'), 240);
-    const t2 = window.setTimeout(() => setStage('content'), 540);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-    };
-  }, [startupReady]);
+    if (onboardingDone !== true) return;
+    setStage('idle');
+    const t1 = setTimeout(() => setStage('sidebar'), T_SIDEBAR);
+    const t2 = setTimeout(() => setStage('header'),  T_HEADER);
+    const t3 = setTimeout(() => setStage('content'), T_CONTENT);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [onboardingDone]);
 
-  const sidebarReady = stage === 'sidebar' || stage === 'header' || stage === 'content';
-  const headerReady = stage === 'header' || stage === 'content';
-  const contentReady = stage === 'content';
+  const sidebarReady  = stage === 'sidebar' || stage === 'header' || stage === 'content';
+  const headerReady   = stage === 'header'  || stage === 'content';
+  const contentReady  = stage === 'content';
+
+  const tx = (delay = 0) =>
+    `transition-all duration-[520ms] ease-[${EASE}] transform-gpu will-change-transform${delay ? ` delay-[${delay}ms]` : ''}`;
+
+  if (!ready || onboardingDone === null) {
+    return (
+      <div className="bg-background aura-tx-colors" style={{ height: 'var(--aura-app-height, 100svh)' }}>
+        <AppearanceScaleSync />
+      </div>
+    );
+  }
+
+  if (!onboardingDone) {
+    return (
+      <>
+        <AppearanceScaleSync />
+        <OnboardingWizard db={db} onComplete={() => setOnboardingDone(true)} />
+      </>
+    );
+  }
 
   return (
     <div
       className="bg-background flex w-full min-w-0 overflow-hidden aura-tx-colors"
       style={{ height: 'var(--aura-app-height, 100svh)' }}
     >
+      <AppearanceScaleSync />
+
+
       <div className="flex min-h-0 min-w-0 flex-1">
+        {/* Sidebar — slides in from left */}
         <div
-          className={`flex min-h-0 shrink-0 ${stageTransitionCn} ${
-            sidebarReady ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
-          }`}
+          className={`flex min-h-0 shrink-0 ${tx()}`}
+          style={{
+            opacity:    sidebarReady ? 1 : 0,
+            transform:  sidebarReady ? 'translateX(0)' : 'translateX(-100%)',
+          }}
         >
           <AppSidebar />
         </div>
+
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {/* Header — slides down from top */}
           <div
-            className={`shrink-0 ${stageTransitionCn} ${
-              headerReady ? 'translate-y-0 opacity-100' : '-translate-y-6 opacity-0'
-            }`}
+            className={`shrink-0 ${tx(40)}`}
+            style={{
+              opacity:   headerReady ? 1 : 0,
+              transform: headerReady ? 'translateY(0)' : 'translateY(-110%)',
+            }}
           >
             <AppHeader />
           </div>
+
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            {/* Content — fades in without scale to avoid layout jitter after settings changes. */}
             <div
-              aria-hidden
-              className={`pointer-events-none absolute inset-0 z-[2] transition-opacity duration-300 ${
-                startupReady ? 'opacity-0' : 'opacity-100'
-              }`}
-            >
-              <div className="bg-background/85 h-full w-full p-0 sm:p-4">
-                <div className="flex h-full w-full animate-pulse flex-col gap-2.5 rounded-xl border border-border/70 bg-card/70 p-3 sm:gap-3 sm:rounded-2xl sm:p-4">
-                  <div className="bg-muted h-7 w-1/3 rounded-lg" />
-                  <div className="bg-muted/90 h-24 w-full rounded-xl" />
-                  <div className="grid flex-1 grid-cols-2 gap-3">
-                    <div className="bg-muted/85 rounded-xl" />
-                    <div className="bg-muted/80 rounded-xl" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div
-              className={`${stageTransitionCn} flex min-h-0 min-w-0 flex-1 flex-col ${
-                contentReady ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.985] opacity-0'
-              }`}
+              className={`${tx(80)} flex min-h-0 min-w-0 flex-1 flex-col`}
+              style={{
+                opacity:   contentReady ? 1 : 0,
+                transform: contentReady ? 'translateY(0)' : 'translateY(8px)',
+              }}
             >
               <AppMainArea />
             </div>
           </div>
+
+          {/* Mobile dock — slides up from bottom */}
           <div
-            className={`shrink-0 ${stageTransitionCn} ${
-              contentReady ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-            }`}
+            className={`shrink-0 ${tx(120)}`}
+            style={{
+              opacity:   contentReady ? 1 : 0,
+              transform: contentReady ? 'translateY(0)' : 'translateY(100%)',
+            }}
           >
             <AppMobileDock />
           </div>

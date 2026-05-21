@@ -37,7 +37,7 @@ export function PageSectionCard({
   cardClassName,
 }: Props) {
   return (
-    <Card size="sm" className={cn('shadow-sm', cardClassName)}>
+    <Card size="sm" className={cn('w-full min-w-0 shadow-sm', cardClassName)}>
       <CardHeader className="pb-2">
         <CardTitle
           className={cn(

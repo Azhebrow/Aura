@@ -16,6 +16,7 @@ type Props = {
   selectedSeriesKeys: string[] | null;
   currencyCode?: string;
   timeSummary: StatsTimeSummary | null;
+  loading?: boolean;
 };
 
 type ChartCanvasProps = {
@@ -46,7 +47,7 @@ function ChartSkeleton({ variant }: { variant: 'series' | 'donut' }) {
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/35 px-2.5 py-2">
+              <div key={index} className="flex items-center gap-2 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-2.5 py-2">
                 <div className="aura-skeleton size-3 rounded-full" />
                 <div className="aura-skeleton h-3 flex-1 rounded-full" style={{ opacity: 1 - index * 0.08 }} />
               </div>
@@ -83,6 +84,7 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
   const chartInstanceRef = useRef<ECharts | null>(null);
   const latestOptionRef = useRef<EChartsOption | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const [correlationIconPositions, setCorrelationIconPositions] = useState<Array<{
     key: string;
     icon: string | null;
@@ -133,6 +135,7 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
     };
 
     setIsLoading(true);
+    setShowSkeleton(true);
     void loadEChartsCore()
       .then((echarts) => {
         echartsCore = echarts;
@@ -149,6 +152,9 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
           instance.resize();
           scheduleCorrelationIconSync();
           setIsLoading(false);
+          window.setTimeout(() => {
+            if (!cancelled) setShowSkeleton(false);
+          }, 260);
         };
 
         if (cancelled || !chartRef.current) return;
@@ -162,7 +168,12 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
         tryInit();
       })
       .catch(() => {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+          window.setTimeout(() => {
+            if (!cancelled) setShowSkeleton(false);
+          }, 260);
+        }
       });
 
     return () => {
@@ -196,13 +207,14 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
   }, [option, correlationIconRows]);
 
   return (
-    <div className="border-border/60 bg-card/80 relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-xl border shadow-sm" style={{ minHeight }}>
-      <div className="from-muted/20 via-background/20 pointer-events-none absolute inset-0 bg-gradient-to-br to-transparent" />
+    <div className="aura-surface-panel relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/80" style={{ minHeight }}>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--aura-surface-control)] via-transparent to-transparent opacity-70" />
       <div
         ref={chartRef}
         className="absolute inset-0 h-full w-full transition-all duration-500 ease-out"
         style={{
           opacity: isLoading ? 0 : 1,
+          transform: isLoading ? 'translateY(4px)' : 'translateY(0)',
         }}
       />
       {correlationIconPositions?.length ? (
@@ -213,14 +225,15 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
               className="absolute left-3 -translate-y-1/2"
               style={{ top: row.top }}
             >
-              <StatsMetaIconBadge icon={row.icon} tint={row.color} size={16} className="bg-card/72 shadow-sm" />
+              <StatsMetaIconBadge icon={row.icon} tint={row.color} size={16} className="bg-[var(--aura-surface-raised)] shadow-sm" />
             </div>
           ))}
         </div>
       ) : null}
-      {isLoading ? (
+      {showSkeleton ? (
         <div
-          className="absolute inset-0 bg-background/45 backdrop-blur-[1px] transition-opacity duration-300 ease-out"
+          className="absolute inset-0 bg-[var(--aura-surface-panel)]/45 backdrop-blur-[1px] transition-opacity duration-500 ease-out"
+          style={{ opacity: isLoading ? 1 : 0 }}
           aria-hidden
         >
           <ChartSkeleton variant={skeletonVariant} />
@@ -233,9 +246,16 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
   );
 }
 
+function skeletonPanelsForMode(mode: StatsMode, groupBy: StatsGroupBy): Array<'series' | 'donut'> {
+  if (mode === 'correlation') return ['series', 'series'];
+  if (mode === 'finance' || mode === 'rank') return ['series', 'donut'];
+  if (mode === 'time' || mode === 'leisure') return ['series', groupBy === 'categories' ? 'donut' : 'donut'];
+  return ['series'];
+}
+
 function SummaryEmptyPanel({ message }: { message: string }) {
   return (
-    <div className="border-border/60 text-muted-foreground flex h-full min-h-0 w-full items-center justify-center rounded-xl border border-dashed bg-muted/10 p-6 text-center text-sm">
+    <div className="aura-surface-control text-[var(--aura-text-subtle)] flex h-full min-h-0 w-full items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm">
       {message}
     </div>
   );
@@ -250,6 +270,7 @@ export function StatsChartView({
   selectedSeriesKeys,
   currencyCode,
   timeSummary,
+  loading = false,
 }: Props) {
   const theme = readThemeColors();
   const screen = useMemo(
@@ -274,17 +295,31 @@ export function StatsChartView({
 
   if (!table.rows.length) {
     return (
-      <div className="border-border/60 text-muted-foreground flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/10 p-8 text-center text-sm">
+      <div className="aura-surface-control text-[var(--aura-text-subtle)] flex min-h-0 flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm">
         Нет данных за выбранный период. Смените режим или расширьте даты.
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+        {skeletonPanelsForMode(mode, groupBy).map((variant, index) => (
+          <div key={`${variant}-${index}`} className="flex min-h-0 flex-1">
+            <div className="aura-surface-panel relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/80">
+              <ChartSkeleton variant={variant} />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   if (screen.visibleKeys.length === 0) {
     return (
-      <div className="border-border/60 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/10 p-8 text-center">
+      <div className="aura-surface-control flex min-h-0 flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center">
         <div className="max-w-sm space-y-3">
-          <p className="text-sm text-muted-foreground">Сейчас скрыты все серии. Включите хотя бы одну серию слева, чтобы показать диаграмму.</p>
+          <p className="aura-body-muted text-sm">Сейчас скрыты все серии. Включите хотя бы одну серию слева, чтобы показать диаграмму.</p>
         </div>
       </div>
     );

@@ -3,6 +3,8 @@ declare global {
     getDB?: () => import('./types/aura').AuraDatabase | null;
     __auraUserDataPath?: string;
     __auraAppPath?: string;
+    __auraWebMode?: boolean;
+    __auraRankImageCache?: Record<string, HTMLImageElement>;
     /** Инъекция из main.js — см. legacy `PointsService` */
     PointsService?: new (db: import('./types/aura').AuraDatabase) => {
       calculateCumulativePoints: (date: string) => number;
@@ -15,7 +17,7 @@ declare global {
         screen: 'home' | 'rituals' | 'sidebar' | 'date-strip',
         body: Record<string, unknown>
       ) => Promise<unknown>;
-      invalidateBootstrapCache: () => void;
+      invalidateBootstrapCache: (detail?: { type?: string; date?: string; entityId?: string; scope?: string }) => void;
     };
   }
 }

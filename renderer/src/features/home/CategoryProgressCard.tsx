@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { Activity, Ban, Clock, Sparkles, type LucideIcon } from 'lucide-react';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
-import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
-import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
+import { useHomeDaySnapshot } from '@/shared/hooks/use-home-day-snapshot';
 import { TASK_CATEGORY_IDS, TASK_CATEGORY_DEFAULT_META, type TaskCategoryId } from '@/shared/config/domain-taxonomy';
-import { getCategoryProgresses } from '@/shared/bridge/get-category-progresses';
 import { LoadingShell } from '@/shared/ui/data-states';
 import { cn } from '@/lib/utils';
 
@@ -38,82 +36,13 @@ type CategoryProgressCardProps = {
 export function CategoryProgressCard({ cardClassName, contentClassName }: CategoryProgressCardProps = {}) {
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
-  const dataTick = useAuraDataRefresh({
-    types: ['task-progress', 'timer', 'ritual', 'nutrition', 'diary', 'mood'],
-    includeTaskCategoriesConfig: true,
-  });
-  const bootstrapParams = useMemo(() => ({ date: dateString }), [dateString]);
-  const { data: homeBootstrap } = useBootstrapData<{ categoryProgresses?: Record<string, number> }>(
-    'home',
-    bootstrapParams,
-    [dataTick],
-    {
-      keepStaleOnError: true,
-      cacheMs: 0,
-      dedupeKey: `home:category-progress:${dateString}:${dataTick}`,
-    }
-  );
-  const bootstrapProgresses = homeBootstrap?.categoryProgresses ?? null;
-
+  const { data: snapshot } = useHomeDaySnapshot(dateString);
   const todayData = useMemo(() => {
-    if (!db) return null;
-    const bulk = bootstrapProgresses ?? getCategoryProgresses(db, dateString, CATEGORIES);
-    return CATEGORIES.map((cat) => bulk[cat] ?? 0);
-  }, [bootstrapProgresses, db, dateString, dataTick]);
+    if (!snapshot) return null;
+    return CATEGORIES.map((cat) => snapshot.categoryProgresses[cat] ?? 0);
+  }, [snapshot]);
 
-  const [displayData, setDisplayData] = useState<number[] | null>(null);
-  const hasHydratedRef = useRef(false);
-  const animationFrameRef = useRef<number | null>(null);
-  const displayDataRef = useRef<number[] | null>(null);
-
-  useEffect(() => {
-    if (!todayData) return;
-
-    if (!hasHydratedRef.current) {
-      hasHydratedRef.current = true;
-      displayDataRef.current = todayData;
-      setDisplayData(todayData);
-      return;
-    }
-
-    const from = displayDataRef.current && displayDataRef.current.length === todayData.length ? displayDataRef.current : todayData;
-    const to = todayData;
-    const durationMs = 320;
-    const startTime = performance.now();
-
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    const tick = (now: number) => {
-      const elapsed = now - startTime;
-      const t = Math.min(1, elapsed / durationMs);
-      const eased = 1 - Math.pow(1 - t, 3);
-      const next = to.map((target, idx) => {
-        const initial = from[idx] ?? 0;
-        return initial + (target - initial) * eased;
-      });
-
-      displayDataRef.current = next;
-      setDisplayData(next);
-
-      if (t < 1) {
-        animationFrameRef.current = requestAnimationFrame(tick);
-      } else {
-        animationFrameRef.current = null;
-      }
-    };
-
-    animationFrameRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-    };
-  }, [todayData]);
+  const displayData = todayData;
 
   const points = useMemo(() => {
     if (!displayData) return [];
@@ -166,7 +95,7 @@ export function CategoryProgressCard({ cardClassName, contentClassName }: Catego
         {!db || !todayData || !displayData ? (
           <LoadingShell />
         ) : (
-          <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-card p-1.5 sm:p-2">
+          <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-transparent p-1.5 sm:p-2">
             <div className="relative aspect-square h-full min-h-0 max-h-full max-w-full">
               <svg viewBox="0 0 100 100" className="h-full w-full text-border" aria-label="Прогресс по категориям">
                   {gridPolygons.map((poly, idx) => (
@@ -205,7 +134,7 @@ export function CategoryProgressCard({ cardClassName, contentClassName }: Catego
                     <span
                       key={cat}
                       className={cn(
-                        'absolute inline-flex size-5 items-center justify-center rounded-full bg-card',
+                        'absolute inline-flex size-5 items-center justify-center rounded-full bg-[var(--aura-surface-panel)]',
                         pos
                       )}
                       title={`${LABELS[cat]}: ${Math.round(displayData[index] ?? 0)}%`}

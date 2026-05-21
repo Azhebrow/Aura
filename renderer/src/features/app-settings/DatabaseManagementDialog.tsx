@@ -16,7 +16,6 @@ import {
   ListChecks,
   Moon,
   Music,
-  RefreshCw,
   Sun,
   Target,
   Trash2,
@@ -28,15 +27,16 @@ import {
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { UniversalModalContent } from '@/components/ui/universal-modal';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { AuraDatabase } from '@/types/aura';
+import { cn } from '@/lib/utils';
 
 type RuntimeDb = AuraDatabase & {
   dbPath?: string;
@@ -181,6 +181,24 @@ function verifySQLiteIntegrity(filePath: string): { ok: boolean; details: string
   }
 }
 
+function markImportedDatabaseOnboarded(filePath: string) {
+  const req = getNodeRequire();
+  if (!req) return;
+  try {
+    const BetterSqlite3 = req('better-sqlite3') as new (path: string) => {
+      prepare: (query: string) => { run: (...args: unknown[]) => unknown };
+      close: () => void;
+    };
+    const importedDb = new BetterSqlite3(filePath);
+    importedDb.prepare(
+      "UPDATE app_settings SET onboarding_complete = 1, updated_at = datetime('now') WHERE id = 'default'"
+    ).run();
+    importedDb.close();
+  } catch {
+    /* best effort: импорт не должен падать из-за флага onboarding */
+  }
+}
+
 function toRuntimeDb(db: AuraDatabase): RuntimeDb {
   return db as RuntimeDb;
 }
@@ -276,19 +294,6 @@ export function DatabaseManagementDialog({
     if (!stats?.path) return;
     await navigator.clipboard.writeText(stats.path);
   }, [stats?.path]);
-
-  const reloadPresets = useCallback(async () => {
-    if (!runtimeDb.reloadPresets) {
-      window.alert('Метод reloadPresets не найден в базе данных');
-      return;
-    }
-    if (!window.confirm('Перезагрузить пресеты? Текущие настройки будут заменены значениями по умолчанию.')) {
-      return;
-    }
-    runtimeDb.reloadPresets();
-    window.alert('Пресеты перезагружены. Приложение будет перезапущено.');
-    window.location.reload();
-  }, [runtimeDb]);
 
   const clearDatabase = useCallback(async () => {
     if (!runtimeDb.clearDatabase) {
@@ -424,6 +429,7 @@ export function DatabaseManagementDialog({
       if (!targetIntegrity.ok) {
         throw new Error(`Проверка новой БД не пройдена: ${targetIntegrity.details}`);
       }
+      markImportedDatabaseOnboarded(targetPath);
     } catch (error) {
       if (fs.existsSync(backupPath)) {
         fs.renameSync(backupPath, targetPath);
@@ -466,68 +472,74 @@ export function DatabaseManagementDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="max-h-[86vh] max-w-[min(980px,94vw)] gap-2 p-0">
-        <DialogHeader className="border-border/70 border-b px-5 pt-5 pb-3">
-          <DialogTitle className="flex items-center gap-2">
-            <Database className="size-4" />
-            Управление базой данных
-          </DialogTitle>
-          <DialogDescription>Минималистичная панель резервирования, проверки и контроля структуры БД.</DialogDescription>
+      <UniversalModalContent
+        size="picker"
+        scroll="content"
+        className="flex h-[min(92svh,52rem)] flex-col gap-0 overflow-hidden p-0"
+      >
+        <DialogHeader className="shrink-0 border-b border-[var(--aura-border-soft)] px-4 py-3 sm:px-5">
+          <div className="flex min-w-0 items-start gap-3 pr-10">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-primary">
+              <Database className="size-4" />
+            </div>
+            <div className="min-w-0">
+              <DialogTitle className="text-left text-sm font-semibold leading-tight">Управление базой данных</DialogTitle>
+              <DialogDescription className="mt-1 text-left text-xs leading-snug text-[var(--aura-text-muted)]">
+                Экспорт, импорт и просмотр структуры текущего файла.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="px-5">
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
-            <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
-              <p className="text-muted-foreground text-[11px] uppercase tracking-wide">Путь</p>
-              <div className="mt-1 flex items-start gap-1.5">
-                <button
-                  type="button"
-                  onClick={openDatabaseFolder}
-                  className="text-left font-mono text-xs break-all hover:underline"
-                  title="Открыть папку базы данных"
-                  disabled={!stats?.path}
-                >
-                  {stats?.path || '—'}
-                </button>
-                <Button variant="ghost" size="icon-xs" className="shrink-0" onClick={() => void copyPath()} disabled={!stats?.path}>
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3 sm:px-5">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1.55fr)_minmax(0,0.7fr)_minmax(0,0.7fr)]">
+            <section className="min-w-0 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-caption font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">Файл базы</p>
+                <Button variant="ghost" size="icon-xs" className="shrink-0" onClick={() => void copyPath()} disabled={!stats?.path} title="Скопировать путь">
                   <Copy className="size-3" />
                 </Button>
               </div>
-            </div>
-            <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
-              <p className="text-muted-foreground text-[11px] uppercase tracking-wide">Размер файла</p>
-              <p className="mt-1 font-mono text-sm">{stats?.fileSizeFormatted ?? '—'}</p>
-            </div>
-            <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
-              <p className="text-muted-foreground text-[11px] uppercase tracking-wide">Всего записей</p>
-              <p className="mt-1 font-mono text-sm">{(stats?.totalRecords ?? 0).toLocaleString('ru-RU')}</p>
-            </div>
-            <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
-              <p className="text-muted-foreground text-[11px] uppercase tracking-wide">Поиск таблиц</p>
-              <div className="mt-1 relative">
-                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="cfg_, act_, diary..."
-                  className="h-8 pl-7 text-xs"
-                />
-              </div>
-            </div>
+              <button
+                type="button"
+                onClick={openDatabaseFolder}
+                className="mt-1 block max-w-full truncate text-left font-mono text-xs text-foreground hover:underline disabled:pointer-events-none disabled:text-[var(--aura-text-disabled)]"
+                title={stats?.path || 'Путь не найден'}
+                disabled={!stats?.path}
+              >
+                {stats?.path || 'Путь не найден'}
+              </button>
+            </section>
+            <section className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
+              <p className="text-caption font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">Размер</p>
+              <p className="mt-1 font-mono text-base font-semibold tabular-nums text-foreground">{stats?.fileSizeFormatted ?? '—'}</p>
+            </section>
+            <section className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
+              <p className="text-caption font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">Записи</p>
+              <p className="mt-1 font-mono text-base font-semibold tabular-nums text-foreground">{(stats?.totalRecords ?? 0).toLocaleString('ru-RU')}</p>
+            </section>
           </div>
-        </div>
 
-        <div className="min-h-0 flex-1 px-5 pb-3">
-          <ScrollArea className="h-[48vh] rounded-lg border border-border/70">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[var(--aura-text-muted)]" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Найти таблицу: cfg_tasks, diary, nutrition..."
+              className="h-9 rounded-lg border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] pl-9 text-sm shadow-none"
+            />
+          </div>
+
+          <ScrollArea className="min-h-0 flex-1 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)]">
             <div className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-2">
               {tableGroups.map((group) => (
-                <section key={group.key} className="rounded-md border border-border/60 bg-background/50">
-                  <header className="border-border/60 border-b px-3 py-2">
-                    <p className="text-sm font-medium">{group.title}</p>
+                <section key={group.key} className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)] bg-card">
+                  <header className="border-b border-[var(--aura-border-soft)] px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">{group.title}</p>
                   </header>
-                  <div className="divide-border/50 divide-y">
+                  <div className="divide-y divide-[var(--aura-border-soft)]">
                     {group.items.length === 0 ? (
-                      <p className="text-muted-foreground px-3 py-2 text-xs">
+                      <p className="px-3 py-2 text-xs text-[var(--aura-text-muted)]">
                         {normalizedSearch ? 'Нет совпадений по фильтру' : 'Нет таблиц'}
                       </p>
                     ) : (
@@ -535,15 +547,15 @@ export function DatabaseManagementDialog({
                         const meta = TABLE_META[table.name];
                         const Icon = meta?.icon ?? Database;
                         return (
-                          <div key={table.name} className="flex items-center justify-between gap-2 px-3 py-2">
-                            <div className="min-w-0">
-                              <p className="flex items-center gap-1.5 text-sm font-medium">
-                                <Icon className="text-muted-foreground size-3.5 shrink-0" />
+                          <div key={table.name} className="flex items-center justify-between gap-3 px-3 py-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
+                                <Icon className="size-3.5 shrink-0 text-[var(--aura-text-muted)]" />
                                 <span className="truncate">{meta?.label ?? table.name}</span>
                               </p>
-                              <p className="text-muted-foreground font-mono text-[11px]">{table.name}</p>
+                              <p className="truncate font-mono text-caption text-[var(--aura-text-muted)]">{table.name}</p>
                             </div>
-                            <span className="rounded-md border border-border/70 bg-muted/35 px-1.5 py-0.5 font-mono text-xs">
+                            <span className="shrink-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-1.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
                               {table.rowCount.toLocaleString('ru-RU')}
                             </span>
                           </div>
@@ -555,22 +567,18 @@ export function DatabaseManagementDialog({
               ))}
             </div>
           </ScrollArea>
+
+          {stats?.error ? (
+            <div className="flex shrink-0 items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <span>{stats.error}</span>
+            </div>
+          ) : null}
         </div>
 
-        {stats?.error ? (
-          <div className="mx-5 mb-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-            <span>{stats.error}</span>
-          </div>
-        ) : null}
-
-        <DialogFooter variant="flush" className="px-5">
-          <div className="flex w-full flex-wrap items-center justify-between gap-2 py-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" onClick={() => void runAction('refresh', loadStats)} disabled={loading || !!busyAction}>
-                <RefreshCw className="size-3.5" />
-                Обновить
-              </Button>
+        <DialogFooter variant="flush" className="border-t border-[var(--aura-border-soft)] px-4 py-3 sm:px-5">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 onClick={() => void runAction('open-folder', openDatabaseFolder)}
@@ -580,28 +588,29 @@ export function DatabaseManagementDialog({
                 <FolderOpen className="size-3.5" />
                 Открыть папку
               </Button>
-              <Button variant="outline" onClick={() => void runAction('presets', reloadPresets)} disabled={!!busyAction}>
-                <FolderOpen className="size-3.5" />
-                Пресеты
-              </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" onClick={() => void runAction('export', exportDatabase)} disabled={!!busyAction}>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button variant="outline" onClick={() => void runAction('export', exportDatabase)} disabled={!!busyAction || loading}>
                 <Download className="size-3.5" />
                 Экспорт
               </Button>
-              <Button variant="outline" onClick={() => void runAction('import', importDatabase)} disabled={!!busyAction}>
+              <Button variant="outline" onClick={() => void runAction('import', importDatabase)} disabled={!!busyAction || loading}>
                 <Upload className="size-3.5" />
                 Импорт
               </Button>
-              <Button variant="destructive" onClick={() => void runAction('clear', clearDatabase)} disabled={!!busyAction}>
+              <Button
+                variant="destructive"
+                className={cn('bg-destructive/15 text-destructive hover:bg-destructive/25', 'dark:bg-destructive/18 dark:hover:bg-destructive/28')}
+                onClick={() => void runAction('clear', clearDatabase)}
+                disabled={!!busyAction || loading}
+              >
                 <Trash2 className="size-3.5" />
                 Очистить
               </Button>
             </div>
           </div>
         </DialogFooter>
-      </DialogContent>
+      </UniversalModalContent>
     </Dialog>
   );
 }

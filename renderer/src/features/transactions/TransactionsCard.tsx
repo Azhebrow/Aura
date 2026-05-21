@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AlertTriangle, Wallet } from 'lucide-react';
 import { ListItem } from '@/components/ui/list-item';
 import { AddListButton } from '@/components/ui/add-list-button';
-import { Progress } from '@/components/ui/progress';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { AddTransactionDialog } from '@/features/transactions/AddTransactionDialog';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
@@ -40,7 +39,7 @@ function loadTopAccounts(db: NonNullable<ReturnType<typeof useAuraDb>['db']>): F
     .getAll('cfg_accounts')
     .filter((a) => a.id != null && Number(a.home_visible) !== 0)
     .sort((a, b) => (Number(a.level) || 0) - (Number(b.level) || 0))
-    .slice(0, 3)
+    .slice(0, 2)
     .map((a) => ({
       id: String(a.id),
       title: String(a.title ?? a.name ?? a.id),
@@ -92,55 +91,61 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
             <p className="text-muted-foreground text-sm">База данных недоступна.</p>
           ) : (
             <>
-              {topAccounts.length > 0 ? (
-                <div className="mb-2 grid shrink-0 auto-cols-fr gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(topAccounts.length, 3)}, 1fr)` }}>
+              {/* Счета */}
+              {topAccounts.length > 0 && (
+                <div className="grid shrink-0 grid-cols-2 gap-2">
                   {topAccounts.map((acc) => {
                     const isSavings = acc.type === 'savings';
                     const hasTarget = acc.target > 0;
                     const pct = accountProgress(acc.balance, acc.target);
                     return (
-                      <div key={acc.id} className="rounded-xl border border-border/50 bg-background/80 px-3 py-2.5">
-                        <div className="mb-1.5 flex items-center gap-2">
-                          <span
-                            className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted/50"
-                            aria-hidden
+                      <div
+                        key={acc.id}
+                        className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-transparent"
+                        style={{ '--acc-color': acc.color } as React.CSSProperties}
+                      >
+                        <div className="flex min-w-0 flex-col gap-1.5 px-2.5 py-2.5">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden>
+                              {acc.icon
+                                ? <AuraThemedIcon name={acc.icon} size={14} tint={acc.color} />
+                                : <Wallet className="size-3.5" style={{ color: acc.color }} />}
+                            </span>
+                            <p className="min-w-0 truncate text-[0.7rem] font-semibold leading-none text-[var(--aura-text-muted)]">{acc.title}</p>
+                          </div>
+                          <p
+                            className="min-w-0 truncate text-xs font-semibold leading-tight text-foreground tabular-nums"
+                            title={hasTarget ? `${formatAmount(acc.balance, currency)} / ${formatAmount(acc.target, currency)}` : formatAmount(acc.balance, currency)}
                           >
-                            {acc.icon ? (
-                              <AuraThemedIcon name={acc.icon} size={14} />
-                            ) : (
-                              <Wallet className="text-muted-foreground size-3.5" />
-                            )}
-                          </span>
-                          <p className="truncate text-xs font-semibold tracking-wide text-muted-foreground">{acc.title}</p>
+                            {formatAmount(acc.balance, currency)}
+                            {hasTarget ? (
+                              <span className="text-[var(--aura-text-disabled)]"> / {formatAmount(acc.target, currency)}</span>
+                            ) : null}
+                          </p>
                         </div>
-                        <p className="truncate text-base font-semibold tracking-tight text-foreground">
-                          {formatAmount(acc.balance, currency)}
-                          {hasTarget ? (
-                            <span className="ml-1 text-xs font-medium text-muted-foreground">/ {formatAmount(acc.target, currency)}</span>
-                          ) : null}
-                        </p>
-                        {isSavings ? (
-                          <Progress
-                            value={hasTarget ? pct : 0}
-                            className={cn(
-                              'mt-2 h-1.5 bg-muted/75 [&_[data-slot=progress-indicator]]:bg-[var(--progress-color)] [&_[data-slot=progress-indicator]]:transition-transform [&_[data-slot=progress-indicator]]:duration-aura-glide',
-                              !hasTarget && 'opacity-40'
-                            )}
-                            style={{ ['--progress-color' as string]: acc.color }}
-                          />
-                        ) : null}
+                        {isSavings && (
+                          <div className="h-[2px] w-full bg-[var(--aura-border-soft)]/60">
+                            <div
+                              className="h-full transition-all duration-[400ms] ease-out"
+                              style={{ width: `${hasTarget ? pct : 0}%`, backgroundColor: acc.color, opacity: 0.75 }}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
-              ) : null}
-              <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-y-contain pr-2">
+              )}
+
+              {/* Транзакции */}
+              <ul className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-y-contain">
                 {rows.map((t) => {
                   const id = String(t.id);
                   const r = resolveTransactionRow(db, t);
                   const amount = t.amount;
                   const desc = t.description ? String(t.description) : '';
-                  const tint = r.accentColor ?? 'var(--muted-foreground)';
+                  const tint = r.accentColor ?? 'var(--aura-text-muted)';
+                  const amountStr = `${r.typeKey === 'expense' ? '−' : r.typeKey === 'income' ? '+' : ''}${formatAmount(amount, currency)}`;
                   return (
                     <li key={id}>
                       <ListItem
@@ -151,34 +156,24 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                           r.isCompulsiveExpense ? (
                             <span className="inline-flex min-w-0 items-center gap-1.5">
                               <span className="truncate">{r.title}</span>
-                              <span
-                                className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200"
-                                title="Импульсивная покупка"
-                              >
+                              <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200" title="Импульсивная покупка">
                                 <AlertTriangle className="size-3" aria-hidden />
                               </span>
                             </span>
-                          ) : (
-                            r.title
-                          )
+                          ) : r.title
                         }
-                        amount={`${r.typeKey === 'expense' ? '−' : r.typeKey === 'income' ? '+' : ''}${formatAmount(amount, currency)}`}
+                        amount={amountStr}
                         description={desc ? <span className="line-clamp-2 text-xs">{desc}</span> : undefined}
-                        onEdit={() => {
-                          setEditingTransaction(t);
-                          setAddOpen(true);
-                        }}
+                        onEdit={() => { setEditingTransaction(t); setAddOpen(true); }}
                         onDelete={() => removeTx(id)}
                       />
                     </li>
                   );
                 })}
-                <li className="mt-2">
+                <li>
                   <AddListButton
-                    onClick={() => {
-                      setEditingTransaction(null);
-                      setAddOpen(true);
-                    }}
+                    className="w-full"
+                    onClick={() => { setEditingTransaction(null); setAddOpen(true); }}
                     disabled={status === 'loading' || !db}
                   />
                 </li>

@@ -14,6 +14,9 @@ import {
 } from '@/shared/config/nav-model';
 import { loadNavOrderFromDb } from '@/shared/bridge/load-nav-order';
 import { parseNavOrderFromSettings } from '@/shared/lib/nav-order';
+import { LoadingScreen } from '@/app/layout/LoadingScreen';
+
+const RESTORE_PAGE_KEY = 'aura-restore-page';
 
 type ShellContextValue = {
   /** Активная «страница» в смысле legacy bottom nav */
@@ -29,12 +32,6 @@ type ShellContextValue = {
 
 const ShellContext = createContext<ShellContextValue | null>(null);
 
-function bootstrapScreenForPage(pageId: PageId): 'home' | 'rituals' | null {
-  if (pageId === 'home') return 'home';
-  if (pageId === 'rituals') return 'rituals';
-  return null;
-}
-
 function sanitizeNavOrder(order: readonly PageId[]): PageId[] {
   return [...order];
 }
@@ -45,7 +42,16 @@ function normalizeActivePageId(id: PageId, order: readonly PageId[]): PageId {
 }
 
 export function ShellProvider({ children }: { children: ReactNode }) {
-  const [activePageId, setActivePageIdState] = useState<PageId>('home');
+  const [activePageId, setActivePageIdState] = useState<PageId>(() => {
+    try {
+      const stored = sessionStorage.getItem(RESTORE_PAGE_KEY);
+      if (stored) {
+        sessionStorage.removeItem(RESTORE_PAGE_KEY);
+        return stored as PageId;
+      }
+    } catch { /* ignore */ }
+    return 'home';
+  });
   const [prevPageId, setPrevPageIdState] = useState<PageId>('home');
   const [navOrder, setNavOrder] = useState<readonly PageId[]>(DEFAULT_NAV_ORDER);
   const [navOrderReady, setNavOrderReady] = useState(false);
@@ -68,11 +74,10 @@ export function ShellProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('settings-saved', handler);
   }, [activePageId]);
 
-  // Trigger reload after overlay is shown
+  // Trigger reload immediately when pending
   useEffect(() => {
     if (!reloadPending) return;
-    const timer = setTimeout(() => window.location.reload(), 450);
-    return () => clearTimeout(timer);
+    window.location.reload();
   }, [reloadPending]);
 
   const setActivePageId = useCallback(
@@ -81,6 +86,7 @@ export function ShellProvider({ children }: { children: ReactNode }) {
       const current = activePageIdRef.current;
       // If leaving settings with unsaved changes — show overlay and reload instead of navigating
       if (current === 'settings' && normalized !== 'settings' && settingsDirtyRef.current) {
+        try { sessionStorage.setItem(RESTORE_PAGE_KEY, normalized); } catch { /* ignore */ }
         setReloadPending(true);
         return;
       }
@@ -141,32 +147,6 @@ export function ShellProvider({ children }: { children: ReactNode }) {
     }
   }, [activePageId]);
 
-  useEffect(() => {
-    const miniApi = (window as Window & {
-      __auraMiniApi?: { fetchBootstrap?: (screen: string) => Promise<unknown> };
-    }).__auraMiniApi;
-    if (!miniApi?.fetchBootstrap) return;
-
-    const screensToWarm = new Set<string>(['sidebar', 'date-strip']);
-    const activeScreen = bootstrapScreenForPage(activePageId);
-    if (activeScreen) screensToWarm.add(activeScreen);
-    // Keep home warm because users return here most often.
-    if (activePageId !== 'home') screensToWarm.add('home');
-    const activeIndex = navOrder.indexOf(activePageId);
-    if (activeIndex >= 0) {
-      const prevPage = navOrder[(activeIndex - 1 + navOrder.length) % navOrder.length];
-      const nextPage = navOrder[(activeIndex + 1) % navOrder.length];
-      const prevScreen = bootstrapScreenForPage(prevPage);
-      const nextScreen = bootstrapScreenForPage(nextPage);
-      if (prevScreen) screensToWarm.add(prevScreen);
-      if (nextScreen) screensToWarm.add(nextScreen);
-    }
-
-    for (const screen of screensToWarm) {
-      void miniApi.fetchBootstrap(screen).catch(() => {});
-    }
-  }, [activePageId, navOrder]);
-
   const value = useMemo(
     () => ({
       activePageId,
@@ -182,22 +162,8 @@ export function ShellProvider({ children }: { children: ReactNode }) {
     <ShellContext.Provider value={value}>
       {children}
       {reloadPending ? (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'var(--background)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: '12px',
-          }}
-        >
-          <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid var(--border)', borderTopColor: 'var(--primary)', animation: 'spin 0.7s linear infinite' }} />
-          <span style={{ color: 'var(--muted-foreground)', fontSize: '13px' }}>Применение настроек…</span>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="fixed inset-0 z-[9999]">
+          <LoadingScreen staticProgress={0} />
         </div>
       ) : null}
     </ShellContext.Provider>

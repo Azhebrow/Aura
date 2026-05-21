@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
 } from 'react';
 import {
@@ -38,12 +37,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
+import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
 import { useBootstrapData, clearBootstrapDataCache } from '@/shared/hooks/use-bootstrap-data';
 import { invalidateBootstrapCache } from '@/shared/bridge/mini-app-client';
 import { clearReadCache } from '@/shared/bridge/init-web-db-bridge';
 import { dispatchAuraDataChanged } from '@/shared/lib/aura-data-events';
+import { detectAuraDataSourceMode } from '@/shared/bridge/aura-data-source';
 import { ColorPickerPanel } from '@/features/settings/color-picker-panel';
 import { IconPickerPanel } from '@/features/settings/icon-picker-panel';
+import { warmIconsManifest } from '@/features/settings/load-icons-manifest';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import { cn } from '@/lib/utils';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
@@ -51,7 +53,6 @@ import {
   LIST_SCROLL_CONTAINER_CN,
 } from '@/shared/ui/mega-section-layout';
 import { ModeSwitchHeader } from '@/shared/ui/mode-switch-header';
-import { SectionControlCard } from '@/shared/ui/section-control-card';
 import { ActAffixValueField, ActModalFooter } from '@/features/act/ActModal';
 import { LoadingShell } from '@/shared/ui/data-states';
 import { ANIM } from '@/shared/lib/animation-classes';
@@ -73,59 +74,9 @@ import {
   calcTaskProgress,
   getStageVisualState,
   getStageStateClasses,
-  getGoalTintSurfaceStyle,
 } from './rituals-utils';
 
-function GoalTaskSegmentsBar({
-  tasks,
-  getRaw,
-  doneFillStyle,
-  partialFillStyle,
-  segmentShellClassName,
-  className,
-}: {
-  tasks: AuraRow[];
-  getRaw: (taskId: string) => AuraRow | null | undefined;
-  doneFillStyle: CSSProperties;
-  partialFillStyle: CSSProperties;
-  segmentShellClassName: string;
-  className?: string;
-}) {
-  if (tasks.length === 0) {
-    return <div className={cn('bg-muted/50 h-2 w-full rounded-full', className)} aria-hidden />;
-  }
-  const completedFull = tasks.filter((t) => Math.round(calcTaskProgress(t, getRaw(String(t.id)))) >= 100).length;
-  return (
-    <div
-      className={cn('flex h-2 w-full gap-1', className)}
-      role="progressbar"
-      aria-valuenow={completedFull}
-      aria-valuemax={tasks.length}
-      aria-valuetext={`Выполнено ${completedFull} из ${tasks.length} задач`}
-    >
-      {tasks.map((t) => {
-        const tid = String(t.id);
-        const pct = Math.round(calcTaskProgress(t, getRaw(tid)));
-        const fillStyle = pct >= 100 ? doneFillStyle : pct > 0 ? partialFillStyle : {};
-        return (
-          <div
-            key={tid}
-            title={`${String(t.title ?? tid)} — ${pct}%`}
-            className={cn('min-w-0 flex-1 overflow-hidden rounded-sm', segmentShellClassName)}
-          >
-            <div
-              className="aura-tx-width h-full min-h-px rounded-[1px]"
-              style={{
-                width: `${Math.min(100, Math.max(0, pct))}%`,
-                ...fillStyle,
-              }}
-            />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const GOAL_TASK_ROW_CN = 'flex items-start gap-2.5 px-3 py-2.5 aura-tx-colors';
 
 function CfgLikeDialogRow({
   label,
@@ -137,8 +88,8 @@ function CfgLikeDialogRow({
   children: ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-1 border-b border-border last:border-b-0 sm:grid-cols-[minmax(9rem,30%)_1fr] sm:divide-x sm:divide-border">
-      <div className="bg-muted/30 flex items-center justify-center px-2 py-2 text-center sm:min-h-9 sm:px-3">
+    <div className="grid grid-cols-1 border-b border-[var(--aura-border-soft)] last:border-b-0 sm:grid-cols-[minmax(9rem,30%)_1fr] sm:divide-x sm:divide-[var(--aura-border-soft)]">
+      <div className="bg-[var(--aura-surface-panel)] flex items-center justify-center px-2 py-2 text-center sm:min-h-9 sm:px-3">
         <Label htmlFor={htmlFor} className="text-foreground cursor-default text-xs font-semibold leading-snug break-words">
           {label}
         </Label>
@@ -203,7 +154,7 @@ function GoalEditDialog({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="border-border/60 bg-muted/70 text-muted-foreground hover:bg-muted/90 h-8 w-8 shrink-0 rounded-md border p-0"
+              className="aura-action-icon p-0"
                   >
                     <XIcon className="size-4" />
                     <span className="sr-only">Close</span>
@@ -226,7 +177,7 @@ function GoalEditDialog({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="border-border/60 bg-muted/70 text-muted-foreground hover:bg-muted/90 h-8 w-8 shrink-0 rounded-md border p-0"
+                    className="aura-action-icon p-0"
                   >
                     <XIcon className="size-4" />
                     <span className="sr-only">Close</span>
@@ -252,7 +203,7 @@ function GoalEditDialog({
                   />
                 </CfgLikeDialogRow>
                 <CfgLikeDialogRow label="Иконка">
-                  <button type="button" className={CFG_DIALOG_ICON_TRIGGER_CN} onClick={() => setIconPickerOpen(true)}>
+                  <button type="button" className={CFG_DIALOG_ICON_TRIGGER_CN} onMouseEnter={warmIconsManifest} onFocus={warmIconsManifest} onClick={() => setIconPickerOpen(true)}>
                     <AuraThemedIcon name={icon || null} className="size-5 shrink-0" />
                     <span className="text-muted-foreground min-w-0 truncate font-mono text-xs">{icon || '—'}</span>
                   </button>
@@ -335,7 +286,7 @@ function GoalEditDialog({
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="border-border/60 bg-muted/70 text-muted-foreground hover:bg-muted/90 h-8 w-8 shrink-0 rounded-md border p-0"
+                  className="aura-action-icon p-0"
                 >
                   <XIcon className="size-4" />
                   <span className="sr-only">Close</span>
@@ -408,7 +359,7 @@ function GoalTaskDialog({
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="border-border/60 bg-muted/70 text-muted-foreground hover:bg-muted/90 h-8 w-8 shrink-0 rounded-md border p-0"
+                  className="aura-action-icon p-0"
                 >
                   <XIcon className="size-4" />
                   <span className="sr-only">Close</span>
@@ -511,7 +462,7 @@ function GoalTaskDialog({
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="border-border/60 bg-muted/70 text-muted-foreground hover:bg-muted/90 h-8 w-8 shrink-0 rounded-md border p-0"
+                  className="aura-action-icon p-0"
                 >
                   <XIcon className="size-4" />
                   <span className="sr-only">Close</span>
@@ -537,12 +488,13 @@ function GoalTaskDialog({
 export function GoalsManagementPanel() {
   const { db } = useAuraDb();
   const dbx = db as AuraDatabase & GoalsDbApi;
-  const preferBootstrap = typeof window !== 'undefined' && Boolean(window.__auraMiniApi);
+
+  // Single reactive tick — listens to 'goals' events dispatched by refresh().
+  const dataTick = useAuraDataRefresh({ types: ['goals'] });
 
   const [mode, setMode] = useState<GoalsMode>('active');
   const [editMode, setEditMode] = useState(false);
   const [goalIndex, setGoalIndex] = useState(0);
-  const [tick, setTick] = useState(0);
   const [goalDialog, setGoalDialog] = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null });
   const [stageDialog, setStageDialog] = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null });
   const [taskDialog, setTaskDialog] = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null });
@@ -554,7 +506,8 @@ export function GoalsManagementPanel() {
     stagesByGoal?: Record<string, AuraRow[]>;
     tasksByStage?: Record<string, AuraRow[]>;
     goalProgressRows?: AuraRow[];
-  }>('rituals', bootstrapParams, [tick], { enabled: Boolean(db), keepStaleOnError: true });
+  }>('rituals', bootstrapParams, [dataTick], { enabled: Boolean(db), keepStaleOnError: true });
+  const waitForBootstrap = detectAuraDataSourceMode() === 'web-mini-api' && ritualsBootstrap == null;
 
   const canManage = Boolean(dbx?.getAllGoals && dbx?.getStagesByGoal && dbx?.getTasksByStage);
 
@@ -563,8 +516,9 @@ export function GoalsManagementPanel() {
     if (ritualsBootstrap?.goals?.length) {
       return [...ritualsBootstrap.goals].sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0));
     }
+    if (waitForBootstrap) return [] as AuraRow[];
     return (dbx.getAllGoals() ?? []).sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0));
-  }, [dbx, ritualsBootstrap?.goals, tick]);
+  }, [dbx, ritualsBootstrap?.goals, waitForBootstrap, dataTick]);
 
   const stagesByGoal = useMemo(() => {
     const out = new Map<string, AuraRow[]>();
@@ -576,13 +530,14 @@ export function GoalsManagementPanel() {
       }
       return out;
     }
+    if (waitForBootstrap) return out;
     for (const g of goals) {
       const gid = String(g.id);
       const stages = (dbx.getStagesByGoal(gid) ?? []).sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
       out.set(gid, stages);
     }
     return out;
-  }, [dbx, goals, ritualsBootstrap?.stagesByGoal, tick]);
+  }, [dbx, goals, ritualsBootstrap?.stagesByGoal, waitForBootstrap, dataTick]);
 
   const tasksByStage = useMemo(() => {
     const out = new Map<string, AuraRow[]>();
@@ -594,6 +549,7 @@ export function GoalsManagementPanel() {
       }
       return out;
     }
+    if (waitForBootstrap) return out;
     for (const stages of stagesByGoal.values()) {
       for (const s of stages) {
         const sid = String(s.id);
@@ -602,13 +558,22 @@ export function GoalsManagementPanel() {
       }
     }
     return out;
-  }, [dbx, ritualsBootstrap?.tasksByStage, stagesByGoal, tick]);
+  }, [dbx, ritualsBootstrap?.tasksByStage, stagesByGoal, waitForBootstrap, dataTick]);
 
   const goalTaskProgressById = useMemo(() => {
     const out = new Map<string, AuraRow | null | undefined>();
     if (!dbx || !dbx.getGoalTasksProgressByDate) return out;
-    // Always read directly from DB (synchronous) — never from bootstrap cache.
-    // Bootstrap data lags behind mutations; direct DB calls are always fresh.
+    if (ritualsBootstrap?.goalProgressRows) {
+      for (const row of ritualsBootstrap.goalProgressRows) {
+        const taskId = String(row.task_id ?? '');
+        if (!taskId) continue;
+        out.set(taskId, row);
+      }
+      return out;
+    }
+    if (waitForBootstrap) return out;
+    // Direct fallback is only for non-mini-api mode. In mini-api mode the bootstrap
+    // request is the freshness boundary and dataTick invalidates it after mutations.
     const rows = dbx.getGoalTasksProgressByDate(GOALS_GLOBAL_SCOPE_DATE) ?? [];
     for (const row of rows) {
       const taskId = String(row.task_id ?? '');
@@ -616,7 +581,7 @@ export function GoalsManagementPanel() {
       out.set(taskId, row);
     }
     return out;
-  }, [dbx, tick]);
+  }, [dbx, ritualsBootstrap?.goalProgressRows, waitForBootstrap, dataTick]);
 
   const goalProgress = useMemo(() => {
     const out = new Map<string, { completed: number; total: number; percent: number }>();
@@ -707,16 +672,19 @@ export function GoalsManagementPanel() {
     if (goalIndex >= filteredGoals.length) setGoalIndex(0);
   }, [filteredGoals.length, goalIndex]);
 
+  // Clears all cache layers and fires the 'goals' event.
+  // The useAuraDataRefresh subscription (dataTick) handles the re-render.
   const refresh = useCallback(() => {
+    const detail = { type: 'goals', date: GOALS_GLOBAL_SCOPE_DATE };
     clearReadCache();
-    clearBootstrapDataCache();
-    invalidateBootstrapCache();
-    dispatchAuraDataChanged('goals');
-    setTick((t) => t + 1);
+    clearBootstrapDataCache(detail);
+    invalidateBootstrapCache(detail);
+    dispatchAuraDataChanged(detail);
   }, []);
 
   const currentGoal = filteredGoals[goalIndex] ?? null;
   const currentGoalId = currentGoal ? String(currentGoal.id) : null;
+  const canDeleteCurrentGoal = goals.length > 1;
   const currentGoalHeroTint =
     currentGoal && typeof currentGoal.color === 'string' && currentGoal.color.trim()
       ? String(currentGoal.color)
@@ -765,27 +733,6 @@ export function GoalsManagementPanel() {
     if (changed) refresh();
   }, [currentStages, stageProgress, dbx, refresh]);
 
-  const currentGoalHistory = useMemo(() => {
-    if (!currentGoalTasks.length) return [] as Array<{ date: string; done: number; total: number; percent: number }>;
-    const taskMap = new Map<string, AuraRow>(currentGoalTasks.map((t) => [String(t.id), t]));
-    const rows = (dbx.getAll?.('act_goal_tasks') ?? []) as AuraRow[];
-    const byDate = new Map<string, number>();
-    for (const row of rows) {
-      const tid = String(row.task_id ?? '');
-      const date = asIsoDate(row.date);
-      if (!tid || !date) continue;
-      const task = taskMap.get(tid);
-      if (!task) continue;
-      if (Math.round(calcTaskProgress(task, row)) >= 100) {
-        byDate.set(date, (byDate.get(date) ?? 0) + 1);
-      }
-    }
-    const total = currentGoalTasks.length;
-    return [...byDate.entries()]
-      .map(([date, done]) => ({ date, done, total, percent: total > 0 ? Math.round((done / total) * 100) : 0 }))
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  }, [dbx, currentGoalTasks, tick]);
-
   const goalInitial = goalDialog.editId ? goals.find((g) => String(g.id) === goalDialog.editId) : null;
   const stageInitial = stageDialog.editId
     ? [...stagesByGoal.values()].flat().find((s) => String(s.id) === stageDialog.editId)
@@ -795,6 +742,7 @@ export function GoalsManagementPanel() {
     : null;
 
   const goalsScrollRef = useRef<HTMLDivElement>(null);
+  const [stagesScrolled, setStagesScrolled] = useState(false);
 
   const firstIncompleteTask = useMemo(() => {
     if (!dbx) return null;
@@ -808,9 +756,14 @@ export function GoalsManagementPanel() {
       }
     }
     return null;
-  }, [dbx, currentStages, tasksByStage, goalTaskProgressById, tick]);
+  }, [dbx, currentStages, tasksByStage, goalTaskProgressById, dataTick]);
 
   const firstIncompleteScrollKey = firstIncompleteTask ? `${firstIncompleteTask.sid}:${firstIncompleteTask.tid}` : '';
+
+  useLayoutEffect(() => {
+    setStagesScrolled(false);
+    if (goalsScrollRef.current) goalsScrollRef.current.scrollTop = 0;
+  }, [currentGoalId, goalIndex]);
 
   useLayoutEffect(() => {
     const root = goalsScrollRef.current;
@@ -866,7 +819,7 @@ export function GoalsManagementPanel() {
           />
         </div>
         <div
-          className={cn('min-h-0 flex flex-1 flex-col overflow-hidden px-2.5 pt-2.5 sm:px-4 sm:pt-4', ANIM.enterFade)}
+          className={cn('min-h-0 flex flex-1 flex-col overflow-hidden px-2.5 pt-2 sm:px-4 sm:pt-3', ANIM.enterFade)}
         >
           {!db ? (
             <LoadingShell />
@@ -882,246 +835,173 @@ export function GoalsManagementPanel() {
             <div className="relative flex min-h-0 flex-1 flex-col">
               {currentGoal ? (
                 <>
-                  <SectionControlCard
-                    className={cn(
-                      'relative z-20 mb-0 shrink-0 overflow-hidden border p-0 shadow-sm',
-                      'rounded-2xl aura-tx-surface ring-1 ring-foreground/[0.04] dark:ring-white/[0.06]'
-                    )}
-                    style={{
-                      backgroundColor: `color-mix(in srgb, ${currentGoalHeroTint} 2.5%, var(--background) 97.5%)`,
-                      borderColor: `color-mix(in srgb, ${currentGoalHeroTint} 8%, var(--border) 92%)`,
-                    }}
+                  {/* Goal card — same visual language as NutritionDaySummaryBar */}
+                  <div
+                    className="relative z-20 shrink-0 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs"
+                    style={{ '--goal-tint': currentGoalHeroTint } as React.CSSProperties}
                   >
-                    <div className="relative z-[1] px-2.5 pt-2 pb-0 sm:px-3 sm:pt-2.5">
-                      <div className="flex min-w-0 items-start gap-2 sm:gap-2.5">
-                        <IconWithBadge
-                          iconName={typeof currentGoal.icon === 'string' ? currentGoal.icon : null}
-                          tint={currentGoalHeroTint}
-                          size="md"
-                          className="mt-0.5 shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex min-w-0 items-center gap-1.5">
-                            <h3 className="text-foreground min-w-0 flex-1 truncate text-sm font-semibold leading-snug tracking-tight">
-                              {String(currentGoal.title ?? currentGoal.id)}
-                            </h3>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant={editMode ? 'secondary' : 'ghost'}
-                              className={GOALS_RITUALS_ICON_BTN_CN}
-                              onClick={() => setEditMode((v) => !v)}
-                              aria-pressed={editMode}
-                              aria-label={editMode ? 'Режим просмотра' : 'Режим редактирования'}
-                              title={editMode ? 'Просмотр' : 'Редактирование'}
-                            >
-                              {editMode ? <Eye className="size-4" /> : <Pencil className="size-4" />}
-                            </Button>
-                          </div>
-                          <p className="text-muted-foreground mt-0.5 truncate text-xs leading-snug tabular-nums">
-                            {(goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0) === 1
-                              ? '1 этап'
-                              : `${goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0} этапов`}
-                            <span className="text-muted-foreground/40 mx-1.5">·</span>
-                            {(goalProgress.get(String(currentGoal.id))?.completed ?? 0) ===
-                            (goalProgress.get(String(currentGoal.id))?.total ?? 0)
-                              ? (goalProgress.get(String(currentGoal.id))?.total ?? 0) === 0
-                                ? 'нет задач'
-                                : `все ${goalProgress.get(String(currentGoal.id))?.total ?? 0} задач`
-                              : `${goalProgress.get(String(currentGoal.id))?.completed ?? 0}/${goalProgress.get(String(currentGoal.id))?.total ?? 0} задач`}
-                          </p>
-                        </div>
+                    {/* Main row: icon + title/meta + edit toggle */}
+                    <div className="flex items-center gap-3 px-3 py-2.5">
+                      <div
+                        className="flex size-8 shrink-0 items-center justify-center rounded-md border"
+                        style={{
+                          borderColor: `color-mix(in oklab, ${currentGoalHeroTint} 25%, transparent)`,
+                          backgroundColor: `color-mix(in oklab, ${currentGoalHeroTint} 12%, transparent)`,
+                          color: currentGoalHeroTint,
+                        }}
+                      >
+                        {typeof currentGoal.icon === 'string' && currentGoal.icon ? (
+                          <AuraThemedIcon name={currentGoal.icon} className="size-4" />
+                        ) : (
+                          <Target className="size-4" strokeWidth={1.75} />
+                        )}
                       </div>
-                      <GoalTaskSegmentsBar
-                        className="mt-2"
-                        tasks={currentStages.flatMap((st) => tasksByStage.get(String(st.id)) ?? [])}
-                        getRaw={(tid) => goalTaskProgressById.get(tid) ?? null}
-                        doneFillStyle={
-                          typeof currentGoal.color === 'string' && currentGoal.color.trim()
-                            ? {
-                                backgroundColor: `color-mix(in srgb, ${String(currentGoal.color)} 78%, var(--foreground) 22%)`,
-                              }
-                            : { backgroundColor: 'var(--primary)' }
-                        }
-                        partialFillStyle={
-                          typeof currentGoal.color === 'string' && currentGoal.color.trim()
-                            ? {
-                                backgroundColor: `color-mix(in srgb, ${String(currentGoal.color)} 48%, var(--muted) 52%)`,
-                              }
-                            : { backgroundColor: 'color-mix(in srgb, var(--primary) 50%, transparent)' }
-                        }
-                        segmentShellClassName="bg-muted/50"
-                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-nano font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">
+                          {(goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0) === 1
+                            ? '1 этап'
+                            : `${goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0} этапов`}
+                          <span className="mx-1 opacity-40">·</span>
+                          {(() => {
+                            const p = goalProgress.get(String(currentGoal.id));
+                            if (!p || p.total === 0) return 'нет задач';
+                            return p.completed === p.total ? `все ${p.total}` : `${p.completed} / ${p.total}`;
+                          })()}
+                        </p>
+                        <p className="truncate text-sm font-semibold leading-tight text-foreground">
+                          {String(currentGoal.title ?? currentGoal.id)}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant={editMode ? 'secondary' : 'ghost'}
+                        className={GOALS_RITUALS_ICON_BTN_CN}
+                        onClick={() => setEditMode((v) => !v)}
+                        aria-pressed={editMode}
+                        aria-label={editMode ? 'Режим просмотра' : 'Режим редактирования'}
+                        title={editMode ? 'Просмотр' : 'Редактирование'}
+                      >
+                        {editMode ? <Eye className="size-4" /> : <Pencil className="size-4" />}
+                      </Button>
+                    </div>
 
-                      {mode === 'archive' ? (
-                        <div className="border-border/20 mt-2.5 hidden rounded-lg border bg-background/40 px-2.5 py-2 lg:block">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-muted-foreground text-xs">
-                              Завершено: <span className="text-foreground">{formatRuDate(currentGoal.completed_at)}</span>
-                            </p>
-                            <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={resumeArchivedGoal}>
-                              Сбросить и возобновить
-                            </Button>
-                          </div>
-                          {currentGoalHistory.length ? (
-                            <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-2.5 gap-y-1 text-[11px]">
-                              {currentGoalHistory.slice(0, 6).map((h) => (
-                                <span key={h.date}>
-                                  {formatRuDate(h.date)}: {h.done}/{h.total}
-                                </span>
+                    {/* Full-width flush progress bar — edge-to-edge, single bar */}
+                    {(() => {
+                      const p = goalProgress.get(String(currentGoal.id));
+                      const pct = p && p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+                      return (
+                        <div className="h-[3px] w-full bg-[var(--aura-surface-control)]">
+                          <div
+                            className="h-full transition-[width] duration-[400ms] ease-out"
+                            style={{ width: `${pct}%`, backgroundColor: currentGoalHeroTint, opacity: 0.85 }}
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Bottom zone: nav dots + edit toolbar / archive info */}
+                    {(filteredGoals.length > 1 || editMode || mode === 'archive') ? (
+                      <div className="flex min-h-9 items-center gap-0.5 border-t border-[var(--aura-border-soft)] px-1">
+                        {filteredGoals.length > 1 ? (
+                          <Button type="button" variant="ghost" size="icon"
+                            className={cn('text-muted-foreground hover:text-foreground', GOALS_RITUALS_ICON_BTN_CN)}
+                            disabled={filteredGoals.length <= 1}
+                            onClick={() => setGoalIndex((p) => (p - 1 + filteredGoals.length) % filteredGoals.length)}
+                            aria-label="Предыдущая цель">
+                            <ChevronLeft className="size-4" />
+                          </Button>
+                        ) : (
+                          <span className="size-8 shrink-0" aria-hidden />
+                        )}
+
+                        <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5">
+                          {filteredGoals.length > 1 ? (
+                            <nav className="flex max-w-full justify-center gap-1.5 overflow-x-auto px-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                              aria-label="Выбор цели">
+                              {filteredGoals.map((g, i) => (
+                                <button key={String(g.id)} type="button" onClick={() => setGoalIndex(i)}
+                                  className={cn(RAW_BUTTON_FOCUS_CN, 'h-1.5 shrink-0 rounded-full transition-[width,background-color,opacity]',
+                                    i === goalIndex ? 'w-5 bg-foreground/70' : 'w-1.5 bg-muted-foreground/30 opacity-90 hover:bg-muted-foreground/50')}
+                                  aria-label={`Цель ${i + 1}: ${String(g.title ?? g.id)}`}
+                                  aria-current={i === goalIndex ? true : undefined} />
                               ))}
+                            </nav>
+                          ) : null}
+                          {mode === 'archive' ? (
+                            <div className="flex items-center gap-2">
+                              <p className="text-muted-foreground text-xs">
+                                Завершено: <span className="text-foreground">{formatRuDate(currentGoal.completed_at)}</span>
+                              </p>
+                              <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={resumeArchivedGoal}>
+                                Возобновить
+                              </Button>
+                            </div>
+                          ) : null}
+                          {editMode ? (
+                            <div className="flex shrink-0 flex-wrap items-center justify-center gap-0.5" role="toolbar" aria-label="Действия с целью">
+                              {dbx.moveGoal && goalIndex > 0 ? (
+                                <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
+                                  aria-label="Поднять цель" onClick={() => (dbx.moveGoal?.(String(currentGoal.id), 'up'), refresh())}>
+                                  <ChevronUp className="size-4" />
+                                </Button>
+                              ) : null}
+                              {dbx.moveGoal && goalIndex < filteredGoals.length - 1 ? (
+                                <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
+                                  aria-label="Опустить цель" onClick={() => (dbx.moveGoal?.(String(currentGoal.id), 'down'), refresh())}>
+                                  <ChevronDown className="size-4" />
+                                </Button>
+                              ) : null}
+                              <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
+                                aria-label="Изменить цель" onClick={() => setGoalDialog({ open: true, editId: String(currentGoal.id) })}>
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button type="button" size="icon" variant="ghost"
+                                className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)}
+                                aria-label="Удалить цель" disabled={!canDeleteCurrentGoal}
+                                title={canDeleteCurrentGoal ? 'Удалить цель' : 'Нельзя удалить последнюю цель'}
+                                onClick={() => { if (!canDeleteCurrentGoal) return; if (!window.confirm('Удалить цель?')) return; dbx.deleteGoal?.(String(currentGoal.id)); refresh(); }}>
+                                <Trash2 className="size-4" />
+                              </Button>
+                              <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
+                                onClick={() => setGoalDialog({ open: true, editId: null })} aria-label="Новая цель">
+                                <Plus className="size-4" />
+                              </Button>
                             </div>
                           ) : null}
                         </div>
-                      ) : null}
 
-                      {filteredGoals.length > 1 || editMode ? (
-                        <div className="border-border/20 mt-1.5 flex min-h-8 items-center gap-0.5 border-t pt-1 pb-1 sm:gap-1">
-                          {filteredGoals.length > 1 ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className={cn('text-muted-foreground hover:text-foreground', GOALS_RITUALS_ICON_BTN_CN)}
-                              disabled={filteredGoals.length <= 1}
-                              onClick={() => setGoalIndex((p) => (p - 1 + filteredGoals.length) % filteredGoals.length)}
-                              aria-label="Предыдущая цель"
-                            >
-                              <ChevronLeft className="size-4" />
-                            </Button>
-                          ) : (
-                            <span className="size-8 shrink-0" aria-hidden />
-                          )}
-
-                          <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 sm:gap-2">
-                            {filteredGoals.length > 1 ? (
-                              <nav
-                                className="flex max-w-full justify-center gap-1.5 overflow-x-auto px-0.5 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                                aria-label="Выбор цели"
-                              >
-                                {filteredGoals.map((g, i) => (
-                                  <button
-                                    key={String(g.id)}
-                                    type="button"
-                                    onClick={() => setGoalIndex(i)}
-                                    className={cn(
-                                      RAW_BUTTON_FOCUS_CN,
-                                      'h-1.5 shrink-0 rounded-full transition-[width,background-color,opacity]',
-                                      i === goalIndex
-                                        ? 'bg-foreground/80 w-5'
-                                        : 'bg-muted-foreground/30 hover:bg-muted-foreground/50 w-1.5 opacity-90'
-                                    )}
-                                    aria-label={`Цель ${i + 1}: ${String(g.title ?? g.id)}`}
-                                    aria-current={i === goalIndex ? true : undefined}
-                                  />
-                                ))}
-                              </nav>
-                            ) : null}
-                            {editMode ? (
-                              <>
-                                {filteredGoals.length > 1 ? (
-                                  <div className="bg-border/45 hidden h-4 w-px shrink-0 sm:block" aria-hidden />
-                                ) : null}
-                                <div
-                                  className="flex shrink-0 flex-wrap items-center justify-center gap-0.5"
-                                  role="toolbar"
-                                  aria-label="Действия с целью"
-                                >
-                                  {dbx.moveGoal && goalIndex > 0 ? (
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      className={GOALS_RITUALS_ICON_BTN_CN}
-                                      aria-label="Поднять цель"
-                                      onClick={() => (dbx.moveGoal?.(String(currentGoal.id), 'up'), refresh())}
-                                    >
-                                      <ChevronUp className="size-4" />
-                                    </Button>
-                                  ) : null}
-                                  {dbx.moveGoal && goalIndex < filteredGoals.length - 1 ? (
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      className={GOALS_RITUALS_ICON_BTN_CN}
-                                      aria-label="Опустить цель"
-                                      onClick={() => (dbx.moveGoal?.(String(currentGoal.id), 'down'), refresh())}
-                                    >
-                                      <ChevronDown className="size-4" />
-                                    </Button>
-                                  ) : null}
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className={GOALS_RITUALS_ICON_BTN_CN}
-                                    aria-label="Изменить цель"
-                                    onClick={() => setGoalDialog({ open: true, editId: String(currentGoal.id) })}
-                                  >
-                                    <Pencil className="size-4" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)}
-                                    aria-label="Удалить цель"
-                                    onClick={() =>
-                                      window.confirm('Удалить цель?') &&
-                                      (dbx.deleteGoal?.(String(currentGoal.id)), refresh())
-                                    }
-                                  >
-                                    <Trash2 className="size-4" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className={GOALS_RITUALS_ICON_BTN_CN}
-                                    onClick={() => setGoalDialog({ open: true, editId: null })}
-                                    aria-label="Новая цель"
-                                  >
-                                    <Plus className="size-4" />
-                                  </Button>
-                                </div>
-                              </>
-                            ) : null}
-                          </div>
-
-                          {filteredGoals.length > 1 ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className={cn('text-muted-foreground hover:text-foreground', GOALS_RITUALS_ICON_BTN_CN)}
-                              disabled={filteredGoals.length <= 1}
-                              onClick={() => setGoalIndex((p) => (p + 1) % filteredGoals.length)}
-                              aria-label="Следующая цель"
-                            >
-                              <ChevronRight className="size-4" />
-                            </Button>
-                          ) : (
-                            <span className="size-8 shrink-0" aria-hidden />
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  </SectionControlCard>
+                        {filteredGoals.length > 1 ? (
+                          <Button type="button" variant="ghost" size="icon"
+                            className={cn('text-muted-foreground hover:text-foreground', GOALS_RITUALS_ICON_BTN_CN)}
+                            disabled={filteredGoals.length <= 1}
+                            onClick={() => setGoalIndex((p) => (p + 1) % filteredGoals.length)}
+                            aria-label="Следующая цель">
+                            <ChevronRight className="size-4" />
+                          </Button>
+                        ) : (
+                          <span className="size-8 shrink-0" aria-hidden />
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
 
                   <div
                     ref={goalsScrollRef}
-                    className={cn(LIST_SCROLL_CONTAINER_CN, 'relative z-0 mt-1')}
+                    className={cn(LIST_SCROLL_CONTAINER_CN, 'relative z-0 mt-2')}
+                    onScroll={(e) => setStagesScrolled(e.currentTarget.scrollTop > 2)}
                     style={{
-                      scrollPaddingTop: '0.75rem',
-                      scrollPaddingBottom: '0.75rem',
-                      WebkitMaskImage:
-                        'linear-gradient(to bottom, transparent 0, black 1.25rem, black calc(100% - 1.75rem), transparent 100%)',
-                      maskImage:
-                        'linear-gradient(to bottom, transparent 0, black 1.25rem, black calc(100% - 1.75rem), transparent 100%)',
+                      scrollPaddingTop: '0.5rem',
+                      scrollPaddingBottom: '1rem',
+                      WebkitMaskImage: stagesScrolled
+                        ? 'linear-gradient(to bottom, transparent 0, black 2rem, black calc(100% - 2.5rem), transparent 100%)'
+                        : 'linear-gradient(to bottom, black calc(100% - 2.5rem), transparent 100%)',
+                      maskImage: stagesScrolled
+                        ? 'linear-gradient(to bottom, transparent 0, black 2rem, black calc(100% - 2.5rem), transparent 100%)'
+                        : 'linear-gradient(to bottom, black calc(100% - 2.5rem), transparent 100%)',
                     }}
                   >
-                    <div className="space-y-0 pt-1 pb-2 sm:pt-2 sm:pb-3">
+                    <div className="flex flex-col gap-2 pt-1 pb-3">
                     {currentStages.map((s, i) => {
                       const sid = String(s.id);
                       const stageP = stageProgress.get(sid) ?? { completed: 0, total: 0, percent: 0 };
@@ -1137,159 +1017,67 @@ export function GoalsManagementPanel() {
                         typeof currentGoal.color === 'string' && currentGoal.color.trim()
                           ? String(currentGoal.color)
                           : 'var(--primary)';
-                      const stageTintStyles = getGoalTintSurfaceStyle(goalTint, stageState);
-                      const stageCardStyle = stageTintStyles.shellStyle;
-                      const tintBorder =
-                        stageState === 'current'
-                          ? `color-mix(in srgb, ${goalTint} 12%, var(--border) 88%)`
-                          : stageState === 'completed'
-                            ? `color-mix(in srgb, ${goalTint} 9%, var(--border) 91%)`
-                            : stageState === 'frozen'
-                              ? `var(--border)`
-                              : `color-mix(in srgb, ${goalTint} 8%, var(--border) 92%)`;
-                      const outerGlow =
-                        stageState === 'current'
-                          ? `0 0 0 1px color-mix(in srgb, ${goalTint} 6%, transparent), 0 10px 32px -18px color-mix(in srgb, ${goalTint} 7%, transparent)`
-                          : stageState === 'active'
-                            ? `0 8px 28px -20px color-mix(in srgb, ${goalTint} 5%, transparent)`
-                            : stageState === 'completed'
-                              ? `0 6px 22px -20px color-mix(in srgb, ${goalTint} 4%, transparent)`
-                              : '';
-                      const mergedStageStyle: CSSProperties = {
-                        ...stageCardStyle,
-                        borderWidth: 1,
-                        borderStyle: 'solid',
-                        borderColor: tintBorder,
-                      };
-                      const shadowParts = [outerGlow, stageCardStyle.boxShadow].filter(Boolean) as string[];
-                      if (shadowParts.length) mergedStageStyle.boxShadow = shadowParts.join(', ');
+                      const taskTint = stageState === 'frozen' ? 'var(--muted-foreground)' : goalTint;
                       return (
-                        <div key={sid}>
-                          {i > 0 ? <div className="bg-border/30 my-5 h-px w-full" role="presentation" /> : null}
-                          <div
-                            className={cn(
-                              'relative overflow-hidden rounded-2xl aura-tx-surface shadow-sm ring-1 ring-foreground/[0.04] dark:ring-white/[0.06]',
-                              stageState === 'current' && 'shadow-md',
-                              stageClasses.shell
-                            )}
-                            style={mergedStageStyle}
-                          >
-                            <div className="relative z-[1] min-w-0 space-y-3 px-4 py-5 sm:px-5 sm:py-5">
-                              <div
-                                className="pointer-events-none mx-auto mb-2.5 h-px max-w-[min(14rem,90%)] rounded-full"
-                                style={{
-                                  background: `linear-gradient(90deg, transparent 0%, color-mix(in srgb, ${goalTint} 14%, var(--border) 86%) 50%, transparent 100%)`,
-                                  boxShadow: `0 0 6px color-mix(in srgb, ${goalTint} 5%, transparent)`,
-                                }}
-                                aria-hidden
-                              />
-                              <div className="flex items-start justify-between gap-3.5">
-                                <div className="flex min-w-0 items-start gap-3.5">
-                                  <IconWithBadge
-                                    iconName={typeof s.icon === 'string' ? s.icon : null}
-                                    tint={goalTint}
-                                    size="md"
-                                    className="shrink-0"
-                                  />
-                                  <div className="min-w-0 flex-1 space-y-1">
-                                    <h4 className={cn('text-sm font-semibold leading-snug sm:text-[15px]', stageClasses.title)}>
-                                      <span className="text-muted-foreground font-medium tabular-nums tracking-tight">
-                                        Этап {stageOrderRoman(i)}
-                                      </span>
-                                      <span className="text-muted-foreground/35 mx-2 font-normal" aria-hidden>
-                                        ·
-                                      </span>
-                                      <span className="text-foreground tracking-tight">{String(s.title ?? s.id)}</span>
-                                    </h4>
-                                    <p className={cn('text-muted-foreground text-sm leading-snug', stageClasses.meta)}>
-                                      {stageP.total === 0
-                                        ? 'Нет задач'
-                                        : stageP.completed === stageP.total
-                                          ? `Все ${stageP.total} задач выполнены`
-                                          : `${stageP.completed} из ${stageP.total} задач`}
-                                      {asIsoDate(s.completed_at) ? (
-                                        <>
-                                          <span className="text-muted-foreground/45 mx-1.5">·</span>
-                                          <span>завершен {formatRuDate(s.completed_at)}</span>
-                                        </>
-                                      ) : null}
-                                    </p>
-                                  </div>
-                                </div>
-                                {editMode ? (
-                                  <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0 pt-0.5')} role="toolbar" aria-label="Действия с этапом">
-                                    {dbx.moveStage && i > 0 ? (
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        className={GOALS_RITUALS_ICON_BTN_CN}
-                                        aria-label="Поднять этап"
-                                        onClick={() => (dbx.moveStage?.(sid, 'up'), refresh())}
-                                      >
-                                        <ChevronUp className="size-4" />
-                                      </Button>
-                                    ) : null}
-                                    {dbx.moveStage && i < currentStages.length - 1 ? (
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        className={GOALS_RITUALS_ICON_BTN_CN}
-                                        aria-label="Опустить этап"
-                                        onClick={() => (dbx.moveStage?.(sid, 'down'), refresh())}
-                                      >
-                                        <ChevronDown className="size-4" />
-                                      </Button>
-                                    ) : null}
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      className={GOALS_RITUALS_ICON_BTN_CN}
-                                      aria-label="Изменить этап"
-                                      onClick={() => setStageDialog({ open: true, editId: sid })}
-                                    >
-                                      <Pencil className="size-4" />
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)}
-                                      aria-label="Удалить этап"
-                                      onClick={() => window.confirm('Удалить этап?') && (dbx.deleteStage?.(sid), refresh())}
-                                    >
-                                      <Trash2 className="size-4" />
-                                    </Button>
-                                  </div>
+                        <div
+                          key={sid}
+                          className={cn(
+                            'overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs',
+                            stageClasses.opacity
+                          )}
+                        >
+                          {/* Stage header */}
+                          <div className="flex items-center gap-2 border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
+                            {/* Number badge */}
+                            <div
+                              className={cn(
+                                'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-micro font-bold leading-none tracking-wide',
+                                stageState === 'completed' && 'bg-[var(--aura-surface-control)] text-[var(--aura-text-disabled)]',
+                                stageState === 'frozen' && 'bg-[var(--aura-surface-control)] text-[var(--aura-text-disabled)]',
+                                stageState === 'active' && 'bg-[var(--aura-surface-control)] text-[var(--aura-text-muted)]',
+                              )}
+                              style={stageState === 'current' ? { backgroundColor: goalTint, color: 'white' } : undefined}
+                            >
+                              {stageState === 'completed' ? (
+                                <Check className="size-2.5" strokeWidth={3.5} />
+                              ) : (
+                                stageOrderRoman(i)
+                              )}
+                            </div>
+                            <span className={cn('min-w-0 flex-1 truncate text-sm font-semibold', stageClasses.title)}>
+                              {String(s.title ?? s.id)}
+                            </span>
+                            <span className={cn('shrink-0 text-xs tabular-nums', stageClasses.meta)}>
+                              {stageP.total === 0
+                                ? ''
+                                : `${stageP.completed}/${stageP.total}`}
+                            </span>
+                            {editMode ? (
+                              <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0')} role="toolbar" aria-label="Действия с этапом">
+                                {dbx.moveStage && i > 0 ? (
+                                  <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Поднять этап"
+                                    onClick={() => (dbx.moveStage?.(sid, 'up'), refresh())}
+                                  ><ChevronUp className="size-4" /></Button>
                                 ) : null}
+                                {dbx.moveStage && i < currentStages.length - 1 ? (
+                                  <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Опустить этап"
+                                    onClick={() => (dbx.moveStage?.(sid, 'down'), refresh())}
+                                  ><ChevronDown className="size-4" /></Button>
+                                ) : null}
+                                <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Изменить этап"
+                                  onClick={() => setStageDialog({ open: true, editId: sid })}
+                                ><Pencil className="size-4" /></Button>
+                                <Button type="button" size="icon" variant="ghost"
+                                  className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)} aria-label="Удалить этап"
+                                  onClick={() => window.confirm('Удалить этап?') && (dbx.deleteStage?.(sid), refresh())}
+                                ><Trash2 className="size-4" /></Button>
                               </div>
-                            {s.description && stageP.percent < 100 ? (
-                              <p
-                                className={cn(
-                                  'text-muted-foreground mt-3 whitespace-pre-wrap border-t border-border/25 pt-3 text-sm leading-relaxed break-words',
-                                  stageClasses.meta
-                                )}
-                              >
-                                {String(s.description)}
-                              </p>
                             ) : null}
-                            <GoalTaskSegmentsBar
-                              className="mt-3"
-                              tasks={tasks}
-                              getRaw={(tid) => goalTaskProgressById.get(tid) ?? null}
-                              doneFillStyle={{
-                                backgroundColor: `color-mix(in srgb, ${goalTint} 78%, var(--foreground) 22%)`,
-                              }}
-                              partialFillStyle={{
-                                backgroundColor: `color-mix(in srgb, ${goalTint} 48%, var(--muted) 52%)`,
-                              }}
-                              segmentShellClassName="bg-muted/50"
-                            />
+                          </div>
 
+                            {/* Task list */}
                             {tasks.length > 0 ? (
-                              <div className="divide-border/30 mt-4 divide-y border-t border-border/25 pt-0">
+                              <div className="divide-y divide-[var(--aura-border-soft)]">
                                 {tasks.map((t, ti) => {
                                   const tid = String(t.id);
                                   const tt = String(t.task_type ?? 'checkbox') === 'number' ? 'number' : 'checkbox';
@@ -1301,31 +1089,31 @@ export function GoalsManagementPanel() {
                                   const targetVal = Number(t.target_value ?? 0);
                                   const currentVal = Number(raw?.current_value ?? 0);
                                   const targetLabel = trimmedUnit ? `${targetVal} ${trimmedUnit}` : String(targetVal);
-
                                   const isScrollFocus =
                                     firstIncompleteTask != null &&
                                     firstIncompleteTask.sid === sid &&
                                     firstIncompleteTask.tid === tid;
 
+                                  const taskRowBg = 'hover:bg-[var(--aura-action-hover-bg)]';
                                   return (
                                     <div
                                       key={tid}
-                                      className="flex items-start gap-3 py-3.5 first:pt-3"
+                                      className={cn(GOAL_TASK_ROW_CN, taskRowBg)}
                                       data-goal-scroll-target={isScrollFocus ? '1' : undefined}
                                     >
                                       <IconWithBadge
                                         iconName={typeof t.icon === 'string' ? t.icon : null}
-                                        tint={goalTint}
-                                        size="md"
-                                        className="mt-1 shrink-0"
+                                        tint={taskTint}
+                                        size="sm"
+                                        className="mt-0.5 shrink-0"
                                       />
-                                      <div className="min-w-0 flex-1 space-y-1.5">
+                                      <div className="min-w-0 flex-1">
                                         {tt === 'checkbox' ? (
                                           <div className="flex items-start gap-2">
                                             <button
                                               type="button"
                                               className={cn(
-                                                'flex min-w-0 flex-1 items-start gap-3.5 rounded-md py-0.5 text-left text-sm outline-none',
+                                                'flex min-w-0 flex-1 items-start gap-2.5 rounded-md py-0.5 text-left outline-none',
                                                 RAW_BUTTON_FOCUS_CN
                                               )}
                                               onClick={() => {
@@ -1336,181 +1124,106 @@ export function GoalsManagementPanel() {
                                             >
                                               <span
                                                 className={cn(
-                                                  'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border text-primary-foreground aura-tx-colors',
+                                                  'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] aura-tx-colors',
                                                   Number(raw?.completed) === 1
-                                                    ? 'border-transparent'
-                                                    : 'border-border/50 bg-muted/15 text-transparent'
+                                                    ? 'border-transparent text-white'
+                                                    : 'border-[var(--aura-border-soft)] bg-transparent text-transparent',
                                                 )}
-                                                style={
-                                                  Number(raw?.completed) === 1 ? { backgroundColor: goalTint } : undefined
-                                                }
+                                                style={Number(raw?.completed) === 1 ? { backgroundColor: taskTint } : undefined}
                                               >
-                                                <Check className="size-3.5" strokeWidth={2.5} />
+                                                <Check className="size-2.5" strokeWidth={3} />
                                               </span>
                                               <span className="min-w-0 flex-1">
-                                                <span
-                                                  className={cn(
-                                                    'block font-medium leading-snug',
-                                                    Number(raw?.completed) === 1 && 'text-muted-foreground line-through'
-                                                  )}
-                                                >
+                                                <span className={cn(
+                                                  'block text-sm font-medium leading-snug',
+                                                  Number(raw?.completed) === 1 && 'text-[var(--aura-text-disabled)] line-through'
+                                                )}>
                                                   {String(t.title ?? t.id)}
                                                 </span>
                                                 {t.description && !isTaskDone ? (
-                                                  <span className="text-muted-foreground mt-1 block whitespace-pre-wrap text-sm leading-relaxed">
+                                                  <span className="text-[var(--aura-text-subtle)] mt-0.5 block whitespace-pre-wrap text-xs leading-relaxed">
                                                     {String(t.description)}
                                                   </span>
                                                 ) : null}
                                               </span>
                                             </button>
                                             {editMode ? (
-                                              <div
-                                                className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0 justify-end pt-0.5')}
-                                                role="toolbar"
-                                                aria-label="Действия с задачей"
-                                              >
+                                              <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0 justify-end pt-0.5')} role="toolbar" aria-label="Действия с задачей">
                                                 {dbx.moveTask && ti > 0 ? (
-                                                  <Button
-                                                    type="button"
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className={GOALS_RITUALS_ICON_BTN_CN}
-                                                    aria-label="Поднять задачу"
+                                                  <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Поднять задачу"
                                                     onClick={() => (dbx.moveTask?.(tid, 'up'), refresh())}
-                                                  >
-                                                    <ChevronUp className="size-4" />
-                                                  </Button>
+                                                  ><ChevronUp className="size-4" /></Button>
                                                 ) : null}
                                                 {dbx.moveTask && ti < tasks.length - 1 ? (
-                                                  <Button
-                                                    type="button"
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className={GOALS_RITUALS_ICON_BTN_CN}
-                                                    aria-label="Опустить задачу"
+                                                  <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Опустить задачу"
                                                     onClick={() => (dbx.moveTask?.(tid, 'down'), refresh())}
-                                                  >
-                                                    <ChevronDown className="size-4" />
-                                                  </Button>
+                                                  ><ChevronDown className="size-4" /></Button>
                                                 ) : null}
-                                                <Button
-                                                  type="button"
-                                                  size="icon"
-                                                  variant="ghost"
-                                                  className={GOALS_RITUALS_ICON_BTN_CN}
-                                                  aria-label="Изменить задачу"
+                                                <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Изменить задачу"
                                                   onClick={() => setTaskDialog({ open: true, editId: tid })}
-                                                >
-                                                  <Pencil className="size-4" />
-                                                </Button>
-                                                <Button
-                                                  type="button"
-                                                  size="icon"
-                                                  variant="ghost"
-                                                  className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)}
-                                                  aria-label="Удалить задачу"
-                                                  onClick={() =>
-                                                    window.confirm('Удалить задачу?') && (dbx.deleteTask?.(tid), refresh())
-                                                  }
-                                                >
-                                                  <Trash2 className="size-4" />
-                                                </Button>
+                                                ><Pencil className="size-4" /></Button>
+                                                <Button type="button" size="icon" variant="ghost"
+                                                  className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)} aria-label="Удалить задачу"
+                                                  onClick={() => window.confirm('Удалить задачу?') && (dbx.deleteTask?.(tid), refresh())}
+                                                ><Trash2 className="size-4" /></Button>
                                               </div>
                                             ) : null}
                                           </div>
                                         ) : (
                                           <div className="space-y-1.5">
                                             <div className="flex items-start justify-between gap-2">
-                                              <span className="text-sm font-medium leading-snug">{String(t.title ?? t.id)}</span>
+                                              <span className={cn('text-sm font-medium leading-snug', isTaskDone && 'text-[var(--aura-text-disabled)] line-through')}>
+                                                {String(t.title ?? t.id)}
+                                              </span>
                                               {editMode ? (
-                                                <div
-                                                  className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0 justify-end')}
-                                                  role="toolbar"
-                                                  aria-label="Действия с задачей"
-                                                >
+                                                <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0 justify-end')} role="toolbar" aria-label="Действия с задачей">
                                                   {dbx.moveTask && ti > 0 ? (
-                                                    <Button
-                                                      type="button"
-                                                      size="icon"
-                                                      variant="ghost"
-                                                      className={GOALS_RITUALS_ICON_BTN_CN}
-                                                      aria-label="Поднять задачу"
+                                                    <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Поднять задачу"
                                                       onClick={() => (dbx.moveTask?.(tid, 'up'), refresh())}
-                                                    >
-                                                      <ChevronUp className="size-4" />
-                                                    </Button>
+                                                    ><ChevronUp className="size-4" /></Button>
                                                   ) : null}
                                                   {dbx.moveTask && ti < tasks.length - 1 ? (
-                                                    <Button
-                                                      type="button"
-                                                      size="icon"
-                                                      variant="ghost"
-                                                      className={GOALS_RITUALS_ICON_BTN_CN}
-                                                      aria-label="Опустить задачу"
+                                                    <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Опустить задачу"
                                                       onClick={() => (dbx.moveTask?.(tid, 'down'), refresh())}
-                                                    >
-                                                      <ChevronDown className="size-4" />
-                                                    </Button>
+                                                    ><ChevronDown className="size-4" /></Button>
                                                   ) : null}
-                                                  <Button
-                                                    type="button"
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className={GOALS_RITUALS_ICON_BTN_CN}
-                                                    aria-label="Изменить задачу"
+                                                  <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Изменить задачу"
                                                     onClick={() => setTaskDialog({ open: true, editId: tid })}
-                                                  >
-                                                    <Pencil className="size-4" />
-                                                  </Button>
-                                                  <Button
-                                                    type="button"
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className={cn(
-                                                      'text-destructive hover:text-destructive',
-                                                      GOALS_RITUALS_ICON_BTN_CN
-                                                    )}
-                                                    aria-label="Удалить задачу"
-                                                    onClick={() =>
-                                                      window.confirm('Удалить задачу?') && (dbx.deleteTask?.(tid), refresh())
-                                                    }
-                                                  >
-                                                    <Trash2 className="size-4" />
-                                                  </Button>
+                                                  ><Pencil className="size-4" /></Button>
+                                                  <Button type="button" size="icon" variant="ghost"
+                                                    className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)} aria-label="Удалить задачу"
+                                                    onClick={() => window.confirm('Удалить задачу?') && (dbx.deleteTask?.(tid), refresh())}
+                                                  ><Trash2 className="size-4" /></Button>
                                                 </div>
                                               ) : null}
                                             </div>
                                             {t.description && !isTaskDone ? (
-                                              <p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">
+                                              <p className="text-[var(--aura-text-subtle)] whitespace-pre-wrap text-xs leading-relaxed">
                                                 {String(t.description)}
                                               </p>
                                             ) : null}
-                                            <div className="text-sm leading-snug">
+                                            <div className="space-y-1">
                                               {editDraft == null ? (
                                                 <button
                                                   type="button"
                                                   className={cn(
-                                                    'text-muted-foreground rounded-md py-0.5 text-left hover:bg-muted/30',
+                                                    'rounded px-0.5 py-0.5 text-left text-sm aura-tx-colors hover:bg-[var(--aura-action-hover-bg)]',
                                                     RAW_BUTTON_FOCUS_CN
                                                   )}
                                                   onClick={() =>
-                                                    setEditingTaskValues((prev) => ({
-                                                      ...prev,
-                                                      [tid]: String(currentVal),
-                                                    }))
+                                                    setEditingTaskValues((prev) => ({ ...prev, [tid]: String(currentVal) }))
                                                   }
                                                 >
                                                   <span className="text-foreground font-medium tabular-nums">{currentVal}</span>
-                                                  <span className="text-muted-foreground"> {' — '}</span>
-                                                  <span className="tabular-nums">{targetLabel}</span>
+                                                  <span className="text-[var(--aura-text-muted)] text-xs"> / {targetLabel}</span>
                                                 </button>
                                               ) : (
-                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
                                                   <Input
                                                     autoFocus
                                                     value={editDraft}
                                                     inputMode="decimal"
-                                                    className="h-9 w-full max-w-[10rem] rounded-md border border-input bg-background px-2 text-sm shadow-xs [appearance:textfield] focus-visible:ring-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                                    className="h-8 w-full max-w-[8rem] rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-2 text-sm shadow-xs [appearance:textfield] focus-visible:ring-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                                     onChange={(e) =>
                                                       setEditingTaskValues((prev) => ({
                                                         ...prev,
@@ -1549,7 +1262,16 @@ export function GoalsManagementPanel() {
                                                       }
                                                     }}
                                                   />
-                                                  <span className="text-muted-foreground text-sm tabular-nums">{targetLabel}</span>
+                                                  <span className="text-[var(--aura-text-muted)] text-xs tabular-nums">{targetLabel}</span>
+                                                </div>
+                                              )}
+                                              {/* Progress bar for number task */}
+                                              {targetVal > 0 && (
+                                                <div className="h-1 overflow-hidden rounded-full bg-[var(--aura-surface-panel)]">
+                                                  <div
+                                                    className="h-full rounded-full aura-tx-width"
+                                                    style={{ width: `${Math.min(100, pct)}%`, backgroundColor: taskTint }}
+                                                  />
                                                 </div>
                                               )}
                                             </div>
@@ -1564,21 +1286,19 @@ export function GoalsManagementPanel() {
                               <EmptyState
                                 title="Пока нет задач."
                                 hint="Добавьте задачу в этот этап, чтобы отслеживать прогресс."
-                                className="mt-4"
+                                className="px-3 py-3"
                                 compact
                               />
                             )}
 
                             {editMode ? (
-                              <div className="mt-4">
+                              <div className="border-t border-[var(--aura-border-soft)] px-3 py-2">
                                 <AddListButton
                                   label="Добавить задачу"
                                   onClick={() => (setTaskStageId(sid), setTaskDialog({ open: true, editId: null }))}
                                 />
                               </div>
                             ) : null}
-                            </div>
-                          </div>
                         </div>
                       );
                     })}
@@ -1590,9 +1310,7 @@ export function GoalsManagementPanel() {
                       />
                     ) : null}
                     {editMode ? (
-                      <div className="mt-8 mb-4 pt-4">
-                        <AddListButton label="Добавить этап" onClick={() => setStageDialog({ open: true, editId: null })} />
-                      </div>
+                      <AddListButton label="Добавить этап" onClick={() => setStageDialog({ open: true, editId: null })} />
                     ) : null}
                     </div>
                   </div>

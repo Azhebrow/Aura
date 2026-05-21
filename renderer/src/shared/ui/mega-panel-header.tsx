@@ -25,7 +25,7 @@ export function MegaPanelHeader({
           {locked ? <Lock className="size-3.5 shrink-0" aria-hidden /> : null}
           <span className="truncate">{title}</span>
         </p>
-        {subtitle ? <p className="text-muted-foreground text-xs leading-snug">{subtitle}</p> : null}
+        {subtitle ? <p className="aura-meta leading-snug">{subtitle}</p> : null}
       </div>
       {right ? <div className="flex shrink-0 items-center gap-2">{right}</div> : null}
     </div>

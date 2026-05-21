@@ -43,6 +43,13 @@ const NUTRITION_GROUP_ICON: Record<string, string> = {
   carbs: 'wheat',
 };
 
+const NUTRITION_GROUP_ORDER = ['proteins', 'fats', 'carbs'] as const;
+const NUTRITION_GROUP_LABEL: Record<string, string> = {
+  proteins: 'Белки',
+  fats: 'Жиры',
+  carbs: 'Углеводы',
+};
+
 export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry, open, onOpenChange, trigger }: Props) {
   const { t } = useTranslation('common');
   const [internalOpen, setInternalOpen] = useState(false);
@@ -274,7 +281,7 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
         if (isEditMode) db.updateNutritionEntry(String(row.id), row);
         else db.addNutritionEntry(row);
       }
-    });
+    }, dateString);
     setDialogOpen(false);
     setItemId('');
     setPortions('1');
@@ -331,29 +338,34 @@ export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry
                 </SelectTrigger>
                 <SelectContent>
                   {kind === 'product' ? (
-                    <SelectGroup>
-                      <SelectLabel>{t('nutrition.product')}</SelectLabel>
-                      {products.map((p) => {
-                        const iconName = NUTRITION_GROUP_ICON[String(p.group ?? 'proteins')] ?? 'apple';
-                        const tint = typeof p.color === 'string' && p.color.trim() ? String(p.color) : undefined;
+                    <>
+                      {NUTRITION_GROUP_ORDER.map((groupKey) => {
+                        const groupProducts = products.filter((p) => String(p.group ?? 'proteins') === groupKey);
+                        if (groupProducts.length === 0) return null;
+                        const groupIconName = NUTRITION_GROUP_ICON[groupKey];
                         return (
-                          <SelectItem key={String(p.id)} value={String(p.id)}>
-                            <span className="flex items-center gap-2">
-                              {iconName ? (
-                                tint ? (
-                                  <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />
-                                ) : (
-                                  <ColoredAuraIcon name={iconName} tint="var(--foreground)" size={16} className="shrink-0" />
-                                )
-                              ) : (
-                                <Apple className="text-muted-foreground size-4 shrink-0" aria-hidden />
-                              )}
-                              <span className="truncate">{String(p.title)}</span>
-                            </span>
-                          </SelectItem>
+                          <SelectGroup key={groupKey}>
+                            <SelectLabel>{NUTRITION_GROUP_LABEL[groupKey]}</SelectLabel>
+                            {groupProducts.map((p) => {
+                              const tint = typeof p.color === 'string' && p.color.trim() ? String(p.color) : undefined;
+                              return (
+                                <SelectItem key={String(p.id)} value={String(p.id)}>
+                                  <span className="flex items-center gap-2">
+                                    <ColoredAuraIcon
+                                      name={groupIconName}
+                                      tint={tint ?? 'var(--foreground)'}
+                                      size={16}
+                                      className="shrink-0"
+                                    />
+                                    <span className="truncate">{String(p.title)}</span>
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectGroup>
                         );
                       })}
-                    </SelectGroup>
+                    </>
                   ) : (
                     <SelectGroup>
                       <SelectLabel>{t('nutrition.preset')}</SelectLabel>

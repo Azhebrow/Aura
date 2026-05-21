@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { AuraDataChangedDetail } from '@/shared/lib/aura-data-events';
 
 type BootstrapScreen = 'home' | 'rituals' | 'sidebar' | 'date-strip';
 
@@ -15,6 +16,31 @@ type Options = {
 
 const inFlightBootstrap = new Map<string, Promise<unknown>>();
 const bootstrapCache = new Map<string, { ts: number; data: unknown; serialized: string }>();
+
+function screensForMutation(detail?: AuraDataChangedDetail): Set<BootstrapScreen> | null {
+  if (!detail?.type) return null;
+  if (detail.scope === 'global') return null;
+  const screens: BootstrapScreen[] =
+    detail.type === 'timer'
+      ? ['home', 'sidebar']
+      : detail.type === 'ritual'
+        ? ['home', 'rituals', 'sidebar']
+        : detail.type === 'nutrition' || detail.type === 'diary' || detail.type === 'transaction'
+          ? ['home', 'sidebar']
+          : detail.type === 'points'
+            ? ['sidebar', 'date-strip']
+            : detail.type === 'goals'
+              ? ['rituals']
+              : ['home', 'rituals', 'sidebar', 'date-strip'];
+  return new Set(screens);
+}
+
+function cacheKeyScreen(key: string): BootstrapScreen | null {
+  const screen = key.slice(0, key.indexOf(':'));
+  return screen === 'home' || screen === 'rituals' || screen === 'sidebar' || screen === 'date-strip'
+    ? screen
+    : null;
+}
 
 function safeSerialize(value: unknown): string {
   try {
@@ -156,7 +182,19 @@ export function useBootstrapData<T>(
   return { data, loading, error };
 }
 
-export function clearBootstrapDataCache() {
-  bootstrapCache.clear();
-  inFlightBootstrap.clear();
+export function clearBootstrapDataCache(detail?: AuraDataChangedDetail) {
+  const screens = screensForMutation(detail);
+  if (!screens) {
+    bootstrapCache.clear();
+    inFlightBootstrap.clear();
+    return;
+  }
+  for (const key of [...bootstrapCache.keys()]) {
+    const screen = cacheKeyScreen(key);
+    if (screen && screens.has(screen)) bootstrapCache.delete(key);
+  }
+  for (const key of [...inFlightBootstrap.keys()]) {
+    const screen = cacheKeyScreen(key);
+    if (screen && screens.has(screen)) inFlightBootstrap.delete(key);
+  }
 }

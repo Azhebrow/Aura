@@ -3,6 +3,7 @@ import type { StatsFormattedRow, StatsFormattedTable } from '@/shared/stats/stat
 import type { StatsMeta, StatsMode } from '@/shared/stats/types';
 import { AURA_STATIC_SEMANTIC, FINANCE_SEMANTIC, MOOD_SCALE } from '@/shared/design/aura-palette';
 import { IconWithBadge } from '@/components/ui/icon-with-badge';
+import { useDragScroll } from '@/shared/hooks/use-drag-scroll';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -100,17 +101,18 @@ function makeCellStyle(mode: StatsMode, colColor: string | undefined, raw: numbe
   return undefined;
 }
 
-const STICKY_HEADER_SHADOW = 'inset 0 -1px 0 hsl(var(--border))';
-const STICKY_COLUMN_SHADOW = 'inset -1px 0 0 hsl(var(--border))';
+const STICKY_HEADER_SHADOW = 'inset 0 -1px 0 hsl(var(--border) / 0.35)';
+const STICKY_COLUMN_SHADOW = 'inset -1px 0 0 hsl(var(--border) / 0.35)';
 const STICKY_CORNER_SHADOW = `${STICKY_HEADER_SHADOW}, ${STICKY_COLUMN_SHADOW}`;
 
 export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props) {
+  const { ref: scrollRef, isDragging, dragScrollHandlers } = useDragScroll<HTMLDivElement>();
   const cols = visibleColumns(table.columns, selectedSeriesKeys);
   const ranges = new Map(cols.map((col) => [col, columnRange(table.rows, col)]));
 
   if (!table.rows.length) {
     return (
-      <div className="border-border/60 text-muted-foreground flex flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/10 p-8 text-center text-sm">
+      <div className="aura-surface-control text-[var(--aura-text-subtle)] flex flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm">
         Нет данных за выбранный период. Смените режим или расширьте даты.
       </div>
     );
@@ -118,9 +120,9 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
 
   if (cols.length === 0) {
     return (
-      <div className="border-border/60 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed bg-muted/10 p-8 text-center">
+      <div className="aura-surface-control flex min-h-0 flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center">
         <div className="max-w-sm space-y-2">
-          <p className="text-sm text-muted-foreground">Сейчас скрыты все серии. Включите хотя бы одну серию слева, чтобы показать таблицу.</p>
+          <p className="aura-body-muted text-sm">Сейчас скрыты все серии. Включите хотя бы одну серию слева, чтобы показать таблицу.</p>
         </div>
       </div>
     );
@@ -128,8 +130,16 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
-      <div className="border-border/50 bg-background flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border shadow-sm">
-        <div className="h-full min-h-0 min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
+      <div className="aura-surface-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/80">
+        <div
+          ref={scrollRef}
+          className={cn(
+            'aura-data-table-scroll h-full min-h-0 min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]',
+            'cursor-grab select-none active:cursor-grabbing',
+            isDragging && 'cursor-grabbing'
+          )}
+          {...dragScrollHandlers}
+        >
           <table className="w-max min-w-full table-fixed border-separate border-spacing-0 text-sm">
             <colgroup>
               <col className="w-[6.5rem] sm:w-[8rem]" />
@@ -140,15 +150,18 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
             <thead className="sticky top-0 z-[4]">
               <tr>
                 <th
-                  className="border-border/60 bg-background text-muted-foreground sticky left-0 top-0 z-[6] border-b border-r border-border px-2 py-2 text-left align-middle sm:py-3"
+                  className="bg-card text-[var(--aura-text-muted)] sticky left-0 top-0 z-[6] border-b border-r border-[var(--aura-border-soft)]/40 px-2 py-2 text-left align-middle sm:py-3"
                   style={{ boxShadow: STICKY_CORNER_SHADOW }}
                 >
                   <span className="text-xs font-semibold uppercase tracking-wider">Период</span>
                 </th>
-                {cols.map((col) => (
+                {cols.map((col, colIdx) => (
                   <th
                     key={col}
-                    className="border-border/60 bg-background text-muted-foreground sticky top-0 z-[5] border-b border-r border-border px-2 py-2 text-center align-middle sm:py-3"
+                    className={cn(
+                      'bg-card text-[var(--aura-text-muted)] sticky top-0 z-[5] border-b border-r border-[var(--aura-border-soft)]/40 px-2 py-2 text-center align-middle sm:py-3',
+                      colIdx === cols.length - 1 && 'border-r-0'
+                    )}
                     style={{ boxShadow: STICKY_HEADER_SHADOW }}
                   >
                     <div className="mx-auto flex max-w-[8.5rem] flex-col items-center justify-center gap-1.5">
@@ -166,21 +179,24 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
               </tr>
             </thead>
             <tbody>
-              {table.rows.map((row: StatsFormattedRow) => (
+              {table.rows.map((row: StatsFormattedRow, rowIdx) => (
                 <tr key={row.date}>
                   <td
                     className={cn(
-                      'border-border/50 text-foreground sticky left-0 z-[4] border-r border-b border-border bg-background px-2 py-2.5 text-xs font-medium'
+                      'text-foreground sticky left-0 z-[4] border-r border-b border-[var(--aura-border-soft)] bg-card px-2 py-2.5 text-xs font-medium',
+                      rowIdx === table.rows.length - 1 && 'border-b-0'
                     )}
                     style={{ boxShadow: STICKY_COLUMN_SHADOW }}
                   >
                     {row.label}
                   </td>
-                  {cols.map((col) => (
+                  {cols.map((col, colIdx) => (
                     <td
                       key={col}
                       className={cn(
-                        'border-border/35 border-r border-b bg-background px-2 py-2.5 text-center text-xs tabular-nums'
+                        'border-r border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-2 py-2.5 text-center text-xs tabular-nums',
+                        colIdx === cols.length - 1 && 'border-r-0',
+                        rowIdx === table.rows.length - 1 && 'border-b-0'
                       )}
                     >
                       {(() => {

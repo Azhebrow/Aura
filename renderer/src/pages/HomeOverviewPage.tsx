@@ -7,7 +7,6 @@ import { TasksCategoriesCard } from '@/features/home/TasksCategoriesCard';
 import { TransactionsCard } from '@/features/transactions/TransactionsCard';
 import { cn } from '@/lib/utils';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
-import { useDayLocked } from '@/shared/hooks/use-day-locked';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
 import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
@@ -26,7 +25,6 @@ import { PageFrame } from '@/widgets/page-frame/PageFrame';
 export function HomeOverviewPage() {
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
-  const dayLocked = useDayLocked(db, Boolean(db), dateString);
   const dataTick = useAuraDataRefresh({ types: ['task-progress', 'timer', 'ritual', 'nutrition', 'diary', 'mood', 'transaction'] });
   const { loading: homeBootLoading } = useBootstrapData(
     'home',
@@ -53,10 +51,14 @@ export function HomeOverviewPage() {
   const showAnySection = showTasks || visibleBottomPanels > 0;
   const [probeRootEl, setProbeRootEl] = useState<HTMLDivElement | null>(null);
   const [desktopRowCount, setDesktopRowCount] = useState(0);
+  const [layoutWidth, setLayoutWidth] = useState(0);
   const [mobileTab, setMobileTab] = useState<'tasks' | 'tx' | 'plans' | 'chart'>('tasks');
   const measureDesktopRows = useCallback(() => {
     const root = probeRootEl;
     if (!root) return;
+
+    const rootWidth = Math.round(root.getBoundingClientRect().width);
+    setLayoutWidth((prev) => (prev === rootWidth ? prev : rootWidth));
 
     const samples = Array.from(root.querySelectorAll<HTMLElement>('[data-home-row-sample="1"]'));
     const tops = new Set<number>();
@@ -104,16 +106,38 @@ export function HomeOverviewPage() {
     };
   }, [homeBootLoading, measureDesktopRows, probeRootEl, showAnySection, visibleBottomPanels, showTasks, showTx, showPlans, showChart]);
 
-  const shouldUseCompactLayout = desktopRowCount > 2;
+  const tasksWouldUseTwoByTwo = showTasks && visibleBottomPanels > 0 && layoutWidth > 0 && layoutWidth < 720;
+  const shouldUseCompactLayout = desktopRowCount > 2 || tasksWouldUseTwoByTwo;
 
   const mobileSections = [
-    showTasks ? { id: 'tasks' as const, label: 'Задачи', Icon: ListTodo, content: <TasksCategoriesCard /> } : null,
+    showTasks
+      ? {
+          id: 'tasks' as const,
+          label: 'Задачи',
+          Icon: ListTodo,
+          content: (
+            <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+              <MegaPanelHeader title="Задачи" />
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+                <TasksCategoriesCard />
+              </div>
+            </section>
+          ),
+        }
+      : null,
     showTx
       ? {
           id: 'tx' as const,
           label: 'Финансы',
           Icon: PiggyBank,
-          content: <TransactionsCard contentClassName="min-h-0 flex-1 gap-2" />,
+          content: (
+            <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+              <MegaPanelHeader title="Финансы" />
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
+                <TransactionsCard contentClassName="min-h-0 flex-1 gap-2" />
+              </div>
+            </section>
+          ),
         }
       : null,
     showPlans
@@ -121,7 +145,14 @@ export function HomeOverviewPage() {
           id: 'plans' as const,
           label: 'Планы',
           Icon: ReceiptText,
-          content: <DailyPlansCard contentClassName="min-h-0 flex-1 gap-2" />,
+          content: (
+            <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+              <MegaPanelHeader title="Планы" />
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
+                <DailyPlansCard contentClassName="min-h-0 flex-1 gap-2" />
+              </div>
+            </section>
+          ),
         }
       : null,
     showChart
@@ -129,13 +160,20 @@ export function HomeOverviewPage() {
           id: 'chart' as const,
           label: 'Прогресс',
           Icon: ChartColumn,
-          content: <CategoryProgressCard contentClassName="min-h-0 flex-1 rounded-lg border border-border/60 bg-card/80 p-2 shadow-sm" />,
+          content: (
+            <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+              <MegaPanelHeader title="Прогресс" />
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
+                <CategoryProgressCard contentClassName="min-h-0 flex-1 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-2 shadow-sm" />
+              </div>
+            </section>
+          ),
         }
       : null,
   ].filter(Boolean) as Array<{ id: 'tasks' | 'tx' | 'plans' | 'chart'; label: string; Icon: typeof ListTodo; content: ReactNode }>;
 
   const desktopGrid = (sampleRows = false) => (
-    <div className="flex min-h-0 flex-1 flex-col divide-y divide-border/60 aura-content-fade-in h-full">
+    <div className="flex min-h-0 flex-1 flex-col divide-y divide-[var(--aura-border-soft)] h-full">
       {showTasks ? (
         <section
           className={cn(
@@ -144,7 +182,6 @@ export function HomeOverviewPage() {
           )}
           data-home-row-sample={sampleRows ? '1' : undefined}
         >
-          <MegaPanelHeader title="Категории задач" locked={dayLocked} />
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-0">
             <TasksCategoriesCard />
           </div>
@@ -155,8 +192,8 @@ export function HomeOverviewPage() {
           <div
             className={cn(
               'flex min-h-0 flex-1 h-full overflow-hidden',
-              visibleBottomPanels === 1 && 'flex-col divide-y divide-border/60',
-              visibleBottomPanels >= 2 && 'flex-row divide-x divide-border/60'
+              visibleBottomPanels === 1 && 'flex-col divide-y divide-[var(--aura-border-soft)]',
+              visibleBottomPanels >= 2 && 'flex-row divide-x divide-[var(--aura-border-soft)]'
             )}
           >
             {showTx ? (
@@ -165,7 +202,7 @@ export function HomeOverviewPage() {
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Финансы" />
-                <TransactionsCard contentClassName="min-h-0 flex-1 gap-1 p-3" />
+                <TransactionsCard contentClassName="min-h-0 flex-1 gap-2 p-3" />
               </div>
             ) : null}
             {showPlans ? (
@@ -174,7 +211,7 @@ export function HomeOverviewPage() {
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Планы" />
-                <DailyPlansCard contentClassName="min-h-0 flex-1 gap-1.5 p-3" />
+                <DailyPlansCard contentClassName="min-h-0 flex-1 gap-2 p-3" />
               </div>
             ) : null}
             {showChart ? (
@@ -203,14 +240,14 @@ export function HomeOverviewPage() {
         !showTasks && visibleBottomPanels > 0 && 'grid-rows-1'
       )}
     >
-      {showTasks ? <div className="h-8" data-home-row-sample="1" /> : null}
+      {showTasks ? <div className="h-px" data-home-row-sample="1" /> : null}
       {visibleBottomPanels > 0 ? (
         <div
           className={cn(
             'grid',
             visibleBottomPanels === 1 && 'grid-cols-1',
             visibleBottomPanels === 2 && 'grid-cols-1 md:grid-cols-2',
-            visibleBottomPanels >= 3 && 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+            visibleBottomPanels >= 3 && 'grid-cols-1 md:grid-cols-3'
           )}
         >
           {showTx ? <div className="h-8" data-home-row-sample="1" /> : null}
@@ -224,7 +261,7 @@ export function HomeOverviewPage() {
   return (
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
       <Card className={MEGA_SHELL_CARD_CN}>
-        <CardContent className={MEGA_SHELL_CONTENT_CN}>
+        <CardContent className={`${MEGA_SHELL_CONTENT_CN} aura-content-fade-in`}>
           {!showAnySection ? (
             <div className="flex min-h-0 flex-1 items-center justify-center p-5">
               <p className="text-muted-foreground text-sm">Включите секции главной страницы в настройках приложения.</p>
@@ -244,11 +281,13 @@ export function HomeOverviewPage() {
                 {desktopRowProbe()}
               </div>
               {shouldUseCompactLayout ? (
-                <SectionTabsLayout sections={mobileSections} value={mobileTab} onChange={setMobileTab} />
+                <SectionTabsLayout sections={mobileSections} value={mobileTab} onChange={setMobileTab} viewportContentClassName="overflow-hidden pb-0" />
               ) : (
                 <>
-                  <MobilePageShell sections={mobileSections} value={mobileTab} onChange={setMobileTab} />
-                  <div className="hidden min-h-0 flex-1 lg:block">
+                  <div className="min-h-0 flex-1 md:hidden">
+                    <MobilePageShell sections={mobileSections} value={mobileTab} onChange={setMobileTab} viewportContentClassName="overflow-hidden pb-0" />
+                  </div>
+                  <div className="hidden min-h-0 flex-1 md:block">
                     {desktopGrid(false)}
                   </div>
                 </>

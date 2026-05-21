@@ -9,14 +9,17 @@ import {
 } from 'react';
 import {
   LS_ACCENT_KEY,
+  LS_COLOR_FILTER_KEY,
   LS_FONT_KEY,
   LS_THEME_KEY,
   type AuraAccentPreset,
+  type AuraColorFilter,
   type AuraThemeMode,
   isAuraAccentPreset,
+  isAuraColorFilter,
   isAuraThemeMode,
 } from '@/features/theme/theme-constants';
-import { applyAuraAccentPreset, applyAuraFontFamily, applyAuraThemeMode } from '@/features/theme/apply-theme-dom';
+import { applyAuraAccentPreset, applyAuraColorFilter, applyAuraFontFamily, applyAuraThemeMode } from '@/features/theme/apply-theme-dom';
 import { DEFAULT_AURA_FONT, isAuraFontFamily, type AuraFontFamily } from '@/features/theme/font-constants';
 import { ensureAuraFontsStylesheet } from '@/features/theme/load-google-fonts';
 
@@ -27,6 +30,8 @@ type ThemeContextValue = {
   setAccentPreset: (preset: AuraAccentPreset) => void;
   fontFamily: AuraFontFamily;
   setFontFamily: (font: AuraFontFamily) => void;
+  colorFilter: AuraColorFilter;
+  setColorFilter: (filter: AuraColorFilter) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -61,10 +66,21 @@ function readStoredAccentPreset(): AuraAccentPreset {
   return 'violet';
 }
 
+function readStoredColorFilter(): AuraColorFilter {
+  try {
+    const raw = localStorage.getItem(LS_COLOR_FILTER_KEY);
+    if (raw && isAuraColorFilter(raw)) return raw;
+  } catch {
+    /* ignore */
+  }
+  return 'vivid';
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<AuraThemeMode>(() => readStoredTheme());
   const [accentPreset, setAccentPresetState] = useState<AuraAccentPreset>(() => readStoredAccentPreset());
   const [fontFamily, setFontFamilyState] = useState<AuraFontFamily>(() => readStoredFontFamily());
+  const [colorFilter, setColorFilterState] = useState<AuraColorFilter>(() => readStoredColorFilter());
 
   useLayoutEffect(() => {
     ensureAuraFontsStylesheet();
@@ -74,7 +90,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyAuraThemeMode(theme);
     applyAuraAccentPreset(accentPreset, theme);
     applyAuraFontFamily(fontFamily);
-  }, [accentPreset, fontFamily, theme]);
+    applyAuraColorFilter(colorFilter);
+  }, [accentPreset, colorFilter, fontFamily, theme]);
 
   const setTheme = useCallback((mode: AuraThemeMode) => {
     setThemeState(mode);
@@ -103,6 +120,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setColorFilter = useCallback((filter: AuraColorFilter) => {
+    setColorFilterState(filter);
+    try {
+      localStorage.setItem(LS_COLOR_FILTER_KEY, filter);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       theme,
@@ -111,8 +137,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setAccentPreset,
       fontFamily,
       setFontFamily,
+      colorFilter,
+      setColorFilter,
     }),
-    [accentPreset, fontFamily, setAccentPreset, setFontFamily, setTheme, theme]
+    [accentPreset, colorFilter, fontFamily, setAccentPreset, setColorFilter, setFontFamily, setTheme, theme]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

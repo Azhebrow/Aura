@@ -14,11 +14,15 @@ type Props = {
   size?: number;
 };
 
+function pxToRem(px: number): string {
+  return `${px / 16}rem`;
+}
+
 function maskStyle(url: string, paint: string, size: number): CSSProperties {
   return {
     display: 'block',
-    width: size,
-    height: size,
+    width: pxToRem(size),
+    height: pxToRem(size),
     backgroundColor: 'var(--aura-icon-paint)',
     ['--aura-icon-paint' as string]: paint,
     WebkitMaskImage: `url("${url}")`,
@@ -46,11 +50,11 @@ export function ColoredAuraIcon({ name, tint, className, size = 20 }: Props) {
   const paint = useMemo(() => normalizeCssColorForPaint(tint ?? undefined), [tint]);
 
   if (!fileBase) {
-    return <Circle className={cn('text-muted-foreground shrink-0', className)} style={{ width: size, height: size }} strokeWidth={1.5} />;
+    return <Circle className={cn('text-muted-foreground shrink-0', className)} style={{ width: pxToRem(size), height: pxToRem(size) }} strokeWidth={1.5} />;
   }
 
   if (!paint) {
-    return <AuraPublicIcon name={name} className={cn('shrink-0 object-contain', className)} style={{ width: size, height: size }} />;
+    return <AuraPublicIcon name={name} className={cn('shrink-0 object-contain', className)} style={{ width: pxToRem(size), height: pxToRem(size) }} />;
   }
 
   return (

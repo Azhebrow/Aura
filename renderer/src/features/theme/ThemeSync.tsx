@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { waitForAuraDatabase } from '@/shared/bridge/wait-for-database';
-import { isAuraAccentPreset } from '@/features/theme/theme-constants';
+import { isAuraAccentPreset, isAuraThemeMode } from '@/features/theme/theme-constants';
 import { useAuraTheme } from '@/features/theme/ThemeContext';
 
 /**
  * После загрузки БД подтягивает пресет акцента из SQLite в контекст.
  */
 export function ThemeSync() {
-  const { setAccentPreset } = useAuraTheme();
+  const { setAccentPreset, setTheme } = useAuraTheme();
 
   useEffect(() => {
     let cancelled = false;
@@ -20,6 +20,10 @@ export function ThemeSync() {
         const db = getDB();
         if (!db) return;
         const settings = db.getAppSettings();
+        const themeMode = settings && typeof settings.theme_mode === 'string' ? settings.theme_mode : null;
+        if (themeMode && isAuraThemeMode(themeMode)) {
+          setTheme(themeMode);
+        }
         const ap = settings && typeof settings.accent_preset === 'string' ? settings.accent_preset : null;
         if (ap && isAuraAccentPreset(ap)) {
           setAccentPreset(ap);
@@ -31,7 +35,7 @@ export function ThemeSync() {
     return () => {
       cancelled = true;
     };
-  }, [setAccentPreset]);
+  }, [setAccentPreset, setTheme]);
 
   return null;
 }

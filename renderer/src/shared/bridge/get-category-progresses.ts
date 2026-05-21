@@ -13,6 +13,10 @@ function isMobileRuntime() {
   return /Android|iPhone|iPad|iPod|Mobile|Telegram/i.test(navigator.userAgent);
 }
 
+export function clearCategoryProgressCache() {
+  CACHE.clear();
+}
+
 export function getCategoryProgresses(
   db: AuraDatabase,
   date: string,

@@ -19,8 +19,8 @@ export function AppStartupGate({ children }: { children: ReactNode }) {
   }, [loadingDone]);
 
   return (
-    <div className="relative h-full w-full">
-      <div className="h-full w-full">{children}</div>
+    <div className="relative h-full w-full" style={{ height: 'var(--aura-app-height, 100svh)' }}>
+      {loadingDone ? <div className="h-full w-full aura-app-soft-reveal">{children}</div> : null}
 
       {!gone && (
         <div

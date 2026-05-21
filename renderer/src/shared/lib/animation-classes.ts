@@ -40,6 +40,18 @@ export const ANIM = {
   /** Shadow transition */
   txShadow:      'aura-tx-shadow',
 
+  // ─── Actions / rows ───────────────────────────────────────────────────────
+  /** Standard icon action: 32px, focus, hover, disabled-compatible */
+  actionIcon:    'aura-action-icon',
+  /** Soft filled action/control surface */
+  actionSoft:    'aura-action-soft',
+  /** Standard interactive row surface */
+  rowInteractive:'aura-row-interactive',
+  /** Destructive action treatment */
+  dangerAction:  'aura-danger-action',
+  /** Disabled action treatment */
+  disabledAction:'aura-disabled-action',
+
   // ─── Loading ───────────────────────────────────────────────────────────────
   /** Animated skeleton placeholder */
   skeleton:      'aura-skeleton',

@@ -16,7 +16,7 @@ export function ProgressDots({ filled, total, size = 'xs' }: ProgressDotsProps) 
           key={i}
           className={cn(
             'rounded-full aura-tx-colors',
-            i < filled ? 'bg-foreground/70' : 'bg-muted/50',
+            i < filled ? 'bg-foreground/70' : 'bg-[var(--aura-surface-control)]',
             size === 'xs' ? 'size-1.5' : 'size-2'
           )}
         />

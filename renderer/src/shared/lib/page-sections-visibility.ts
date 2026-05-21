@@ -55,12 +55,6 @@ function deepMergeVisibility(stored: unknown): PageSectionsVisibility {
 }
 
 export function enforceVisibilityInvariants(v: PageSectionsVisibility): PageSectionsVisibility {
-  if (!v.diary.contentEntries && !v.diary.contentNutrition) {
-    v.diary.contentEntries = true;
-  }
-  if (!v.ranks.rank && !v.ranks.pointsHistory) {
-    v.ranks.rank = true;
-  }
   return v;
 }
 
@@ -68,9 +62,20 @@ export function parsePageSectionsVisibility(raw: unknown): PageSectionsVisibilit
   if (raw == null || raw === '') return deepMergeVisibility(null);
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return enforceVisibilityInvariants(deepMergeVisibility(parsed));
+    return deepMergeVisibility(parsed);
   } catch {
     return deepMergeVisibility(null);
+  }
+}
+
+/** Возвращает true если хотя бы одна секция страницы включена, false — страница скрыта */
+export function isPageVisible(vis: PageSectionsVisibility, pageId: string): boolean {
+  switch (pageId) {
+    case 'home':    return Object.values(vis.home).some(Boolean);
+    case 'diary':   return Object.values(vis.diary).some(Boolean);
+    case 'rituals': return Object.values(vis.rituals).some(Boolean);
+    case 'ranks':   return Object.values(vis.ranks).some(Boolean);
+    default:        return true;
   }
 }
 

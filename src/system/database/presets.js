@@ -224,30 +224,93 @@ const PRESETS = {
   diaryEntryPresets: [
     {
       id: 'entry_0',
-      title: 'Начало',
-      prompt: 'Сделай первый честный абзац и не редактируй его заранее.',
-      description: 'Мягкий вход в пустой дневник.',
-      icon: 'book-text',
+      title: 'Природа разума',
+      prompt: 'Ты имеешь власть над своим разумом, а не над внешними событиями. Осознай это — и обретёшь силу.',
+      description: 'Марк Аврелий · Размышления',
+      icon: 'brain',
       active: 1,
       level: 0
     },
     {
       id: 'entry_1',
-      title: 'Проверка курса',
-      prompt: 'Что сегодня важно не потерять из виду?',
-      description: 'Короткая вечерняя фиксация.',
+      title: 'Различение',
+      prompt: 'Есть то, что в нашей власти, и то, что не в нашей. Различи их.',
+      description: 'Эпиктет · Энхиридион',
       icon: 'compass',
       active: 1,
       level: 1
     },
     {
       id: 'entry_2',
-      title: 'Тихий старт',
-      prompt: 'Не ищи идеальную формулировку, просто назови факт.',
-      description: 'Подходит для дней с низкой энергией.',
-      icon: 'sparkles',
+      title: 'Настоящий момент',
+      prompt: 'Пока откладываешь жизнь — она проходит.',
+      description: 'Сенека · Письма к Луцилию',
+      icon: 'hourglass',
       active: 1,
       level: 2
+    },
+    {
+      id: 'entry_3',
+      title: 'Суждения',
+      prompt: 'Нас расстраивают не события, а наши суждения о них.',
+      description: 'Марк Аврелий · Размышления',
+      icon: 'eye',
+      active: 1,
+      level: 3
+    },
+    {
+      id: 'entry_4',
+      title: 'Воля и препятствия',
+      prompt: 'Не ищи, чтобы случающееся происходило так, как ты хочешь. Желай, чтобы всё было так, как оно есть, — и будешь спокоен.',
+      description: 'Эпиктет · Энхиридион',
+      icon: 'anchor',
+      active: 1,
+      level: 4
+    },
+    {
+      id: 'entry_5',
+      title: 'Общество',
+      prompt: 'Отступи в себя, насколько можешь. Проводи время с теми, кто делает тебя лучше.',
+      description: 'Сенека · Письма к Луцилию',
+      icon: 'users',
+      active: 1,
+      level: 5
+    },
+    {
+      id: 'entry_6',
+      title: 'Утро',
+      prompt: 'Встань — и займись тем, чего от тебя требует твоя природа.',
+      description: 'Марк Аврелий · Размышления',
+      icon: 'sunrise',
+      active: 1,
+      level: 6
+    },
+    {
+      id: 'entry_7',
+      title: 'Изменение',
+      prompt: 'Потеря — лишь изменение. А изменение — радость для природы всего.',
+      description: 'Марк Аврелий · Размышления',
+      icon: 'refresh-cw',
+      active: 1,
+      level: 7
+    },
+    {
+      id: 'entry_8',
+      title: 'Мера жизни',
+      prompt: 'Отмерь жизнь не годами, а делами.',
+      description: 'Сенека · О краткости жизни',
+      icon: 'scale',
+      active: 1,
+      level: 8
+    },
+    {
+      id: 'entry_9',
+      title: 'Тело и воля',
+      prompt: 'Болезнь — помеха телу, но не воле, если она сама того не пожелает.',
+      description: 'Эпиктет · Энхиридион',
+      icon: 'shield',
+      active: 1,
+      level: 9
     }
   ],
 
@@ -271,16 +334,6 @@ const PRESETS = {
       icon: 'piggy-bank',
       color: 'hsl(206, 57%, 55%)',
       level: 1
-    },
-    {
-      id: 'acc_2',
-      title: 'Резерв',
-      type: 'savings',
-      balance: 0,
-      target: 90000,
-      icon: 'shield',
-      color: 'hsl(214, 56%, 54%)',
-      level: 2
     }
   ],
 

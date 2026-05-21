@@ -33,7 +33,7 @@ export function CheckStatusControl({
           'inline-flex size-5 items-center justify-center rounded-md border aura-tx-interactive',
           checked
             ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-            : 'border-border/50 bg-muted/20 text-transparent hover:border-border/70 hover:bg-muted/35'
+            : 'border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-transparent hover:border-[var(--aura-border-strong)] hover:bg-[var(--aura-action-hover-bg)]'
         )}
       >
         {checked ? (
@@ -49,7 +49,7 @@ export function CheckStatusControl({
         className="hidden"
       />
       {showLabel ? (
-        <span className={cn('text-xs font-medium whitespace-nowrap', checked ? 'text-foreground' : 'text-muted-foreground')}>
+        <span className={cn('text-xs font-medium whitespace-nowrap', checked ? 'text-foreground' : 'text-[var(--aura-text-subtle)]')}>
           {checked ? checkedLabel : uncheckedLabel}
         </span>
       ) : null}

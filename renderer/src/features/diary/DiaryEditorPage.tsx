@@ -45,7 +45,6 @@ import { readNutritionTargets, sumNutritionDay } from '@/shared/lib/nutrition-ag
 import { cn } from '@/lib/utils';
 import { PageFrame } from '@/widgets/page-frame/PageFrame';
 import { Card, CardContent } from '@/components/ui/card';
-import { IconWithBadge } from '@/components/ui/icon-with-badge';
 import type { AuraRow } from '@/types/aura';
 import {
   MEGA_PAGEFRAME_CN,
@@ -56,7 +55,6 @@ import {
 } from '@/shared/ui/mega-section-layout';
 import { MegaPanelHeader } from '@/shared/ui/mega-panel-header';
 import { ModeSwitchHeader } from '@/shared/ui/mode-switch-header';
-import { SectionControlCard } from '@/shared/ui/section-control-card';
 import { MobilePageShell } from '@/shared/ui/mobile';
 import { ANIM } from '@/shared/lib/animation-classes';
 
@@ -85,10 +83,17 @@ function toPlainText(raw: string) {
   return raw.replace(/<[^>]*>/g, ' ').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+function decodeHtmlEntities(raw: string) {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = raw;
+  return textarea.value;
+}
+
 function toEditorHtml(raw: string) {
-  const hasTags = /<\/?[a-z][\s\S]*>/i.test(raw);
-  if (hasTags) return raw;
-  return raw
+  const decoded = decodeHtmlEntities(raw);
+  const hasTags = /<\/?[a-z][\s\S]*>/i.test(decoded);
+  if (hasTags) return decoded;
+  return decoded
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -159,10 +164,22 @@ export function DiaryEditorPage() {
   const [nutritionDialogOpen, setNutritionDialogOpen] = useState(false);
   const [editingNutritionEntry, setEditingNutritionEntry] = useState<AuraRow | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const latestTextRef = useRef(text);
   const selectionRef = useRef<Range | null>(null);
   const loadingRef = useRef(false);
   const allowAutosave = useRef(false);
   const dataRefreshTick = useAuraDataRefresh({ types: ['diary', 'nutrition', 'cfg'] });
+
+  useEffect(() => {
+    latestTextRef.current = text;
+  }, [text]);
+
+  const setEditorRef = useCallback((node: HTMLDivElement | null) => {
+    editorRef.current = node;
+    if (node && node.innerHTML !== latestTextRef.current) {
+      node.innerHTML = latestTextRef.current;
+    }
+  }, []);
 
   const moods = useMemo(() => {
     if (!db) return [] as AuraRow[];
@@ -265,15 +282,21 @@ export function DiaryEditorPage() {
   const load = useCallback(() => {
     if (!db) return;
     loadingRef.current = true;
+    const editorFocused = document.activeElement === editorRef.current;
     const row = db.getDiaryEntry(dateString) as AuraRow | undefined;
     if (row) {
       setEntryId(String(row.id));
-      setText(typeof row.text === 'string' ? toEditorHtml(row.text) : '');
+      // Не перезаписываем текст пока пользователь печатает — иначе курсор прыгает в начало
+      if (!editorFocused) {
+        setText(typeof row.text === 'string' ? toEditorHtml(row.text) : '');
+      }
       setMoodId(row.mood_id ? String(row.mood_id) : '');
       setCategoryId(row.category_id ? String(row.category_id) : '');
     } else {
       setEntryId(`diary_${dateString}`);
-      setText('');
+      if (!editorFocused) {
+        setText('');
+      }
       setMoodId('');
       setCategoryId('');
     }
@@ -311,13 +334,13 @@ export function DiaryEditorPage() {
           category_id: categoryId || null,
           text: trimmed || null,
         });
-      });
+      }, dateString);
       const again = db.getDiaryEntry(dateString);
       if (again) setEntryId(String(again.id));
     } else if (db.getDiaryEntry(dateString)) {
       runAuraMutation('diary', () => {
         db.deleteDiaryEntry(dateString);
-      });
+      }, dateString);
       setEntryId(`diary_${dateString}`);
     }
   }, [categoryId, dateString, db, entryId, moodId, text]);
@@ -373,9 +396,11 @@ export function DiaryEditorPage() {
     const el = editorRef.current;
     if (!el) return;
     if (el.innerHTML !== text) {
+      saveEditorSelection();
       el.innerHTML = text;
+      restoreEditorSelection();
     }
-  }, [text]);
+  }, [text, saveEditorSelection, restoreEditorSelection]);
 
   const nutritionEntries = useMemo(() => {
     if (!db) return [];
@@ -406,95 +431,113 @@ export function DiaryEditorPage() {
   }, [moods, moodId]);
 
   const activeMood = moods[moodIdx];
+  const activeCategory = categories.find((c) => String(c.id) === categoryId) ?? null;
 
   const entryColumn = (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <MegaPanelHeader title={isEntryEmpty ? entryPresetTitle : t('diary.entry')} />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="border-border/60 border-b">
-            <div className="grid grid-cols-1 items-center gap-3 py-2.5 px-3 sm:grid-cols-2 sm:gap-4 sm:px-4 sm:py-3">
-              <div className="flex min-w-0 flex-col">
-                <Label htmlFor="diary-mood-slider" className="sr-only">
-                  {t('diary.mood')}
-                </Label>
-                {moods.length === 0 ? (
-                  <p className="text-muted-foreground text-xs">{t('diary.no_moods')}</p>
-                ) : (
-                  <div className="flex h-9 min-h-9 items-center gap-2.5 sm:h-10 sm:min-h-10">
-                    <IconWithBadge
-                      iconName={activeMood && typeof activeMood.icon === 'string' && activeMood.icon.trim() ? activeMood.icon : null}
-                      size="sm"
-                    />
-                    <div className="flex min-h-9 min-w-0 flex-1 items-center sm:min-h-10">
-                      <Slider
-                        id="diary-mood-slider"
-                        value={[moodIdx]}
-                        min={0}
-                        max={Math.max(0, moods.length - 1)}
-                        step={1}
-                        className={cn(
-                          'w-full py-0',
-                          '[&_[data-slot=slider-track]]:h-2.5 [&_[data-slot=slider-track]]:rounded-full [&_[data-slot=slider-track]]:bg-muted/90',
-                          '[&_[data-slot=slider-range]]:bg-foreground/65',
-                          '[&_[data-slot=slider-thumb]]:size-[18px] [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:bg-background [&_[data-slot=slider-thumb]]:shadow'
-                        )}
-                        aria-label={t('diary.mood')}
-                        aria-valuetext={activeMood?.id != null ? t('diary.mood_level', { level: moodIdx + 1 }) : undefined}
-                        onValueChange={(vals) => {
-                          const idx = Math.min(moods.length - 1, Math.max(0, Math.round(Number(vals[0]) ?? 0)));
-                          const m = moods[idx];
-                          if (m?.id != null) setMoodId(String(m.id));
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex min-w-0 flex-col">
-                <Label htmlFor="diary-category" className="sr-only">
-                  {t('diary.category')}
-                </Label>
-                <div className="flex h-9 min-h-9 w-full items-center sm:h-10 sm:min-h-10">
-                  <Select
-                    value={categoryId || DIARY_NO_CATEGORY_VALUE}
-                    onValueChange={(next) => setCategoryId(next === DIARY_NO_CATEGORY_VALUE ? '' : next)}
-                    disabled={categories.length === 0}
-                  >
-                    <SelectTrigger id="diary-category" className="border-input/80 h-9 w-full bg-background/90 shadow-sm sm:h-10">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>{t('diary.category')}</SelectLabel>
-                        <SelectItem value={DIARY_NO_CATEGORY_VALUE}>
-                          <span className="flex items-center gap-2">
-                            <CircleOff className="size-4 shrink-0" />
-                            <span className="truncate">{t('diary.no_category')}</span>
-                          </span>
-                        </SelectItem>
-                        {categories.map((c) => (
-                          <SelectItem key={String(c.id)} value={String(c.id)}>
-                            <span className="flex items-center gap-2">
-                              <AuraThemedIcon name={typeof c.icon === 'string' ? c.icon : null} className="size-4 shrink-0" />
-                              <span className="truncate">{String(c.title ?? c.id)}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
+        <div className="shrink-0 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
+          <div className="flex h-10 min-h-10 items-stretch border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] sm:h-11 sm:min-h-11">
+            {/* Настроение */}
+            <Label htmlFor="diary-mood-slider" className="sr-only">{t('diary.mood')}</Label>
+            {moods.length === 0 ? (
+              <div className="flex flex-1 items-center px-3 text-[var(--aura-text-muted)] text-xs">{t('diary.no_moods')}</div>
+            ) : (
+              <div className="flex min-w-0 flex-1 items-stretch">
+                <div className="flex items-center border-r border-[var(--aura-border-soft)] px-3">
+                  <AuraThemedIcon
+                    name={activeMood && typeof activeMood.icon === 'string' && activeMood.icon.trim() ? activeMood.icon : null}
+                    tint={typeof activeMood?.color === 'string' && activeMood.color.trim() ? activeMood.color : 'var(--primary)'}
+                    size={15}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-1 items-center px-3">
+                  <Slider
+                    id="diary-mood-slider"
+                    value={[moodIdx]}
+                    min={0}
+                    max={Math.max(0, moods.length - 1)}
+                    step={1}
+                    className={cn(
+                      'w-full py-0',
+                      '[&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-track]]:rounded-full [&_[data-slot=slider-track]]:bg-[var(--aura-surface-control)]',
+                      '[&_[data-slot=slider-range]]:bg-foreground/65',
+                      '[&_[data-slot=slider-thumb]]:size-[16px] [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:bg-background [&_[data-slot=slider-thumb]]:shadow'
+                    )}
+                    aria-label={t('diary.mood')}
+                    aria-valuetext={activeMood?.id != null ? t('diary.mood_level', { level: moodIdx + 1 }) : undefined}
+                    onValueChange={(vals) => {
+                      const idx = Math.min(moods.length - 1, Math.max(0, Math.round(Number(vals[0]) ?? 0)));
+                      const m = moods[idx];
+                      if (m?.id != null) setMoodId(String(m.id));
+                    }}
+                  />
                 </div>
               </div>
+            )}
+            {/* Разделитель */}
+            <div className="w-px shrink-0 bg-[var(--aura-border-soft)]" />
+            {/* Категория */}
+            <Label htmlFor="diary-category" className="sr-only">{t('diary.category')}</Label>
+            <div className="flex min-w-0 flex-1 items-stretch">
+              <div className="flex items-center border-r border-[var(--aura-border-soft)] px-3">
+                    {activeCategory ? (
+                      <AuraThemedIcon
+                        name={typeof activeCategory.icon === 'string' && activeCategory.icon.trim() ? activeCategory.icon : null}
+                        tint={typeof activeCategory.color === 'string' && activeCategory.color.trim() ? activeCategory.color : 'var(--foreground)'}
+                        size={15}
+                      />
+                    ) : (
+                      <CircleOff className="size-[15px] shrink-0 text-[var(--aura-text-muted)]" aria-hidden />
+                    )}
+                  </div>
+              <Select
+                value={categoryId || DIARY_NO_CATEGORY_VALUE}
+                onValueChange={(next) => setCategoryId(next === DIARY_NO_CATEGORY_VALUE ? '' : next)}
+                disabled={categories.length === 0}
+              >
+                <SelectTrigger id="diary-category" className="!h-full flex-1 rounded-none border-0 !bg-transparent px-3 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0">
+                  <SelectValue placeholder="—">
+                    <span className="truncate text-sm">
+                      {activeCategory
+                        ? String(activeCategory.title ?? activeCategory.id)
+                        : t('diary.no_category')}
+                    </span>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>{t('diary.category')}</SelectLabel>
+                    <SelectItem value={DIARY_NO_CATEGORY_VALUE} textValue={t('diary.no_category')}>
+                      <span className="flex items-center gap-2">
+                        <CircleOff className="size-4 shrink-0" />
+                        <span className="truncate">{t('diary.no_category')}</span>
+                      </span>
+                    </SelectItem>
+                    {categories.map((c) => {
+                      const tint = typeof c.color === 'string' && c.color.trim() ? c.color : 'var(--primary)';
+                      return (
+                        <SelectItem key={String(c.id)} value={String(c.id)} textValue={String(c.title ?? c.id)} tint={tint}>
+                          <span className="flex items-center gap-2">
+                            <AuraThemedIcon name={typeof c.icon === 'string' ? c.icon : null} tint={tint} className="size-4 shrink-0" />
+                            <span className="truncate">{String(c.title ?? c.id)}</span>
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div className="border-border/60 border-b">
-            <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:px-4">
+          <div>
+            <div className="flex items-center gap-0.5 overflow-x-auto px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="hidden h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted sm:inline-flex"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('bold');
@@ -507,8 +550,8 @@ export function DiaryEditorPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="hidden h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted lg:inline-flex"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('italic');
@@ -521,8 +564,8 @@ export function DiaryEditorPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="hidden h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted sm:inline-flex"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('underline');
@@ -535,8 +578,8 @@ export function DiaryEditorPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('strikeThrough');
@@ -549,8 +592,8 @@ export function DiaryEditorPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('formatBlock', 'H2');
@@ -563,8 +606,8 @@ export function DiaryEditorPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('insertUnorderedList');
@@ -577,8 +620,8 @@ export function DiaryEditorPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('insertOrderedList');
@@ -591,8 +634,8 @@ export function DiaryEditorPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('formatBlock', 'BLOCKQUOTE');
@@ -605,8 +648,8 @@ export function DiaryEditorPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-md border border-border/60 bg-background/70 px-2.5 hover:bg-muted"
+                      size="icon-sm"
+                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         applyEditorCommand('removeFormat');
@@ -617,8 +660,8 @@ export function DiaryEditorPage() {
                     >
                       <Eraser className="size-3.5" />
                     </Button>
-                    <div className="ml-auto flex shrink-0 items-center gap-2">
-                      <span className="text-muted-foreground inline-flex min-w-8 items-center justify-center gap-1 text-xs">
+                    <div className="ml-auto flex shrink-0 items-center gap-1.5 pl-1.5">
+                      <span className="aura-meta inline-flex min-w-8 items-center justify-center gap-1">
                         <span className="font-semibold leading-none">A</span>
                         {spellcheckEnabled ? <Check className="size-3" aria-hidden /> : null}
                       </span>
@@ -633,14 +676,27 @@ export function DiaryEditorPage() {
                     </div>
                   </div>
                 </div>
-          <div className="relative min-h-0 h-full flex-1">
+        </div>
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
+            {isEntryEmpty && activeEntryPreset ? (
+              <div className="pointer-events-none absolute inset-0 overflow-hidden px-3 py-3 sm:px-4">
+                <p className="text-[var(--aura-text-disabled)] select-none text-base italic leading-relaxed">
+                  «{normalizeDiaryPresetText(activeEntryPreset.prompt)}»
+                </p>
+                {activeEntryPreset.description ? (
+                  <p className="text-[var(--aura-text-disabled)] mt-2.5 select-none text-xs font-medium tracking-wide opacity-70">
+                    — {String(activeEntryPreset.description)}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <div
               id="diary-text"
-              ref={editorRef}
+              ref={setEditorRef}
               contentEditable
               suppressContentEditableWarning
-              data-placeholder={isEntryEmpty ? entryPresetPrompt : t('diary.entry')}
-              className="text-foreground empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)] min-h-0 h-full flex-1 overflow-y-auto bg-transparent px-3 py-3 pb-7 text-base leading-relaxed outline-none sm:px-4 [&_h2]:my-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:leading-tight [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-border/70 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_blockquote]:italic"
+              data-placeholder={isEntryEmpty && !activeEntryPreset ? t('diary.entry') : ''}
+              className="text-foreground empty:before:text-[var(--aura-text-disabled)] empty:before:content-[attr(data-placeholder)] min-h-0 h-full flex-1 overflow-y-auto bg-transparent px-3 py-3 pb-7 text-base leading-relaxed outline-none sm:px-4 [&_h2]:my-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:leading-tight [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-[var(--aura-border-soft)] [&_blockquote]:pl-3 [&_blockquote]:text-[var(--aura-text-muted)] [&_blockquote]:italic"
               spellCheck={spellcheckEnabled}
               onInput={(e) => setText((e.currentTarget as HTMLDivElement).innerHTML)}
               onBlur={() => {
@@ -651,11 +707,10 @@ export function DiaryEditorPage() {
               onMouseUp={saveEditorSelection}
               onKeyUp={saveEditorSelection}
             />
-            <span className="text-muted-foreground pointer-events-none absolute bottom-1.5 right-3 text-xs tabular-nums sm:right-4">
+            <span className="text-[var(--aura-text-subtle)] pointer-events-none absolute bottom-1.5 right-3 text-xs tabular-nums sm:right-4">
               S {toPlainText(text).length}
             </span>
           </div>
-        </div>
       </div>
     </section>
   );
@@ -691,9 +746,7 @@ export function DiaryEditorPage() {
     <div className={cn(MEGA_PANEL_BODY_CN, ANIM.enterFade)}>
       {resolvedRightTab === 'nutrition' && showNutrition ? (
         <>
-          <SectionControlCard className={cn('mb-2 rounded-none border-0 bg-transparent px-0 py-0 sm:px-0 sm:py-0', dayLocked && 'pointer-events-none opacity-55')}>
-            <NutritionDaySummaryBar totals={nutritionDayTotals} targets={nutritionDayTargets} />
-          </SectionControlCard>
+          <NutritionDaySummaryBar totals={nutritionDayTotals} targets={nutritionDayTargets} className={cn('mb-2 shrink-0', dayLocked && 'pointer-events-none opacity-55')} />
           {nutritionEntries.length === 0 ? (
             <EmptyState
               title="За этот день пока нет приёмов пищи."
@@ -701,62 +754,63 @@ export function DiaryEditorPage() {
               compact
             />
           ) : (
-            <ul className="flex flex-col gap-1">
-              {nutritionEntries.map((e) => {
-                const productRow =
-                  e.product_id && db ? (db.getById('cfg_nutrition_products', String(e.product_id)) as AuraRow | null) : null;
-                const presetRow =
-                  e.preset_id && db ? (db.getById('cfg_nutrition_presets', String(e.preset_id)) as AuraRow | null) : null;
-                const sourceRow = productRow ?? presetRow;
-                const icon =
-                  productRow != null
-                    ? NUTRITION_GROUP_ICON[String(productRow.group ?? 'proteins')] ?? 'apple'
-                    : sourceRow && typeof sourceRow.icon === 'string'
-                      ? sourceRow.icon
-                      : null;
-                const color =
-                  sourceRow && typeof sourceRow.color === 'string' && String(sourceRow.color).trim()
-                    ? String(sourceRow.color)
-                    : 'var(--primary)';
-                const title = sourceRow != null ? String(sourceRow.title ?? sourceRow.id ?? t('diary.entry')) : t('diary.entry');
-                const kcal = Math.round(Number(e.total_calories) || 0);
-                const p = Math.round(Number(e.total_proteins) || 0);
-                const f = Math.round(Number(e.total_fats) || 0);
-                const c = Math.round(Number(e.total_carbs) || 0);
-                const cfgHint = nutritionCfgHint(productRow);
-                const amountLabel = cfgHint
-                  ? `${p}Б ${f}Ж ${c}У ${kcal}ккал · ${cfgHint}`
-                  : `${p}Б ${f}Ж ${c}У ${kcal}ккал`;
+            <div className="mb-2 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
+              <ul className="divide-y divide-[var(--aura-border-soft)]">
+                {nutritionEntries.map((e) => {
+                  const productRow =
+                    e.product_id && db ? (db.getById('cfg_nutrition_products', String(e.product_id)) as AuraRow | null) : null;
+                  const presetRow =
+                    e.preset_id && db ? (db.getById('cfg_nutrition_presets', String(e.preset_id)) as AuraRow | null) : null;
+                  const sourceRow = productRow ?? presetRow;
+                  const icon =
+                    productRow != null
+                      ? NUTRITION_GROUP_ICON[String(productRow.group ?? 'proteins')] ?? 'apple'
+                      : sourceRow && typeof sourceRow.icon === 'string'
+                        ? sourceRow.icon
+                        : null;
+                  const color =
+                    sourceRow && typeof sourceRow.color === 'string' && String(sourceRow.color).trim()
+                      ? String(sourceRow.color)
+                      : 'var(--primary)';
+                  const title = sourceRow != null ? String(sourceRow.title ?? sourceRow.id ?? t('diary.entry')) : t('diary.entry');
+                  const kcal = Math.round(Number(e.total_calories) || 0);
+                  const p = Math.round(Number(e.total_proteins) || 0);
+                  const f = Math.round(Number(e.total_fats) || 0);
+                  const c = Math.round(Number(e.total_carbs) || 0);
+                  const cfgHint = nutritionCfgHint(productRow);
+                  const amountLabel = cfgHint
+                    ? `${p}Б ${f}Ж ${c}У ${kcal}ккал · ${cfgHint}`
+                    : `${p}Б ${f}Ж ${c}У ${kcal}ккал`;
 
-                return (
-                  <li key={String(e.id)}>
-                    <ListItem
-                      mode="edit-delete"
-                      icon={icon}
-                      iconTint={color}
-                      title={title}
-                      amount={amountLabel}
-                      className={dayLocked ? 'opacity-65' : undefined}
-                      onEdit={() => {
-                        if (dayLocked) return;
-                        setEditingNutritionEntry(e);
-                        setNutritionDialogOpen(true);
-                      }}
-                      onDelete={() => {
-                        if (!db || dayLocked) return;
-                        runAuraMutation('nutrition', () => {
-                          db.deleteNutritionEntry(String(e.id));
-                        });
-                        setNutritionTick((n) => n + 1);
-                      }}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
+                  return (
+                    <li key={String(e.id)}>
+                      <ListItem
+                        mode="edit-delete"
+                        icon={icon}
+                        iconTint={color}
+                        title={title}
+                        amount={amountLabel}
+                        className={cn('rounded-none border-0 bg-transparent shadow-none', dayLocked && 'opacity-65')}
+                        onEdit={() => {
+                          if (dayLocked) return;
+                          setEditingNutritionEntry(e);
+                          setNutritionDialogOpen(true);
+                        }}
+                        onDelete={() => {
+                          if (!db || dayLocked) return;
+                          runAuraMutation('nutrition', () => {
+                            db.deleteNutritionEntry(String(e.id));
+                          }, dateString);
+                          setNutritionTick((n) => n + 1);
+                        }}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
           <AddListButton
-            className="mt-2"
             onClick={() => {
               if (dayLocked) return;
               setEditingNutritionEntry(null);
@@ -784,8 +838,8 @@ export function DiaryEditorPage() {
       ) : null}
           {resolvedRightTab === 'entries' && showEntries ? (
         <>
-          <SectionControlCard className="mb-2 rounded-none border-0 bg-transparent px-0 py-0 sm:px-0 sm:py-0">
-            <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="mb-2 shrink-0 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
+            <div className="px-3 py-2">
               <Input
                 value={entriesSearch}
                 onChange={(e) => setEntriesSearch(e.target.value)}
@@ -793,44 +847,47 @@ export function DiaryEditorPage() {
                 className="h-8 w-full"
                 aria-label={t('diary.search_placeholder')}
               />
-              <div className="grid min-w-0 grid-flow-col auto-cols-fr gap-1.5 overflow-x-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  className="w-full rounded-md active:scale-100"
-                  onClick={() => setEntriesCategoryFilters([])}
-                  title={t('diary.all_categories')}
-                  aria-label={t('diary.all_categories')}
-                >
-                  <CircleOff className="size-3.5" aria-hidden />
-                </Button>
-                {categories.map((c) => {
-                  const catId = String(c.id);
-                  const active = entriesCategoryFilters.includes(catId);
-                  return (
-                    <Button
-                      key={catId}
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      className="w-full rounded-md active:scale-100 aria-pressed:bg-muted aria-pressed:text-foreground"
-                      onClick={() =>
-                        setEntriesCategoryFilters((prev) =>
-                          prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId]
-                        )
-                      }
-                      aria-pressed={active}
-                      title={String(c.title ?? c.id)}
-                      aria-label={String(c.title ?? c.id)}
-                    >
-                      <AuraThemedIcon name={typeof c.icon === 'string' ? c.icon : null} className="size-3.5 shrink-0" />
-                    </Button>
-                  );
-                })}
-              </div>
             </div>
-          </SectionControlCard>
+            <div className="flex divide-x divide-[var(--aura-border-soft)] border-t border-[var(--aura-border-soft)]">
+              <button
+                type="button"
+                onClick={() => setEntriesCategoryFilters([])}
+                title={t('diary.all_categories')}
+                aria-label={t('diary.all_categories')}
+                aria-pressed={entriesCategoryFilters.length === 0}
+                className={cn(
+                  'flex flex-1 items-center justify-center py-2 text-[var(--aura-text-muted)] aura-tx-interactive hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground',
+                  entriesCategoryFilters.length === 0 && 'bg-[var(--aura-surface-control)] text-foreground'
+                )}
+              >
+                <CircleOff className="size-3.5" aria-hidden />
+              </button>
+              {categories.map((c) => {
+                const catId = String(c.id);
+                const active = entriesCategoryFilters.includes(catId);
+                return (
+                  <button
+                    key={catId}
+                    type="button"
+                    onClick={() =>
+                      setEntriesCategoryFilters((prev) =>
+                        prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId]
+                      )
+                    }
+                    aria-pressed={active}
+                    title={String(c.title ?? c.id)}
+                    aria-label={String(c.title ?? c.id)}
+                    className={cn(
+                      'flex flex-1 items-center justify-center py-2 text-[var(--aura-text-muted)] aura-tx-interactive hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground',
+                      active && 'bg-[var(--aura-surface-control)] text-foreground'
+                    )}
+                  >
+                    <AuraThemedIcon name={typeof c.icon === 'string' ? c.icon : null} className="size-3.5 shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {filteredDiaryEntries.length === 0 ? (
             <EmptyState
               title={t('diary.entries_not_found')}
@@ -838,31 +895,34 @@ export function DiaryEditorPage() {
               compact
             />
           ) : (
-            <ul className="flex flex-col gap-1">
-              {filteredDiaryEntries.map((e) => {
-                const mood = e.mood_id ? moodById.get(String(e.mood_id)) : undefined;
-                const cat = e.category_id ? categoryById.get(String(e.category_id)) : undefined;
-                return (
-                  <li key={String(e.id)}>
-                    <ListItem
-                      mode="diary"
-                      title={String(e.date)}
-                      amount={cat ? String(cat.title ?? cat.id ?? '') : t('diary.no_category')}
-                      description={diaryTextPreview(e.text, 160, t('diary.empty_entry'))}
-                      categoryIcon={cat && typeof cat.icon === 'string' ? cat.icon : null}
-                      moodLevel={Number(mood?.level ?? 0)}
-                      moodLevelsTotal={moods.length}
-                      onActivate={() => {
-                        const normalizedDate = normalizeDiaryDate(e.date);
-                        if (!normalizedDate) return;
-                        setDateString(normalizedDate);
-                        setMobileSection('entry');
-                      }}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
+              <ul className="divide-y divide-[var(--aura-border-soft)]">
+                {filteredDiaryEntries.map((e) => {
+                  const mood = e.mood_id ? moodById.get(String(e.mood_id)) : undefined;
+                  const cat = e.category_id ? categoryById.get(String(e.category_id)) : undefined;
+                  return (
+                    <li key={String(e.id)}>
+                      <ListItem
+                        mode="diary"
+                        title={String(e.date)}
+                        amount={cat ? String(cat.title ?? cat.id ?? '') : t('diary.no_category')}
+                        description={diaryTextPreview(e.text, 160, t('diary.empty_entry'))}
+                        categoryIcon={cat && typeof cat.icon === 'string' ? cat.icon : null}
+                        moodLevel={Number(mood?.level ?? 0)}
+                        moodLevelsTotal={moods.length}
+                        className="rounded-none border-0 bg-transparent shadow-none"
+                        onActivate={() => {
+                          const normalizedDate = normalizeDiaryDate(e.date);
+                          if (!normalizedDate) return;
+                          setDateString(normalizedDate);
+                          setMobileSection('entry');
+                        }}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
         </>
       ) : null}
@@ -895,7 +955,7 @@ export function DiaryEditorPage() {
   const layout = bothColumns ? (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {isDesktopViewport ? (
-        <div className="min-h-0 min-w-0 flex-1 divide-y divide-border/60 overflow-hidden lg:grid lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+        <div className="min-h-0 min-w-0 flex-1 divide-y divide-[var(--aura-border-soft)] overflow-hidden lg:grid lg:grid-cols-2 lg:divide-x lg:divide-y-0">
           {showEntry ? entryColumn : null}
           {(showNutrition || showEntries) ? rightColumn : null}
         </div>

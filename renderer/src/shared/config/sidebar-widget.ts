@@ -10,8 +10,6 @@ export type SidebarMetricKey =
   | 'balance'
   | 'streak';
 
-export type SidebarWidgetStyleVariant = 'compact' | 'balanced';
-
 export const SIDEBAR_CORE_METRICS: readonly SidebarMetricKey[] = [
   'day-progress',
   'daily-points',
@@ -34,9 +32,7 @@ export const SIDEBAR_METRIC_LABELS: Readonly<Record<SidebarMetricKey, string>> =
   streak: 'Серия',
 };
 
-const MIN_ITEMS = 3;
-const MAX_ITEMS = 10;
-const DEFAULT_MAX = 8;
+const MIN_ENABLED = 3;
 
 function parseJsonArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((v) => String(v));
@@ -61,34 +57,20 @@ function asMetricKeys(raw: string[]): SidebarMetricKey[] {
 export function getSidebarWidgetSettings(settings: AuraRow | null | undefined): {
   enabledMetrics: SidebarMetricKey[];
   order: SidebarMetricKey[];
-  maxItems: number;
-  styleVariant: SidebarWidgetStyleVariant;
 } {
   const enabledRaw = asMetricKeys(parseJsonArray(settings?.sidebar_widget_enabled_metrics));
   const orderRaw = asMetricKeys(parseJsonArray(settings?.sidebar_widget_order));
   const enabled = uniqueKeys(enabledRaw.length ? enabledRaw : [...SIDEBAR_CORE_METRICS]);
-  const mergedOrder = uniqueKeys([...orderRaw, ...SIDEBAR_CORE_METRICS]);
-  const maxRaw = Number(settings?.sidebar_widget_max_items);
-  const maxItems = Number.isFinite(maxRaw) ? Math.max(MIN_ITEMS, Math.min(MAX_ITEMS, Math.floor(maxRaw))) : DEFAULT_MAX;
-  const styleVariant: SidebarWidgetStyleVariant =
-    settings?.sidebar_widget_style_variant === 'compact' ? 'compact' : 'balanced';
   return {
-    enabledMetrics: enabled,
-    order: mergedOrder,
-    maxItems,
-    styleVariant,
+    enabledMetrics: enabled.length >= MIN_ENABLED ? enabled : [...SIDEBAR_CORE_METRICS],
+    order: uniqueKeys([...orderRaw, ...SIDEBAR_CORE_METRICS]),
   };
 }
 
 export function resolveVisibleSidebarMetrics(
   enabledMetrics: SidebarMetricKey[],
-  order: SidebarMetricKey[],
-  maxItems: number
+  order: SidebarMetricKey[]
 ): SidebarMetricKey[] {
   const enabled = new Set(enabledMetrics);
-  const orderedEnabled = order.filter((k) => enabled.has(k));
-  const fallback = SIDEBAR_CORE_METRICS.filter((k) => enabled.has(k));
-  const merged = uniqueKeys([...orderedEnabled, ...fallback]);
-  return merged.slice(0, Math.max(MIN_ITEMS, Math.min(MAX_ITEMS, maxItems)));
+  return uniqueKeys([...order.filter((k) => enabled.has(k)), ...SIDEBAR_CORE_METRICS.filter((k) => enabled.has(k))]);
 }
-

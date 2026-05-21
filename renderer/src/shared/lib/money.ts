@@ -4,6 +4,17 @@ const SYMBOLS: Record<string, string> = {
   EUR: '€',
   GBP: '£',
   KZT: '₸',
+  BYN: 'Br',
+  PLN: 'zł',
+  TRY: '₺',
+  AED: 'د.إ',
+  CZK: 'Kč',
+  HUF: 'Ft',
+  NOK: 'kr',
+  SEK: 'kr',
+  CHF: 'Fr',
+  JPY: '¥',
+  CNY: '¥',
 };
 
 export function currencySymbol(code: string | undefined): string {

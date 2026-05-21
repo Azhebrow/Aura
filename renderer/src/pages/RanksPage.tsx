@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Activity,
-  Ban,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Lock,
   Pencil,
   Percent,
   Sparkle,
-  Sparkles,
   Sigma,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -21,6 +18,7 @@ import { useSelectedDate } from '@/features/selected-date/selected-date-context'
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useCumulativePoints } from '@/shared/hooks/use-cumulative-points';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
+import { useDragScroll } from '@/shared/hooks/use-drag-scroll';
 import { getPageSectionsFromSettings } from '@/shared/lib/page-sections-visibility';
 import {
   type RankTier,
@@ -42,7 +40,7 @@ import {
   MEGA_SHELL_CARD_CN,
   MEGA_SHELL_CONTENT_CN,
 } from '@/shared/ui/mega-section-layout';
-import { MobilePageShell, MobileSectionTabs, MobileSectionViewport } from '@/shared/ui/mobile';
+import { MobilePageShell, SectionTabsLayout } from '@/shared/ui/mobile';
 import { MegaPanelHeader } from '@/shared/ui/mega-panel-header';
 import { TASK_CATEGORY_IDS, type TaskCategoryId } from '@/shared/config/domain-taxonomy';
 import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
@@ -51,19 +49,42 @@ import { LoadingShell } from '@/shared/ui/data-states';
 type HistoryCategoryId = TaskCategoryId;
 const HISTORY_CATEGORY_IDS = TASK_CATEGORY_IDS;
 
-const HISTORY_CATEGORY_ICONS: Record<HistoryCategoryId, LucideIcon> = {
-  rituals: Sparkles,
-  time: Clock,
-  body: Activity,
-  deps: Ban,
-};
-
 const HISTORY_CATEGORY_PERCENT_KEYS: Record<HistoryCategoryId, string> = {
   rituals: 'rituals_percent',
   time: 'time_percent',
   body: 'body_percent',
   deps: 'deps_percent',
 };
+
+function isIsoDate(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function addDaysIso(dateStr: string, delta: number): string {
+  const date = new Date(`${dateStr}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateStr;
+  date.setDate(date.getDate() + delta);
+  return date.toISOString().slice(0, 10);
+}
+
+function buildPointsHistoryRange(db: AuraDatabase, endDate: string): AuraRow[] {
+  const rows = db.getAll('act_daily_points').filter((r) => isIsoDate(r.date));
+  const settings = (db.getAppSettings() ?? {}) as AuraRow;
+  const configuredStart = isIsoDate(settings.points_start_date) ? settings.points_start_date : null;
+  const firstStoredDate = rows
+    .map((r) => String(r.date))
+    .sort((a, b) => a.localeCompare(b))[0];
+  const startDate = configuredStart ?? firstStoredDate ?? endDate;
+  const safeEnd = isIsoDate(endDate) ? endDate : startDate;
+  if (startDate > safeEnd) return [];
+
+  const byDate = new Map(rows.map((row) => [String(row.date), row]));
+  const out: AuraRow[] = [];
+  for (let cursor = safeEnd, guard = 0; cursor >= startDate && guard < 5000; cursor = addDaysIso(cursor, -1), guard += 1) {
+    out.push(byDate.get(cursor) ?? { id: `empty_${cursor}`, date: cursor, completion_percent: 0, daily_points: 0, cumulative_points: 0 });
+  }
+  return out;
+}
 
 export function RanksPage() {
   const { dateString } = useSelectedDate();
@@ -106,57 +127,11 @@ export function RanksPage() {
   const history = useMemo(() => {
     if (!db) return [];
     try {
-      return db
-        .getAll('act_daily_points')
-        .filter((r) => r.date)
-        .sort((a, b) => String(b.date).localeCompare(String(a.date)))
-        .slice(0, 24);
+      return buildPointsHistoryRange(db, dateString);
     } catch {
       return [];
     }
   }, [db, dateString, dataTick]);
-
-  const [rankAssetsReady, setRankAssetsReady] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    setRankAssetsReady(false);
-    const allSources = Array.from(new Set(RANK_TIERS.map((tier) => rankImageSrc(tier.imageNumber))));
-    if (allSources.length === 0) {
-      setRankAssetsReady(true);
-      return () => {
-        active = false;
-      };
-    }
-
-    let loadedCount = 0;
-    const markDone = () => {
-      loadedCount += 1;
-      if (active && loadedCount >= allSources.length) {
-        setRankAssetsReady(true);
-      }
-    };
-
-    allSources.forEach((src) => {
-      const img = new Image();
-      let settled = false;
-      const settle = () => {
-        if (settled) return;
-        settled = true;
-        markDone();
-      };
-      img.onload = settle;
-      img.onerror = settle;
-      img.src = src;
-      if (img.complete) {
-        settle();
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   if (!showRank && !showHistory) {
     return (
@@ -165,6 +140,8 @@ export function RanksPage() {
       </PageFrame>
     );
   }
+
+  const both = showRank && showHistory;
 
   const rankColumn = showRank ? (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -176,16 +153,17 @@ export function RanksPage() {
         pct={pct}
         needed={needed}
         dateString={dateString}
-        assetsReady={rankAssetsReady}
       />
       {!compactMiniRankOnly ? (
-        <RankLadder
-          points={points}
-          currentId={current.id}
-          selectedId={selectedRank.id}
-          onSelect={setSelectedRankId}
-          assetsReady={rankAssetsReady}
-        />
+        <div className="hidden min-h-0 flex-1 flex-col overflow-hidden lg:flex">
+          <RankLadder
+            points={points}
+            currentId={current.id}
+            selectedId={selectedRank.id}
+            onSelect={setSelectedRankId}
+            showHeader={both}
+          />
+        </div>
       ) : null}
     </div>
   ) : null;
@@ -193,7 +171,7 @@ export function RanksPage() {
   const historyColumn = showHistory ? (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <MegaPanelHeader title="История очков" />
-      <div className={MEGA_PANEL_BODY_CN}>
+      <div className="min-h-0 flex-1 overflow-auto overscroll-contain p-3 sm:p-4">
         <PointsHistoryTable db={db} history={history} />
       </div>
     </div>
@@ -203,7 +181,7 @@ export function RanksPage() {
     return (
       <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
         <Card className={MEGA_SHELL_CARD_CN}>
-          <CardContent className={cn(MEGA_SHELL_CONTENT_CN, 'p-0')}>
+          <CardContent className={cn(MEGA_SHELL_CONTENT_CN, 'aura-content-fade-in p-0')}>
             <MobilePageShell
               sections={[{ id: 'rank', label: 'Ранг', Icon: Sparkle, content: rankColumn }]}
               value="rank"
@@ -215,7 +193,6 @@ export function RanksPage() {
     );
   }
 
-  const both = showRank && showHistory;
   const mobileSections = [
     showRank ? { id: 'rank' as const, label: 'Ранг', Icon: Sparkle, content: rankColumn } : null,
     showHistory ? { id: 'history' as const, label: 'История', Icon: Calendar, content: historyColumn } : null,
@@ -225,26 +202,22 @@ export function RanksPage() {
   return (
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
       <Card className={MEGA_SHELL_CARD_CN}>
-        <CardContent className={MEGA_SHELL_CONTENT_CN}>
-          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-background xl:hidden">
-            <MobileSectionViewport>
-              {activeMobileSection?.content}
-            </MobileSectionViewport>
-            <MobileSectionTabs
-              sections={mobileSections.map(({ id, label, Icon }) => ({ id, label, Icon }))}
-              value={activeMobileSection?.id ?? mobilePanel}
-              onChange={(v) => setMobilePanel(v as 'rank' | 'history')}
-            />
-          </div>
+        <CardContent className={`${MEGA_SHELL_CONTENT_CN} aura-content-fade-in`}>
+          <SectionTabsLayout
+            className="xl:hidden"
+            sections={mobileSections}
+            value={activeMobileSection?.id ?? mobilePanel}
+            onChange={(v) => setMobilePanel(v as 'rank' | 'history')}
+          />
           {both ? (
-            <div className="hidden h-full min-h-0 flex-1 overflow-hidden aura-content-fade-in xl:grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] xl:divide-x xl:divide-border/60">
+            <div className="hidden h-full min-h-0 flex-1 overflow-hidden xl:grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] xl:divide-x xl:divide-[var(--aura-border-soft)]">
               {rankColumn}
               {historyColumn}
             </div>
           ) : showRank ? (
-            <div className="hidden min-h-0 flex-1 lg:flex">{rankColumn}</div>
+            <div className="hidden min-h-0 flex-1 xl:flex">{rankColumn}</div>
           ) : (
-            <div className="hidden min-h-0 flex-1 lg:flex">{historyColumn}</div>
+            <div className="hidden min-h-0 flex-1 xl:flex">{historyColumn}</div>
           )}
         </CardContent>
       </Card>
@@ -260,7 +233,6 @@ function CurrentRankHero({
   pct,
   needed,
   dateString,
-  assetsReady,
 }: {
   current: RankTier;
   actualCurrent: RankTier;
@@ -269,17 +241,15 @@ function CurrentRankHero({
   pct: number;
   needed: number;
   dateString: string;
-  assetsReady: boolean;
 }) {
   const aura = rankAuraHsl(current.id);
   const currentRankImageSrc = rankImageSrc(current.imageNumber);
-  const canRenderImage = assetsReady;
   const heroAuraVars = { ['--rank-aura' as string]: aura } as CSSProperties;
   const hasLocalPointsFallback = typeof window === 'undefined' || !window.PointsService;
 
   return (
     <div
-      className="relative shrink-0 overflow-hidden border-b border-border/40 bg-transparent px-2.5 py-3 sm:px-4 sm:py-5"
+      className="relative shrink-0 overflow-hidden border-b border-[var(--aura-border-soft)]/40 bg-transparent px-2.5 py-3 sm:px-4 sm:py-5"
       style={heroAuraVars}
     >
       <div aria-hidden className="ranks-hero-aura-flow pointer-events-none absolute inset-0 hidden sm:block" />
@@ -287,21 +257,18 @@ function CurrentRankHero({
         <div className="relative mx-auto flex aspect-square w-full max-w-[min(126px,34vw)] shrink-0 items-center justify-center sm:max-w-[min(132px,34vw)] xl:mx-0 xl:max-w-[min(220px,28%)]">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-[-22%] rounded-full opacity-[0.65] blur-2xl motion-safe:transition-opacity motion-safe:duration-aura-glide motion-safe:ease-aura"
+            className="pointer-events-none absolute left-1/2 top-1/2 size-[min(64rem,150vw)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.62] blur-[72px] motion-safe:transition-opacity motion-safe:duration-aura-glide motion-safe:ease-aura"
             style={{
-              background: `radial-gradient(closest-side, color-mix(in srgb, ${aura} var(--ranks-aura-core-mix), transparent) 0%, color-mix(in srgb, ${aura} var(--ranks-aura-mid-mix), transparent) 45%, transparent 72%)`,
+              background: `radial-gradient(circle, color-mix(in srgb, ${aura} calc(var(--ranks-aura-core-mix) * 1.25), transparent) 0%, color-mix(in srgb, ${aura} calc(var(--ranks-aura-mid-mix) * 1.05), transparent) 28%, color-mix(in srgb, ${aura} calc(var(--ranks-aura-mid-mix) * 0.42), transparent) 54%, color-mix(in srgb, ${aura} calc(var(--ranks-aura-mid-mix) * 0.16), transparent) 76%, transparent 100%)`,
             }}
           />
-          {canRenderImage ? (
-            <RankImage
-              src={currentRankImageSrc}
-              alt={current.name}
-              className="relative z-[1] max-h-full w-full object-contain drop-shadow-sm"
-              loading="eager"
-            />
-          ) : (
-            <div aria-hidden className="relative z-[1] h-full w-full rounded-lg bg-muted/45" />
-          )}
+          <RankImage
+            src={currentRankImageSrc}
+            alt={current.name}
+            className="relative z-[1] max-h-full w-full object-contain drop-shadow-sm"
+            loading="eager"
+            revealWhenLoaded
+          />
         </div>
 
     <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-3 sm:gap-4 xl:justify-center">
@@ -319,14 +286,14 @@ function CurrentRankHero({
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <div className="rounded-lg border border-border/70 bg-card/60 px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5 sm:px-4 sm:py-3">
               <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Накоплено очков</p>
-              <p className="mt-1 font-mono text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">
+              <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">
                 {formatRankPoints(points)}
               </p>
-              <p className="text-muted-foreground mt-1 font-mono text-xs tabular-nums">на {dateString}</p>
+              <p className="text-muted-foreground mt-1 text-xs tabular-nums">на {dateString}</p>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card/40 px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5 sm:px-4 sm:py-3">
               {next ? (
                 <>
                   <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">До «{next.name}»</p>
@@ -349,7 +316,7 @@ function CurrentRankHero({
             <div className="space-y-2">
               <div className="flex items-end justify-between gap-2 text-xs">
                 <span className="text-muted-foreground">Прогресс к следующему рангу</span>
-                <span className="font-mono font-semibold tabular-nums text-foreground">{Math.round(pct)}%</span>
+                <span className="font-semibold tabular-nums text-foreground">{Math.round(pct)}%</span>
               </div>
               <Progress value={pct} className="h-2" />
             </div>
@@ -370,15 +337,36 @@ function RankLadder({
   currentId,
   selectedId,
   onSelect,
-  assetsReady,
+  showHeader = true,
 }: {
   points: number;
   currentId: number;
   selectedId: number;
   onSelect: (tierId: number) => void;
-  assetsReady: boolean;
+  showHeader?: boolean;
 }) {
   const stripRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [hasRoom, setHasRoom] = useState(true);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const { height } = el.getBoundingClientRect();
+      setHasRoom(height >= 260);
+    };
+
+    update();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    ro?.observe(el);
+    window.addEventListener('resize', update);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   const scrollBy = useCallback((dir: -1 | 1) => {
     const el = stripRef.current;
@@ -387,38 +375,42 @@ function RankLadder({
   }, []);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <MegaPanelHeader
-        title="Все ранги"
-        right={
-          <div className="flex gap-1 lg:hidden">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              className="size-8 shrink-0"
-              aria-label="Прокрутить влево"
-              onClick={() => scrollBy(-1)}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              className="size-8 shrink-0"
-              aria-label="Прокрутить вправо"
-              onClick={() => scrollBy(1)}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        }
-      />
+    <div ref={rootRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {!hasRoom ? null : (
+        <>
+      {showHeader ? (
+        <MegaPanelHeader
+          title="Все ранги"
+          right={
+            <div className="flex gap-1 lg:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                className="size-8 shrink-0"
+                aria-label="Прокрутить влево"
+                onClick={() => scrollBy(-1)}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                className="size-8 shrink-0"
+                aria-label="Прокрутить вправо"
+                onClick={() => scrollBy(1)}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          }
+        />
+      ) : null}
       <div
         ref={stripRef}
         className={cn(
-          'h-full min-h-0 flex-1 overflow-hidden p-4',
+          'h-full min-h-0 flex-1 overflow-hidden p-3 sm:p-4',
           'grid gap-2',
           'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
           'auto-rows-fr'
@@ -432,10 +424,11 @@ function RankLadder({
             isCurrent={tier.id === currentId}
             isSelected={tier.id === selectedId}
             onSelect={onSelect}
-            assetsReady={assetsReady}
           />
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -446,44 +439,34 @@ function RankRibbonCard({
   isCurrent,
   isSelected,
   onSelect,
-  assetsReady,
 }: {
   tier: RankTier;
   reached: boolean;
   isCurrent: boolean;
   isSelected: boolean;
   onSelect: (tierId: number) => void;
-  assetsReady: boolean;
 }) {
   const aura = rankAuraHsl(tier.id);
   const tierImageSrc = rankImageSrc(tier.imageNumber);
-  const glow = reached
-    ? isCurrent
-      ? `0 0 0 1px color-mix(in srgb, ${aura} 42%, transparent), 0 0 28px -4px color-mix(in srgb, ${aura} 35%, transparent), 0 14px 40px -8px color-mix(in srgb, ${aura} 28%, transparent)`
-      : `0 0 0 1px color-mix(in srgb, ${aura} 18%, transparent), 0 8px 26px -8px color-mix(in srgb, ${aura} 14%, transparent)`
-    : undefined;
-
   const cardStyle: CSSProperties | undefined =
     reached && isCurrent
       ? {
-          boxShadow: glow,
-          backgroundColor: `color-mix(in srgb, ${aura} 14%, var(--card))`,
+          boxShadow: `0 0 0 1px color-mix(in srgb, ${aura} 28%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${aura} 8%, var(--card))`,
         }
-      : glow
-        ? { boxShadow: glow }
-        : undefined;
+      : undefined;
 
   if (!reached) {
     return (
       <div
         className={cn(
-          'isolate flex h-full flex-col items-center justify-center rounded-xl border border-border/30 bg-muted/20 p-2 text-center',
+          'isolate flex h-full flex-col items-center justify-center rounded-xl border border-[var(--aura-border-soft)]/50 bg-[var(--aura-surface-panel)] p-2 text-center',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura'
         )}
         title={`${tier.name} — ${tier.threshold}+`}
       >
-        <Lock className="size-5 text-muted-foreground/40" aria-hidden />
-        <span className="mt-1 font-mono text-xs text-muted-foreground/40 tabular-nums">{tier.threshold}+</span>
+        <Lock className="size-5 text-[var(--aura-text-subtle)]" aria-hidden />
+        <span className="mt-1 text-xs text-[var(--aura-text-disabled)] tabular-nums">{tier.threshold}+</span>
       </div>
     );
   }
@@ -493,7 +476,7 @@ function RankRibbonCard({
       type="button"
       onClick={() => onSelect(tier.id)}
         className={cn(
-          'isolate relative flex h-full flex-col items-center justify-center rounded-xl border border-border/60 px-2 py-2 text-center gap-2',
+          'isolate relative flex h-full flex-col items-center justify-center rounded-xl border border-[var(--aura-border-soft)] px-2 py-2 text-center gap-2',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura',
           'w-full',
           !isCurrent && 'bg-card/85 opacity-95',
@@ -503,17 +486,13 @@ function RankRibbonCard({
     >
       <div className="flex flex-col items-center">
         <div className="relative size-10 shrink-0 sm:size-12">
-          {assetsReady ? (
-            <RankImage
-              src={tierImageSrc}
-              alt=""
-              ariaHidden
-              className="size-full object-contain"
-              loading="eager"
-            />
-          ) : (
-            <div aria-hidden className="size-full rounded-md bg-muted/45" />
-          )}
+          <RankImage
+            src={tierImageSrc}
+            alt=""
+            ariaHidden
+            className="size-full object-contain"
+            loading="eager"
+          />
         </div>
       </div>
       <span
@@ -524,7 +503,7 @@ function RankRibbonCard({
       >
         {tier.name}
       </span>
-      <span className="absolute bottom-1 right-1.5 font-mono text-[9px] tabular-nums text-muted-foreground/50">
+      <span className="absolute bottom-1 right-1.5 text-micro tabular-nums text-muted-foreground/50">
         {tier.threshold}+
       </span>
     </button>
@@ -537,46 +516,59 @@ function RankImage({
   className,
   loading = 'eager',
   ariaHidden = false,
+  revealWhenLoaded = false,
 }: {
   src: string;
   alt: string;
   className?: string;
   loading?: 'eager' | 'lazy';
   ariaHidden?: boolean;
+  revealWhenLoaded?: boolean;
 }) {
-  const [loaded, setLoaded] = useState(false);
+  const [ready, setReady] = useState(!revealWhenLoaded || Boolean(window.__auraRankImageCache?.[src]?.complete));
 
   useEffect(() => {
-    setLoaded(false);
-    const preloaded = new Image();
-    preloaded.src = src;
-    if (preloaded.complete) setLoaded(true);
-  }, [src]);
+    if (!revealWhenLoaded) {
+      setReady(true);
+      return;
+    }
+    if (window.__auraRankImageCache?.[src]?.complete) {
+      setReady(true);
+      return;
+    }
+    let alive = true;
+    const image = new Image();
+    image.onload = () => {
+      window.__auraRankImageCache = { ...(window.__auraRankImageCache ?? {}), [src]: image };
+      if (alive) setReady(true);
+    };
+    image.onerror = () => {
+      if (alive) setReady(true);
+    };
+    image.src = src;
+    if (image.complete) {
+      window.__auraRankImageCache = { ...(window.__auraRankImageCache ?? {}), [src]: image };
+      setReady(true);
+    }
+    return () => {
+      alive = false;
+    };
+  }, [revealWhenLoaded, src]);
 
   return (
     <>
-      <div
-        aria-hidden
-        className={cn(
-          'absolute inset-0 rounded-md bg-muted/45 aura-tx-opacity',
-          loaded && 'opacity-0'
-        )}
-      />
-      <img
-        src={src}
-        alt={alt}
-        aria-hidden={ariaHidden || undefined}
-        decoding="async"
-        fetchPriority={loading === 'eager' ? 'high' : 'auto'}
-        loading={loading}
-        onLoad={() => setLoaded(true)}
-        onError={() => setLoaded(true)}
-        className={cn(
-          'relative z-[1] transition-opacity duration-aura-base ease-aura',
-          loaded ? 'ranks-media-in opacity-100' : 'opacity-0',
-          className
-        )}
-      />
+      {!ready ? <div aria-hidden className={cn('relative z-[1]', className)} /> : null}
+      {ready ? (
+        <img
+          src={src}
+          alt={alt}
+          aria-hidden={ariaHidden || undefined}
+          decoding="sync"
+          fetchPriority={loading === 'eager' ? 'high' : 'auto'}
+          loading={loading}
+          className={cn('relative z-[1]', className)}
+        />
+      ) : null}
     </>
   );
 }
@@ -594,9 +586,11 @@ function PointsHistoryTable({
   db: AuraDatabase | null;
   history: AuraRow[];
 }) {
+  const { ref: scrollRef, isDragging, dragScrollHandlers } = useDragScroll<HTMLDivElement>();
+  const categoryConfig = useMemo(() => loadTaskCategoryConfig(db), [db]);
   const categoryLabels = useMemo(
-    () => Object.fromEntries(TASK_CATEGORY_IDS.map((k) => [k, loadTaskCategoryConfig(db)[k].title])) as Record<TaskCategoryId, string>,
-    [db]
+    () => Object.fromEntries(TASK_CATEGORY_IDS.map((k) => [k, categoryConfig[k].title])) as Record<TaskCategoryId, string>,
+    [categoryConfig]
   );
 
   const completionsByDate = useMemo(() => {
@@ -638,113 +632,137 @@ function PointsHistoryTable({
     return <p className="text-muted-foreground text-sm">Нет данных по очкам.</p>;
   }
 
+  const STICKY_HEADER_SHADOW = 'inset 0 -1px 0 hsl(var(--border) / 0.35)';
+  const STICKY_COLUMN_SHADOW = 'inset -1px 0 0 hsl(var(--border) / 0.35)';
+  const STICKY_CORNER_SHADOW = `${STICKY_HEADER_SHADOW}, ${STICKY_COLUMN_SHADOW}`;
+  const TABLE_CELL_CN = 'border-r border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-1 py-2 text-center text-xs tabular-nums';
+
+  const COL_HEADERS: { key: string; Icon: LucideIcon; label: string; color: string }[] = [
+    { key: 'date',  Icon: Calendar, label: 'Дата', color: 'var(--aura-text-muted)' },
+    { key: 'categories', Icon: Activity, label: 'Категории', color: 'var(--aura-text-muted)' },
+    { key: 'avg',   Icon: Percent,  label: 'Средний %', color: 'hsl(var(--primary))' },
+    { key: 'daily', Icon: Sparkle,  label: 'Очки за день', color: 'var(--semantic-success)' },
+    { key: 'total', Icon: Sigma,    label: 'Накоплено', color: 'var(--aura-text-muted)' },
+    { key: 'status',Icon: Lock,     label: 'Статус', color: 'var(--aura-text-muted)' },
+  ];
+
   return (
-    <div className="min-w-0 overflow-x-auto rounded-lg border border-border/60">
-      <table className="w-max min-w-full text-left text-sm">
-        <thead className="bg-muted/50 sticky top-0 z-[1] backdrop-blur-sm">
-          <tr className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-            <th className="w-10 px-1 py-2 text-center font-medium sm:w-11 sm:px-1.5" title="Дата">
-              <span className="inline-flex size-7 items-center justify-center rounded-md border border-border/50 bg-muted/40 text-foreground">
-                <Calendar className="size-3.5 shrink-0 opacity-90" aria-hidden />
-              </span>
-              <span className="sr-only">Дата</span>
-            </th>
-            {HISTORY_CATEGORY_IDS.map((id) => {
-              const Icon = HISTORY_CATEGORY_ICONS[id];
-              return (
-                <th key={id} className="w-10 px-1 py-2 text-center font-medium sm:w-11 sm:px-1.5" title={categoryLabels[id]}>
-                  <span className="inline-flex size-7 items-center justify-center rounded-md border border-border/50 bg-muted/40 text-foreground">
-                    <Icon className="size-3.5 shrink-0 opacity-90" aria-hidden />
-                  </span>
-                  <span className="sr-only">{categoryLabels[id]}</span>
-                </th>
-              );
-            })}
-            <th className="w-11 px-1 py-2 text-center font-medium sm:w-12" title="Средний процент по всем категориям">
-              <span className="inline-flex size-7 items-center justify-center rounded-md border border-border/50 bg-muted/40 text-foreground">
-                <Percent className="size-3.5 shrink-0 opacity-90" aria-hidden />
-              </span>
-              <span className="sr-only">Всего</span>
-            </th>
-            <th className="w-11 px-1 py-2 text-center font-medium sm:w-12" title="Очки за день">
-              <span className="inline-flex size-7 items-center justify-center rounded-md border border-border/50 bg-muted/40 text-foreground">
-                <Sparkle className="size-3.5 shrink-0 opacity-90" aria-hidden />
-              </span>
-              <span className="sr-only">Очки за день</span>
-            </th>
-            <th className="w-11 px-1 py-2 text-center font-medium sm:w-12" title="Накопленные очки">
-              <span className="inline-flex size-7 items-center justify-center rounded-md border border-border/50 bg-muted/40 text-foreground">
-                <Sigma className="size-3.5 shrink-0 opacity-90" aria-hidden />
-              </span>
-              <span className="sr-only">Накопленные очки</span>
-            </th>
-            <th className="w-9 px-1 py-2 text-center font-medium sm:w-10" title="День открыт или закрыт">
-              <span className="inline-flex size-7 items-center justify-center rounded-md border border-border/50 bg-muted/40">
-                <Lock className="size-3.5 shrink-0 opacity-80" aria-hidden />
-              </span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {history.map((row, i) => {
-            const dateStr = String(row.date);
-            const completion = completionsByDate.get(dateStr);
-            const avgPct = Math.round(Math.min(100, Math.max(0, Number(row.completion_percent ?? 0))));
-            const StatusIc = dayStatusIcon(dateStr);
-            const daily = Number(row.daily_points ?? 0);
-            return (
-              <tr
-                key={String(row.id)}
-                className={cn(
-                  'border-t border-border/50 aura-tx-colors',
-                  i % 2 === 0 ? 'bg-background/40' : 'bg-muted/15'
-                )}
-              >
-                <td className="text-muted-foreground whitespace-nowrap px-2 py-2 text-xs tabular-nums sm:px-3">
-                  <span className="max-lg:inline lg:hidden">{formatHistoryDateShort(dateStr)}</span>
-                  <span className="hidden lg:inline">{dateStr}</span>
-                </td>
-                {HISTORY_CATEGORY_IDS.map((id) => {
-                  const key = HISTORY_CATEGORY_PERCENT_KEYS[id];
-                  const raw = completion?.[key];
-                  const v =
-                    raw !== null && raw !== undefined && !Number.isNaN(Number(raw))
-                      ? Math.round(Math.min(100, Math.max(0, Number(raw))))
-                      : null;
-                  return (
-                    <td
-                      key={id}
-                      className="px-1 py-2 text-center text-xs tabular-nums text-foreground/90"
-                    >
-                      {v != null ? `${v}%` : '—'}
-                    </td>
-                  );
-                })}
-                <td className="px-1 py-2 text-center text-xs font-semibold tabular-nums text-foreground sm:text-sm">
-                  {avgPct}%
-                </td>
-                <td
-                  className={cn(
-                    'whitespace-nowrap px-2 py-2 text-right text-xs font-medium tabular-nums sm:px-3',
-                    daily >= 0 ? 'text-semantic-success' : 'text-semantic-negative'
-                  )}
-                >
-                  {daily >= 0 ? '+' : ''}
-                  {Math.round(daily)}
-                </td>
-                <td className="text-muted-foreground whitespace-nowrap px-2 py-2 text-right text-xs tabular-nums sm:px-3">
-                  {Math.round(Number(row.cumulative_points ?? 0))}
-                </td>
-                <td className="px-1 py-2 text-center text-muted-foreground">
-                  <span className="inline-flex items-center justify-center" title="Статус дня">
-                    <StatusIc className="size-3.5 shrink-0 opacity-85" aria-hidden />
-                  </span>
-                </td>
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+      <div className="aura-surface-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/80">
+        <div
+          ref={scrollRef}
+          className={cn(
+            'aura-data-table-scroll h-full min-h-0 min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]',
+            'cursor-grab select-none active:cursor-grabbing',
+            isDragging && 'cursor-grabbing'
+          )}
+          {...dragScrollHandlers}
+        >
+          <table className="w-max min-w-full table-fixed border-separate border-spacing-0 text-sm">
+            <colgroup>
+              <col className="w-[4.75rem] sm:w-[5.5rem]" />
+              <col className="w-[7rem] sm:w-[7.5rem]" />
+              <col className="w-[3.25rem] sm:w-[3.5rem]" />
+              <col className="w-[3.75rem] sm:w-[4rem]" />
+              <col className="w-[4rem] sm:w-[4.5rem]" />
+              <col className="w-[2.5rem] sm:w-[2.75rem]" />
+            </colgroup>
+            <thead className="sticky top-0 z-[4]">
+              <tr>
+                {COL_HEADERS.map(({ key, Icon, label, color }, idx) => (
+                  <th
+                    key={key}
+                    title={label}
+                    aria-label={label}
+                    className={cn(
+                      'bg-card text-[var(--aura-text-muted)] sticky top-0 z-[5] border-b border-r border-[var(--aura-border-soft)]/40 px-1 py-1.5 text-center align-middle sm:py-2',
+                      idx === 0 && 'sticky left-0 z-[6]',
+                      idx === COL_HEADERS.length - 1 && 'border-r-0'
+                    )}
+                    style={{ boxShadow: idx === 0 ? STICKY_CORNER_SHADOW : STICKY_HEADER_SHADOW }}
+                  >
+                    <div className="flex items-center justify-center">
+                      <span className="inline-flex size-5 items-center justify-center" style={{ color } as CSSProperties}>
+                        <Icon className="size-3.5 shrink-0" aria-hidden />
+                      </span>
+                      <span className="sr-only">{label}</span>
+                    </div>
+                  </th>
+                ))}
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {history.map((row, rowIdx) => {
+                const dateStr = String(row.date);
+                const completion = completionsByDate.get(dateStr);
+                const avgPct = Math.round(Math.min(100, Math.max(0, Number(row.completion_percent ?? 0))));
+                const StatusIc = dayStatusIcon(dateStr);
+                const daily = Number(row.daily_points ?? 0);
+                const isLastRow = rowIdx === history.length - 1;
+                return (
+                  <tr key={String(row.id)} className="aura-tx-colors">
+                    {/* Date — sticky left */}
+                    <td
+                      className={cn(
+                        'sticky left-0 z-[3] border-r border-b border-[var(--aura-border-soft)] bg-card px-1.5 py-2 text-center text-xs font-medium text-foreground whitespace-nowrap',
+                        isLastRow && 'border-b-0'
+                      )}
+                      style={{ boxShadow: STICKY_COLUMN_SHADOW }}
+                    >
+                      <span className="max-lg:inline lg:hidden">{formatHistoryDateShort(dateStr)}</span>
+                      <span className="hidden lg:inline">{dateStr}</span>
+                    </td>
+                    {/* Category % */}
+                    <td className={cn(TABLE_CELL_CN, 'font-medium whitespace-nowrap', isLastRow && 'border-b-0')}>
+                      {HISTORY_CATEGORY_IDS.map((id, idx) => {
+                        const pctKey = HISTORY_CATEGORY_PERCENT_KEYS[id];
+                        const raw = completion?.[pctKey];
+                        const v = raw !== null && raw !== undefined && !Number.isNaN(Number(raw))
+                          ? Math.round(Math.min(100, Math.max(0, Number(raw))))
+                          : null;
+                        return (
+                          <span key={id} title={categoryLabels[id] ?? id}>
+                            {idx > 0 ? <span className="text-muted-foreground/45">+</span> : null}
+                            {v != null ? (
+                              <span style={{ color: categoryConfig[id].color } as CSSProperties}>{v}</span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </span>
+                        );
+                      })}
+                    </td>
+                    {/* Avg % */}
+                    <td className={cn(TABLE_CELL_CN, 'font-semibold text-foreground', isLastRow && 'border-b-0')}>
+                      {avgPct}%
+                    </td>
+                    {/* Daily points */}
+                    <td className={cn(
+                      TABLE_CELL_CN,
+                      'font-medium whitespace-nowrap',
+                      daily >= 0 ? 'text-semantic-success' : 'text-semantic-negative',
+                      isLastRow && 'border-b-0'
+                    )}>
+                      {daily >= 0 ? '+' : ''}{Math.round(daily)}
+                    </td>
+                    {/* Cumulative */}
+                    <td className={cn(TABLE_CELL_CN, 'text-muted-foreground whitespace-nowrap', isLastRow && 'border-b-0')}>
+                      {Math.round(Number(row.cumulative_points ?? 0))}
+                    </td>
+                    {/* Status */}
+                    <td className={cn(
+                      'border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-1 py-2 text-center text-muted-foreground',
+                      isLastRow && 'border-b-0'
+                    )}>
+                      <StatusIc className="inline size-3.5 shrink-0 opacity-80" aria-hidden />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

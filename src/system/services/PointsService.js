@@ -225,29 +225,15 @@ class PointsService {
       const todayMonth = todayStart.getMonth();
       const todayDay = todayStart.getDate();
       
-      // ОТЛАДКА: Выводим информацию для всех дней
-      console.log(`[PointsService.isDayOpen] Проверка дня ${date}:`, {
-        targetDate: `${targetYear}-${targetMonth + 1}-${targetDay}`,
-        todayDate: `${todayYear}-${todayMonth + 1}-${todayDay}`,
-        targetTimestamp: targetDateStart.getTime(),
-        todayTimestamp: todayStart.getTime(),
-        isToday: targetYear === todayYear && targetMonth === todayMonth && targetDay === todayDay,
-        isFuture: targetYear > todayYear || 
-                  (targetYear === todayYear && targetMonth > todayMonth) ||
-                  (targetYear === todayYear && targetMonth === todayMonth && targetDay > todayDay)
-      });
-      
       // Если целевая дата в будущем, день закрыт
       if (targetYear > todayYear || 
           (targetYear === todayYear && targetMonth > todayMonth) ||
           (targetYear === todayYear && targetMonth === todayMonth && targetDay > todayDay)) {
-        console.log(`[PointsService.isDayOpen] ${date} - БУДУЩИЙ день, возвращаем false`);
         return false;
       }
       
       // Если целевая дата - сегодня, день всегда открыт
       if (targetYear === todayYear && targetMonth === todayMonth && targetDay === todayDay) {
-        console.log(`[PointsService.isDayOpen] ${date} - СЕГОДНЯ, возвращаем true`);
         return true;
       }
       
@@ -258,9 +244,7 @@ class PointsService {
       
       // День открыт если прошло не более openHours часов с начала целевого дня
       const isOpen = diffHours >= 0 && diffHours <= openHours;
-      
-      console.log(`[PointsService.isDayOpen] ${date} - ПРОШЛЫЙ день, diffHours=${diffHours.toFixed(2)}, openHours=${openHours}, возвращаем ${isOpen}`);
-      
+
       return isOpen;
     } catch (e) {
       console.error(`[PointsService] Ошибка проверки открытости дня ${date}:`, e);

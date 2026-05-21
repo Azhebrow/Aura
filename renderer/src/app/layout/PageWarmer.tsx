@@ -5,20 +5,11 @@ import { prefetchBootstrap } from '@/shared/hooks/use-bootstrap-data';
 import { ensureAuraFontsStylesheet } from '@/features/theme/load-google-fonts';
 import { loadIconsManifest } from '@/features/settings/load-icons-manifest';
 import { RANK_TIERS, rankImageSrc } from '@/shared/config/ranks-model';
-import { getCategoryProgresses } from '@/shared/bridge/get-category-progresses';
-import { TASK_CATEGORY_IDS } from '@/shared/config/domain-taxonomy';
 import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
+import { applyAppearanceScales, readAppearanceScaleSettings } from '@/features/theme/appearance-scale';
 import { setStartupReadiness, type StartupTask } from './startup-readiness';
+import type { AuraDatabase, AuraRow } from '@/types/aura';
 
-type DbLike = {
-  getAll: (table: string) => unknown;
-  getAppSettings?: () => unknown;
-  getDiaryEntry?: (date: string) => unknown;
-  getTimerSessions?: (date: string) => unknown;
-  getNutritionEntries?: (date: string) => unknown;
-  getCategoryProgress?: (category: string, date: string) => unknown;
-  getCategoryProgresses?: (date: string) => Record<string, unknown> | null;
-};
 
 const STARTUP_TASK_TIMEOUT_MS = 12_000;
 const BOOTSTRAP_TIMEOUT_MS = 9_000;
@@ -73,34 +64,23 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): 
 }
 
 function preloadImage(src: string) {
-  return new Promise<void>((resolve) => {
+  return new Promise<HTMLImageElement>((resolve) => {
     const img = new Image();
-    const done = () => resolve();
-    img.onload = done;
-    img.onerror = done;
+    const done = async () => {
+      try {
+        await img.decode?.();
+      } catch {
+        /* decode can reject for SVG/cached edge cases; onload is enough fallback */
+      }
+      resolve(img);
+    };
+    img.onload = () => void done();
+    img.onerror = () => resolve(img);
     img.decoding = 'async';
     img.loading = 'eager';
     img.src = src;
-    if (img.complete) resolve();
+    if (img.complete) void done();
   });
-}
-
-function warmTables(db: DbLike, tables: string[]) {
-  const touched: string[] = [];
-  for (const table of tables) {
-    try {
-      db.getAll(table);
-      touched.push(table);
-    } catch {
-      /* best-effort warmup */
-    }
-  }
-  try {
-    db.getAppSettings?.();
-  } catch {
-    /* ignore */
-  }
-  return touched;
 }
 
 function preloadCuratedIcons(available: Set<string>) {
@@ -108,62 +88,58 @@ function preloadCuratedIcons(available: Set<string>) {
   return Promise.allSettled(urls.map((src) => preloadImage(src)));
 }
 
-function preloadRankArt() {
-  return Promise.allSettled(RANK_TIERS.map((tier) => preloadImage(rankImageSrc(tier.imageNumber))));
+async function preloadRankArt() {
+  const entries = await Promise.all(
+    RANK_TIERS.map(async (tier) => {
+      const src = rankImageSrc(tier.imageNumber);
+      const image = await preloadImage(src);
+      return [src, image] as const;
+    })
+  );
+  window.__auraRankImageCache = {
+    ...(window.__auraRankImageCache ?? {}),
+    ...Object.fromEntries(entries),
+  };
 }
 
-function warmPointsService(db: DbLike, date: string) {
-  const Ctor = typeof window !== 'undefined' ? window.PointsService : undefined;
-  const pointsApi = Ctor ? (new Ctor(db as never) as any) : null;
-  const month = new Date(`${date}T00:00:00`);
-  if (!Number.isNaN(month.getTime()) && pointsApi) {
-    const year = month.getFullYear();
-    const monthIndex = month.getMonth() + 1;
-    const types = ['completion', 'points', 'rituals', 'mood', 'income', 'expense', 'finance', 'calories'] as const;
-    for (const type of types) {
-      try {
-        pointsApi.getMonthRange(year, monthIndex, type);
-      } catch {
-        /* best effort */
-      }
-      try {
-        pointsApi.getDayData(date, type);
-      } catch {
-        /* best effort */
-      }
-    }
-    try {
-      pointsApi.calculateCumulativePoints(date);
-    } catch {
-      /* best effort */
-    }
-    try {
-      pointsApi.isDayOpen(date);
-    } catch {
-      /* best effort */
-    }
-    try {
-      pointsApi.isFutureDay(date);
-    } catch {
-      /* best effort */
-    }
-  }
+function warmDatabaseDialogData(db: AuraDatabase) {
+  const runtimeDb = db as AuraDatabase & {
+    getInfo?: () => { tables?: Array<{ name: string; rowCount: number }>; path?: string; error?: string };
+    dbPath?: string;
+    db?: {
+      pragma?: (query: string) => unknown;
+      prepare?: (query: string) => {
+        all?: () => Array<{ name: string }>;
+        get?: () => { count?: number } | undefined;
+      };
+    };
+  };
 
-  try {
-    getCategoryProgresses(db as never, date, TASK_CATEGORY_IDS);
-  } catch {
-    /* best effort */
+  const info = runtimeDb.getInfo?.();
+  if (info?.tables?.length) return;
+
+  const tableRows = runtimeDb.db?.prepare?.("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")?.all?.() ?? [];
+  for (const row of tableRows) {
+    if (!row.name) continue;
+    try {
+      runtimeDb.db?.prepare?.(`SELECT COUNT(*) as count FROM ${row.name}`)?.get?.();
+    } catch {
+      /* best-effort warmup only */
+    }
   }
-  try {
-    loadTaskCategoryConfig(db as never);
-  } catch {
-    /* best effort */
-  }
-  try {
-    db.getAll('act_daily_points');
-  } catch {
-    /* best effort */
-  }
+}
+
+async function warmHeavyModalSurfaces(db: AuraDatabase) {
+  await Promise.allSettled([
+    import('@/features/timer/TimerFullscreenDialog'),
+    import('@/widgets/date-strip/CalendarPickerDialog'),
+    import('@/features/app-settings/DatabaseManagementDialog'),
+    import('@/features/settings/icon-picker-panel'),
+    import('@/components/ui/universal-modal'),
+    import('@/components/ui/dialog'),
+  ]);
+
+  warmDatabaseDialogData(db);
 }
 
 function buildStartupTasks(): StartupTask[] {
@@ -199,45 +175,21 @@ function buildStartupTasks(): StartupTask[] {
       status: 'pending',
     },
     {
+      id: 'heavy-modals',
+      label: 'Модальные окна',
+      detail: 'Прогреваем fullscreen-таймер, календарь, базу данных и пикер иконок.',
+      status: 'pending',
+    },
+    {
       id: 'nav-order',
       label: 'Списки и навигация',
       detail: 'Читаем порядок вкладок и базовые списки.',
       status: 'pending',
     },
     {
-      id: 'cfg-forms',
-      label: 'CFG и настройки',
-      detail: 'Поднимаем cfg-таблицы и читаем конфиг категорий задач.',
-      status: 'pending',
-    },
-    {
-      id: 'analytics',
-      label: 'Статистика и календарь',
-      detail: 'Прогреваем точки, прогресс категорий и legacy PointsService.',
-      status: 'pending',
-    },
-    {
-      id: 'timer-data',
-      label: 'Таймер и сессии',
-      detail: 'Прогреваем задачи таймера, музыку и дневные сессии.',
-      status: 'pending',
-    },
-    {
-      id: 'diary-data',
-      label: 'Дневник и питание',
-      detail: 'Прогреваем записи дневника, настроения и питание.',
-      status: 'pending',
-    },
-    {
       id: 'bootstrap-home',
       label: 'Домашняя страница',
       detail: 'Прогреваем домашнюю bootstrap-сводку.',
-      status: 'pending',
-    },
-    {
-      id: 'bootstrap-rituals',
-      label: 'Страница ритуалов',
-      detail: 'Прогреваем данные ритуалов и списков.',
       status: 'pending',
     },
     {
@@ -301,33 +253,18 @@ export function PageWarmer({ onDone }: { onDone: () => void }) {
       }
     };
 
-    const warmCfgGroup = async () => {
+    const markCfgReady = async () => {
       await waitForAuraDatabase();
       const getDB = window.getDB;
       if (typeof getDB !== 'function') throw new Error('window.getDB is not available');
       const db = getDB();
       if (!db) throw new Error('Database is not ready');
-      const tables = warmTables(db, [
-        'cfg_tasks',
-        'cfg_leisure_tasks',
-        'cfg_goal_categories',
-        'cfg_vows',
-        'cfg_diary_moods',
-        'cfg_diary_categories',
-        'cfg_diary_entry_presets',
-        'cfg_nutrition_products',
-        'cfg_nutrition_presets',
-        'cfg_accounts',
-        'cfg_income_categories',
-        'cfg_expense_categories',
-        'cfg_ambient_music',
-      ]);
       try {
         loadTaskCategoryConfig(db as never);
       } catch {
         /* ignore */
       }
-      cfgReady = tables.length > 0;
+      cfgReady = true;
     };
 
     publish();
@@ -358,57 +295,30 @@ export function PageWarmer({ onDone }: { onDone: () => void }) {
       });
 
       await dbPromise;
+      const db = window.getDB?.();
+      if (!db) throw new Error('Database is not ready after startup task');
+
+      const modalsPromise = runTask('heavy-modals', async () => {
+        if (manifestIcons.size === 0) {
+          await manifestPromise;
+        }
+        await warmHeavyModalSurfaces(db);
+      }, STARTUP_TASK_TIMEOUT_MS + 4000);
+
+      // Apply appearance scale immediately after DB is ready so the loading
+      // screen uses the correct rem size — prevents the visual grow on reveal.
+      try {
+        if (db) {
+          const settings = (db.getAppSettings?.() ?? {}) as AuraRow;
+          const { appScale, textScale } = readAppearanceScaleSettings(settings);
+          applyAppearanceScales(appScale, textScale);
+        }
+      } catch { /* non-critical */ }
 
       const navPromise = runTask('nav-order', async () => {
         await loadNavOrderFromDb();
       });
-      const cfgFormsPromise = runTask('cfg-forms', warmCfgGroup);
-      const analyticsPromise = runTask('analytics', async () => {
-        const getDB = window.getDB;
-        if (typeof getDB !== 'function') throw new Error('window.getDB is not available');
-        const db = getDB();
-        if (!db) throw new Error('Database is not ready');
-        warmPointsService(db, date);
-        warmTables(db, ['act_daily_points', 'act_task_completions', 'act_daily_plans', 'act_goal_tasks']);
-      });
-      const timerPromise = runTask('timer-data', async () => {
-        const getDB = window.getDB;
-        if (typeof getDB !== 'function') throw new Error('window.getDB is not available');
-        const db = getDB();
-        if (!db) throw new Error('Database is not ready');
-        warmTables(db, ['cfg_tasks', 'cfg_leisure_tasks', 'cfg_ambient_music']);
-        try {
-          db.getTimerSessions?.(date);
-        } catch {
-          /* ignore */
-        }
-      });
-      const diaryPromise = runTask('diary-data', async () => {
-        const getDB = window.getDB;
-        if (typeof getDB !== 'function') throw new Error('window.getDB is not available');
-        const db = getDB();
-        if (!db) throw new Error('Database is not ready');
-        warmTables(db, [
-          'cfg_diary_moods',
-          'cfg_diary_categories',
-          'cfg_diary_entry_presets',
-          'cfg_nutrition_products',
-          'cfg_nutrition_presets',
-          'cfg_accounts',
-          'cfg_income_categories',
-          'cfg_expense_categories',
-        ]);
-        try {
-          db.getDiaryEntry?.(date);
-        } catch {
-          /* ignore */
-        }
-        try {
-          db.getNutritionEntries?.(date);
-        } catch {
-          /* ignore */
-        }
-      });
+      const cfgReadyPromise = markCfgReady();
 
       const bootstrapHomePromise = runTask('bootstrap-home', async () => {
         const payload = await withTimeout(
@@ -417,14 +327,6 @@ export function PageWarmer({ onDone }: { onDone: () => void }) {
           'Home bootstrap'
         );
         if (payload) actReadyByScreen = { ...actReadyByScreen, home: true };
-      }, BOOTSTRAP_TIMEOUT_MS + 500);
-      const bootstrapRitualsPromise = runTask('bootstrap-rituals', async () => {
-        const payload = await withTimeout(
-          prefetchBootstrap('rituals', { date }, { cacheMs: 8_000 }),
-          BOOTSTRAP_TIMEOUT_MS,
-          'Rituals bootstrap'
-        );
-        if (payload) actReadyByScreen = { ...actReadyByScreen, rituals: true };
       }, BOOTSTRAP_TIMEOUT_MS + 500);
       const bootstrapSidebarPromise = runTask('bootstrap-sidebar', async () => {
         const payload = await withTimeout(
@@ -448,13 +350,10 @@ export function PageWarmer({ onDone }: { onDone: () => void }) {
         manifestPromise,
         iconsAssetsPromise,
         ranksPromise,
+        modalsPromise,
         navPromise,
-        cfgFormsPromise,
-        analyticsPromise,
-        timerPromise,
-        diaryPromise,
+        cfgReadyPromise,
         bootstrapHomePromise,
-        bootstrapRitualsPromise,
         bootstrapSidebarPromise,
         bootstrapStripPromise,
       ]);

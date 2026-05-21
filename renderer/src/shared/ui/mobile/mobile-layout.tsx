@@ -59,11 +59,11 @@ export function MobileSectionTabs<T extends string>({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       className={cn(
-        'shrink-0 px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)] pt-2',
+        'shrink-0 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.6rem)] pt-2 sm:px-4',
         className
       )}
     >
-      <div className="grid min-h-[3.25rem] grid-flow-col auto-cols-fr gap-1 rounded-lg border border-border/60 bg-card/95 p-1 shadow-sm ring-1 ring-foreground/[0.03]">
+      <div className="grid min-h-[3.25rem] grid-flow-col auto-cols-fr gap-1 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-1 shadow-sm">
         {sections.map((section) => {
           const active = section.id === value;
           const DisplayIcon = locked || section.locked ? Lock : section.Icon;
@@ -76,8 +76,8 @@ export function MobileSectionTabs<T extends string>({
                 'flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 text-[0.8125rem] font-semibold leading-none aura-tx-colors',
                 'focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
                 active
-                  ? 'bg-background text-foreground shadow-xs'
-                  : 'text-muted-foreground hover:bg-muted/45 hover:text-foreground active:bg-muted/65'
+                  ? 'bg-primary/10 text-primary shadow-none'
+                  : 'text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground active:bg-[var(--aura-action-active-bg)]'
               )}
               aria-current={active ? 'page' : undefined}
             >
@@ -99,7 +99,7 @@ type MobileSectionViewportProps = {
 
 export function MobileSectionViewport({ children, className, contentClassName }: MobileSectionViewportProps) {
   return (
-    <div className={cn('min-h-0 flex-1 overflow-hidden px-3 sm:px-4 pt-3', className)}>
+    <div className={cn('min-h-0 flex-1 overflow-hidden', className)}>
       <div className={cn('mobile-section-scroll flex flex-col h-full min-h-0 overflow-y-auto overscroll-y-contain pb-3', contentClassName)}>
         {children}
       </div>
@@ -131,7 +131,7 @@ export function SectionTabsLayout<T extends string>({
   const active = sections.find((section) => section.id === value) ?? sections[0];
 
   return (
-    <div className={cn('flex h-full min-h-0 min-w-0 flex-1 flex-col bg-background', className)}>
+    <div className={cn('flex h-full min-h-0 min-w-0 flex-1 flex-col bg-transparent', className)}>
       <MobileSectionViewport className={viewportClassName} contentClassName={viewportContentClassName}>
         {active?.content}
       </MobileSectionViewport>
@@ -173,7 +173,7 @@ export function MobilePanelHeader({
   return (
     <div className={cn('mb-3 flex min-h-11 items-center justify-between gap-3', className)}>
       <div className="flex min-w-0 items-center gap-2">
-        {locked ? <Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden /> : null}
+        {locked ? <Lock className="size-4 shrink-0 text-[var(--aura-text-subtle)]" aria-hidden /> : null}
         <h2 className="min-w-0 truncate text-base font-semibold leading-tight text-foreground">{title}</h2>
       </div>
       {right ? <div className="flex shrink-0 items-center gap-2">{right}</div> : null}
@@ -183,7 +183,7 @@ export function MobilePanelHeader({
 
 export function MobileContentBand({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-lg border border-border/60 bg-card/80 p-3 shadow-sm', className)}>
+    <div className={cn('aura-surface-panel rounded-lg border p-3', className)}>
       {children}
     </div>
   );

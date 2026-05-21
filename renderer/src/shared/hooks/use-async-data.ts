@@ -73,7 +73,12 @@ export function useAsyncData<T>(
 
   useLayoutEffect(() => {
     if (!dbReady || !db) return;
-    setStatus('loading');
+    setStatus((prev) => {
+      if (hadSuccessRef.current && (prev === 'ready' || prev === 'empty' || prev === 'refreshing')) {
+        return 'refreshing';
+      }
+      return 'loading';
+    });
   }, [dbReady, db, tick, manualReloadRef.current, ...deps]);
 
   useEffect(() => {

@@ -11,8 +11,31 @@
       content="default-src 'self' file:; script-src 'self' file: https://telegram.org; style-src 'self' 'unsafe-inline' file: https://fonts.googleapis.com; font-src 'self' file: https://fonts.gstatic.com; img-src 'self' blob: data: file:; media-src 'self' blob: file:; connect-src 'self' file:;"
     />
     <title>AURA</title>
+    <script>
+      (function () {
+        // Тема до загрузки CSS — убирает белый флеш
+        var theme = localStorage.getItem('aura-theme') || 'dark';
+        var bg = theme === 'light' ? '#f0eef7' : theme === 'dim' ? '#31303a' : '#161618';
+        document.documentElement.style.background = bg;
+        document.documentElement.setAttribute('data-theme', theme);
+        if (theme !== 'light') document.documentElement.classList.add('dark');
+
+        // Плавное появление/исчезания скроллбара через класс .is-scrolling
+        var timers = new WeakMap();
+        document.addEventListener('scroll', function (e) {
+          var el = e.target;
+          if (!(el instanceof Element)) return;
+          el.classList.add('is-scrolling');
+          if (timers.has(el)) clearTimeout(timers.get(el));
+          timers.set(el, setTimeout(function () {
+            el.classList.remove('is-scrolling');
+            timers.delete(el);
+          }, 900));
+        }, true);
+      })();
+    </script>
   </head>
-  <body>
+  <body style="background:inherit">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

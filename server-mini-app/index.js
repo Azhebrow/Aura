@@ -121,49 +121,82 @@ function executeDbCall(method, args) {
   }
 }
 
+function isActiveRow(row) {
+  const active = row?.active;
+  return !(active === 0 || active === '0' || active === false || active === 'false');
+}
+
+function buildRitualCountsByType(morningCfg, eveningCfg, morningRows, eveningRows) {
+  const morningIds = new Set((morningCfg ?? []).filter((row) => row?.id && isActiveRow(row)).map((row) => String(row.id)));
+  const eveningIds = new Set((eveningCfg ?? []).filter((row) => row?.id && isActiveRow(row)).map((row) => String(row.id)));
+  const countDone = (rows, ids) => (rows ?? []).reduce((acc, row) => {
+    const ritualId = String(row?.ritual_id ?? '');
+    if (!ritualId || !ids.has(ritualId)) return acc;
+    return acc + (Number(row?.completed) === 1 ? 1 : 0);
+  }, 0);
+  return {
+    sunrise: { completed: countDone(morningRows, morningIds), total: morningIds.size },
+    sunset: { completed: countDone(eveningRows, eveningIds), total: eveningIds.size },
+  };
+}
+
 function bootstrapHome(db, date) {
   const cfgTasks = db.getAll('cfg_tasks') ?? [];
+  const cfgRitualsMorning = db.getAll('cfg_rituals_morning') ?? [];
+  const cfgRitualsEvening = db.getAll('cfg_rituals_evening') ?? [];
+  const ritualsMorningRows = db.getRitualsMorning?.(date) ?? [];
+  const ritualsEveningRows = db.getRitualsEvening?.(date) ?? [];
   const taskProgressById = {};
   const timerTotalsByTaskId = {};
   for (const task of cfgTasks) {
     const taskId = String(task.id ?? '');
     if (!taskId) continue;
-    taskProgressById[taskId] = db.getTaskProgress?.(taskId, date) ?? null;
-    if (String(task.task_type ?? '') === 'timer') {
+    const taskType = String(task.task_type ?? '');
+    if (taskType === 'timer') {
       timerTotalsByTaskId[taskId] = db.getTaskTimerTotal?.(date, taskId) ?? 0;
+      taskProgressById[taskId] = null;
+    } else if (taskType === 'ritual' || taskType === 'nutrition') {
+      taskProgressById[taskId] = null;
+    } else {
+      taskProgressById[taskId] = db.getTaskProgress?.(taskId, date) ?? null;
     }
   }
   return {
-    categoryProgresses: db.getCategoryProgresses?.(date) ?? {
-      rituals: db.getCategoryProgress('rituals', date),
-      time: db.getCategoryProgress('time', date),
-      body: db.getCategoryProgress('body', date),
-      deps: db.getCategoryProgress('deps', date),
-    },
+    categoryProgresses: {},
     appSettings: db.getAppSettings?.() ?? null,
     cfgTasks,
-    cfgRitualsMorning: db.getAll('cfg_rituals_morning') ?? [],
-    cfgRitualsEvening: db.getAll('cfg_rituals_evening') ?? [],
-    ritualsMorningRows: db.getRitualsMorning?.(date) ?? [],
-    ritualsEveningRows: db.getRitualsEvening?.(date) ?? [],
+    cfgRitualsMorning,
+    cfgRitualsEvening,
+    ritualsMorningRows,
+    ritualsEveningRows,
+    ritualCountsByType: buildRitualCountsByType(cfgRitualsMorning, cfgRitualsEvening, ritualsMorningRows, ritualsEveningRows),
+    nutritionEntries: db.getNutritionEntries?.(date) ?? [],
     taskProgressById,
     timerTotalsByTaskId,
   };
 }
 
 function bootstrapRituals(db, date) {
-  const goals = db.getAllGoals?.() ?? [];
+  const goalsFromAll = db.getAll?.('cfg_goals') ?? [];
+  const goals = goalsFromAll.length ? goalsFromAll : (db.getAllGoals?.() ?? []);
+  const stages = db.getAll?.('cfg_goal_stages') ?? [];
+  const tasks = db.getAll?.('cfg_goal_tasks') ?? [];
   const stagesByGoal = {};
   const tasksByStage = {};
   for (const goal of goals) {
     const goalId = String(goal.id ?? '');
     if (!goalId) continue;
-    const stages = db.getStagesByGoal?.(goalId) ?? [];
-    stagesByGoal[goalId] = stages;
-    for (const stage of stages) {
+    const goalStages = stages
+      .filter((stage) => String(stage.goal_id ?? '') === goalId)
+      .sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
+    stagesByGoal[goalId] = goalStages.length ? goalStages : (db.getStagesByGoal?.(goalId) ?? []);
+    for (const stage of stagesByGoal[goalId]) {
       const stageId = String(stage.id ?? '');
       if (!stageId) continue;
-      tasksByStage[stageId] = db.getTasksByStage?.(stageId) ?? [];
+      const stageTasks = tasks
+        .filter((task) => String(task.stage_id ?? '') === stageId)
+        .sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
+      tasksByStage[stageId] = stageTasks.length ? stageTasks : (db.getTasksByStage?.(stageId) ?? []);
     }
   }
   return {
@@ -182,35 +215,31 @@ function bootstrapRituals(db, date) {
 
 function bootstrapSidebar(db, date) {
   return {
-    categoryProgresses: db.getCategoryProgresses?.(date) ?? {
-      rituals: db.getCategoryProgress('rituals', date),
-      time: db.getCategoryProgress('time', date),
-      body: db.getCategoryProgress('body', date),
-      deps: db.getCategoryProgress('deps', date),
-    },
+    categoryProgresses: {},
     dailyPointsRows: db.getAll('act_daily_points') ?? [],
     timerSessions: db.getTimerSessions?.(date) ?? [],
     nutritionEntries: db.getNutritionEntries?.(date) ?? [],
     diaryEntry: db.getDiaryEntry?.(date) ?? null,
+    transactions: db.getTransactions?.(date) ?? [],
   };
 }
 
 function bootstrapDateStrip(db, date, rangeDays = 7) {
   const out = [];
+  const dailyPointsRows = db.getAll('act_daily_points') ?? [];
+  const dailyByDate = new Map(dailyPointsRows.map((row) => [String(row.date ?? ''), row]));
   const d = new Date(`${date}T00:00:00`);
   for (let i = 0; i < rangeDays; i += 1) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     const ymd = `${y}-${m}-${day}`;
+    const daily = dailyByDate.get(ymd);
+    const completion = daily && daily.completion_percent != null ? Number(daily.completion_percent) || 0 : 0;
     out.push({
       date: ymd,
-      categoryProgresses: db.getCategoryProgresses?.(ymd) ?? {
-        rituals: db.getCategoryProgress('rituals', ymd),
-        time: db.getCategoryProgress('time', ymd),
-        body: db.getCategoryProgress('body', ymd),
-        deps: db.getCategoryProgress('deps', ymd),
-      },
+      categoryProgresses: {},
+      completionPercent: Math.min(100, Math.max(0, completion)),
     });
     d.setDate(d.getDate() + 1);
   }

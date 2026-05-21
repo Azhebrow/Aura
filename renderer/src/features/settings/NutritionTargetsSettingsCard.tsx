@@ -45,72 +45,39 @@ export function NutritionTargetsSettingsCard() {
     });
   };
 
+  const fields = [
+    { id: 'nt-cal', label: 'Ккал', suffix: 'ккал', value: calories, ariaLabel: 'Калории',
+      borderCn: 'border-r border-b border-[var(--aura-border-soft)] sm:border-b-0',
+      onCommit: (next: string) => { setCalories(next); persist({ calories: next }); } },
+    { id: 'nt-p', label: 'Белки', suffix: 'г', value: proteins, ariaLabel: 'Белки',
+      borderCn: 'border-b border-[var(--aura-border-soft)] sm:border-r sm:border-b-0',
+      onCommit: (next: string) => { setProteins(next); persist({ proteins: next }); } },
+    { id: 'nt-f', label: 'Жиры', suffix: 'г', value: fats, ariaLabel: 'Жиры',
+      borderCn: 'border-r border-[var(--aura-border-soft)] sm:border-b-0',
+      onCommit: (next: string) => { setFats(next); persist({ fats: next }); } },
+    { id: 'nt-c', label: 'Углеводы', suffix: 'г', value: carbs, ariaLabel: 'Углеводы',
+      borderCn: '',
+      onCommit: (next: string) => { setCarbs(next); persist({ carbs: next }); } },
+  ];
+
   return (
-    <SettingsSectionCard
-      title="Цели КБЖУ"
-      leadingIcon={Target}
-      contentClassName="gap-2"
-    >
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border border-border/70 bg-muted/15 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Ккал</p>
-          <ActAffixValueField
-            id="nt-cal"
-            ariaLabel="Калории"
-            suffix="ккал"
-            value={calories}
-            onCommit={(next) => {
-              setCalories(next);
-              persist({ calories: next });
-            }}
-            placeholder="0"
-            inputKind="number"
-          />
-        </div>
-        <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border border-border/70 bg-muted/15 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Белки</p>
-          <ActAffixValueField
-            id="nt-p"
-            ariaLabel="Белки"
-            suffix="г"
-            value={proteins}
-            onCommit={(next) => {
-              setProteins(next);
-              persist({ proteins: next });
-            }}
-            placeholder="0"
-            inputKind="number"
-          />
-        </div>
-        <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border border-border/70 bg-muted/15 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Жиры</p>
-          <ActAffixValueField
-            id="nt-f"
-            ariaLabel="Жиры"
-            suffix="г"
-            value={fats}
-            onCommit={(next) => {
-              setFats(next);
-              persist({ fats: next });
-            }}
-            placeholder="0"
-            inputKind="number"
-          />
-        </div>
-        <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border border-border/70 bg-muted/15 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Углеводы</p>
-          <ActAffixValueField
-            id="nt-c"
-            ariaLabel="Углеводы"
-            suffix="г"
-            value={carbs}
-            onCommit={(next) => {
-              setCarbs(next);
-              persist({ carbs: next });
-            }}
-            placeholder="0"
-            inputKind="number"
-          />
+    <SettingsSectionCard title="Цели КБЖУ" leadingIcon={Target} contentClassName="gap-0">
+      <div className="w-full overflow-hidden rounded-xl border border-[var(--aura-border-soft)]">
+        <div className="grid w-full grid-cols-2 sm:grid-cols-4">
+          {fields.map((f) => (
+            <div key={f.id} className={`flex flex-col gap-1.5 px-3 py-2.5 ${f.borderCn}`}>
+              <p className="aura-label">{f.label}</p>
+              <ActAffixValueField
+                id={f.id}
+                ariaLabel={f.ariaLabel}
+                suffix={f.suffix}
+                value={f.value}
+                onCommit={f.onCommit}
+                placeholder="0"
+                inputKind="number"
+              />
+            </div>
+          ))}
         </div>
       </div>
     </SettingsSectionCard>

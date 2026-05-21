@@ -1,9 +1,15 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition, startTransition } from 'react';
 import {
   Activity,
   AlertTriangle,
   ArrowRight,
+  Bell,
+  Bird,
+  Bike,
+  Box,
+  Building2,
   Calendar,
+  Camera,
   ChartNoAxesCombined,
   CircleHelp,
   Cloud,
@@ -12,19 +18,28 @@ import {
   Cpu,
   CreditCard,
   FileText,
+  Flame,
   Gamepad2,
   Globe,
   HeartPulse,
   Home,
   Image,
   LayoutGrid,
+  Leaf,
+  Mail,
   Music2,
   Palette,
+  Pencil,
+  PcCase,
+  Pi,
   Search,
   Shield,
   ShoppingCart,
   Smile,
+  Snowflake,
   Sparkles,
+  Stethoscope,
+  Tag,
   Text,
   Timer,
   Briefcase,
@@ -32,63 +47,83 @@ import {
   Users,
   Wallet,
   Waves,
+  Wifi,
   Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import { loadIconsManifest } from '@/features/settings/load-icons-manifest';
 import { cn } from '@/lib/utils';
 
 type Props = {
-  /** Current icon file name (without .svg). */
   current?: string;
   onPick: (iconName: string) => void;
 };
 
 const CELL_MIN_WIDTH_PX = 52;
-const GRID_GAP_PX = 8;
-const ROW_HEIGHT_PX = 60;
-const OVERSCAN_ROWS = 4;
+const GRID_GAP_PX = 6;
+const ROW_HEIGHT_PX = 58;
+const OVERSCAN_ROWS = 3;
+
 const GROUP_ICON_MAP: Record<string, LucideIcon> = {
   accessibility: CircleHelp,
+  account: UserRound,
   action: Sparkles,
   alert: AlertTriangle,
+  animals: Bird,
   arrows: ArrowRight,
   audio: Music2,
+  brands: Tag,
+  buildings: Building2,
   charts: ChartNoAxesCombined,
   communication: Globe,
+  connectivity: Wifi,
   controls: Cog,
   currency: Wallet,
+  cursors: Pencil,
   data: Cpu,
   date: Calendar,
   design: Palette,
   development: Wrench,
+  devices: PcCase,
   editing: FileText,
+  emoji: Smile,
   emotion: Smile,
   files: FileText,
   finance: CreditCard,
+  'food-beverage': Flame,
+  'food beverage': Flame,
   gaming: Gamepad2,
   health: HeartPulse,
   home: Home,
   interface: LayoutGrid,
   layout: LayoutGrid,
+  mail: Mail,
+  math: Pi,
   media: Image,
+  medical: Stethoscope,
+  multimedia: Music2,
+  nature: Leaf,
   navigation: Compass,
   network: Waves,
+  notifications: Bell,
   people: Users,
+  photography: Camera,
   photos: Image,
   science: Activity,
+  seasons: Snowflake,
   security: Shield,
+  shapes: Box,
   shopping: ShoppingCart,
   social: Users,
-  sports: Activity,
+  sports: Bike,
+  sustainability: Leaf,
   text: Text,
   time: Timer,
   tools: Briefcase,
   transport: Compass,
+  transportation: Compass,
   travel: Compass,
   ui: LayoutGrid,
   user: UserRound,
@@ -97,21 +132,100 @@ const GROUP_ICON_MAP: Record<string, LucideIcon> = {
   general: CircleHelp,
 };
 
-function groupLabelOriginal(group: string): string {
-  const parts = group
-    .trim()
-    .replace(/[_-]+/g, ' ')
-    .split(/\s+/g)
-    .filter(Boolean);
-  if (parts.length === 0) return 'Other';
-  return parts
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(' ');
+const GROUP_LABELS: Record<string, string> = {
+  accessibility: 'Доступность',
+  account: 'Аккаунт',
+  action: 'Действия',
+  alert: 'Уведомления',
+  animals: 'Животные',
+  arrows: 'Стрелки',
+  audio: 'Аудио',
+  brands: 'Бренды',
+  buildings: 'Здания',
+  charts: 'Графики',
+  communication: 'Общение',
+  connectivity: 'Связь',
+  controls: 'Управление',
+  currency: 'Валюта',
+  cursors: 'Курсоры',
+  data: 'Данные',
+  date: 'Дата',
+  design: 'Дизайн',
+  development: 'Разработка',
+  devices: 'Устройства',
+  editing: 'Редактор',
+  emoji: 'Эмодзи',
+  emotion: 'Эмоции',
+  files: 'Файлы',
+  finance: 'Финансы',
+  'food-beverage': 'Еда и напитки',
+  'food beverage': 'Еда и напитки',
+  gaming: 'Игры',
+  health: 'Здоровье',
+  home: 'Дом',
+  interface: 'Интерфейс',
+  layout: 'Макет',
+  mail: 'Почта',
+  math: 'Математика',
+  media: 'Медиа',
+  medical: 'Медицина',
+  multimedia: 'Мультимедиа',
+  nature: 'Природа',
+  navigation: 'Навигация',
+  network: 'Сеть',
+  notifications: 'Оповещения',
+  people: 'Люди',
+  photography: 'Фотография',
+  photos: 'Фото',
+  science: 'Наука',
+  seasons: 'Сезоны',
+  security: 'Безопасность',
+  shapes: 'Фигуры',
+  shopping: 'Покупки',
+  social: 'Соцсети',
+  sports: 'Спорт',
+  sustainability: 'Экология',
+  text: 'Текст',
+  time: 'Время',
+  tools: 'Инструменты',
+  transport: 'Транспорт',
+  transportation: 'Транспорт',
+  travel: 'Путешествия',
+  ui: 'UI',
+  user: 'Пользователь',
+  users: 'Пользователи',
+  weather: 'Погода',
+  general: 'Общее',
+};
+
+function groupLabel(group: string): string {
+  const key = group.trim().toLowerCase();
+  if (GROUP_LABELS[key]) return GROUP_LABELS[key];
+  return group.trim().replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function groupIcon(group: string): LucideIcon {
+function GroupIcon({ group, active, firstIconName }: { group: string; active: boolean; firstIconName?: string }) {
   const key = group.trim().toLowerCase();
-  return GROUP_ICON_MAP[key] ?? CircleHelp;
+  const LIcon = GROUP_ICON_MAP[key];
+  if (LIcon) {
+    return <LIcon className="size-3.5 shrink-0" />;
+  }
+  if (firstIconName) {
+    // Use currentColor via style so it reacts to active button text color
+    return (
+      <span
+        className="size-3.5 shrink-0 inline-block"
+        style={{
+          WebkitMaskImage: `url("icons/${firstIconName}.svg")`,
+          WebkitMaskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center',
+          backgroundColor: active ? 'var(--primary-foreground)' : 'var(--foreground)',
+        }}
+      />
+    );
+  }
+  return <CircleHelp className="size-3.5 shrink-0" />;
 }
 
 export function IconPickerPanel({ current, onPick }: Props) {
@@ -120,47 +234,17 @@ export function IconPickerPanel({ current, onPick }: Props) {
   const [groupsMap, setGroupsMap] = useState<Record<string, string[]>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [booting, setBooting] = useState(true);
-  const [isHydratingGrid, setIsHydratingGrid] = useState(true);
   const [query, setQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState<string>('all');
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [viewportHeight, setViewportHeight] = useState(320);
   const [viewportWidth, setViewportWidth] = useState(640);
+  const scrollTopRef = useRef(0);
   const [scrollTop, setScrollTop] = useState(0);
+  const rafRef = useRef<number | null>(null);
   const deferred = useDeferredValue(query);
-
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setBooting(false));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  useEffect(() => {
-    if (isLoading || booting) {
-      setIsHydratingGrid(true);
-      return;
-    }
-    let cancelled = false;
-    let timeoutId: ReturnType<typeof window.setTimeout> | null = null;
-    let idleId: number | null = null;
-    const hydrate = () => {
-      if (!cancelled) setIsHydratingGrid(false);
-    };
-    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      const ric = window.requestIdleCallback as (cb: IdleRequestCallback, opts?: IdleRequestOptions) => number;
-      idleId = ric(() => hydrate(), { timeout: 220 });
-    } else {
-      timeoutId = globalThis.setTimeout(hydrate, 90);
-    }
-    return () => {
-      cancelled = true;
-      if (typeof window !== 'undefined' && idleId != null && 'cancelIdleCallback' in window) {
-        const cancelRic = window.cancelIdleCallback as (handle: number) => void;
-        cancelRic(idleId);
-      }
-      if (timeoutId != null) globalThis.clearTimeout(timeoutId);
-    };
-  }, [isLoading, booting]);
+  // isPending=true во время тяжёлых переходов (смена группы, загрузка)
+  const [isPending, startGroupTransition] = useTransition();
 
   useEffect(() => {
     let cancelled = false;
@@ -169,38 +253,32 @@ export function IconPickerPanel({ current, onPick }: Props) {
     loadIconsManifest()
       .then((manifest) => {
         if (cancelled) return;
-        setAll(manifest.icons);
-        setGroups(manifest.groups);
-        setGroupsMap(manifest.groupsMap);
+        // Оборачиваем в startTransition — React рендерит асинхронно,
+        // не блокируя UI. Скелетон остаётся пока рендер не завершится.
+        startTransition(() => {
+          setAll(manifest.icons);
+          setGroups(manifest.groups);
+          setGroupsMap(manifest.groupsMap);
+          setIsLoading(false);
+        });
       })
       .catch((e) => {
         if (cancelled) return;
         setLoadError(e instanceof Error ? e.message : String(e));
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+        setIsLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const filtered = useMemo(() => {
-    if (isHydratingGrid) return [];
     const q = deferred.trim().toLowerCase();
     let list = all;
     if (activeGroup !== 'all') {
       list = list.filter((id) => (groupsMap[id] ?? []).includes(activeGroup));
     }
     if (!q) return list;
-    const out: string[] = [];
-    for (const id of list) {
-      if (id.toLowerCase().includes(q)) {
-        out.push(id);
-      }
-    }
-    return out;
-  }, [activeGroup, all, deferred, groupsMap, isHydratingGrid]);
+    return list.filter((id) => id.toLowerCase().includes(q));
+  }, [activeGroup, all, deferred, groupsMap]);
 
   const columns = useMemo(() => {
     const width = Math.max(1, viewportWidth);
@@ -208,7 +286,6 @@ export function IconPickerPanel({ current, onPick }: Props) {
   }, [viewportWidth]);
 
   const rowCount = useMemo(() => Math.ceil(filtered.length / columns), [filtered.length, columns]);
-
   const startRow = useMemo(() => Math.max(0, Math.floor(scrollTop / ROW_HEIGHT_PX) - OVERSCAN_ROWS), [scrollTop]);
   const endRow = useMemo(
     () => Math.min(rowCount, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT_PX) + OVERSCAN_ROWS),
@@ -220,26 +297,15 @@ export function IconPickerPanel({ current, onPick }: Props) {
   const offsetY = startRow * ROW_HEIGHT_PX;
   const totalHeight = rowCount * ROW_HEIGHT_PX;
 
-  const total = all.length;
   const firstIconByGroup = useMemo(() => {
     const map: Record<string, string | undefined> = {};
     for (const id of all) {
-      const iconGroups = groupsMap[id] ?? [];
-      for (const group of iconGroups) {
+      for (const group of groupsMap[id] ?? []) {
         if (!map[group]) map[group] = id;
       }
     }
     return map;
   }, [all, groupsMap]);
-
-  const activeTotal = useMemo(() => {
-    if (activeGroup === 'all') return all.length;
-    let count = 0;
-    for (const id of all) {
-      if ((groupsMap[id] ?? []).includes(activeGroup)) count += 1;
-    }
-    return count;
-  }, [activeGroup, all, groupsMap]);
 
   useEffect(() => {
     const node = viewportRef.current;
@@ -252,24 +318,49 @@ export function IconPickerPanel({ current, onPick }: Props) {
     const ro = new ResizeObserver(update);
     ro.observe(node);
     return () => ro.disconnect();
-  }, [isLoading, booting]);
+  }, [isLoading]);
 
   useEffect(() => {
     const node = viewportRef.current;
     if (!node) return;
     node.scrollTop = 0;
+    scrollTopRef.current = 0;
     setScrollTop(0);
   }, [activeGroup, deferred]);
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const top = e.currentTarget.scrollTop;
+    scrollTopRef.current = top;
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      setScrollTop(scrollTopRef.current);
+    });
+  };
+
+  const handleGroupClick = (g: string) => {
+    startGroupTransition(() => setActiveGroup(g));
+  };
+
+  const groupTabCn = (g: string, mobile?: boolean) => cn(
+    mobile
+      ? 'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium aura-tx-colors whitespace-nowrap'
+      : 'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium aura-tx-colors text-left',
+    activeGroup === g
+      ? 'bg-primary text-primary-foreground'
+      : 'text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
+  );
+
   return (
-    <div className="flex h-[min(72vh,42rem)] min-h-[24rem] w-full min-w-0 flex-col gap-3 overflow-hidden">
+    <div className="flex h-[min(72vh,42rem)] min-h-[24rem] w-full min-w-0 flex-col gap-2 overflow-hidden">
+      {/* Поиск */}
       <div className="relative shrink-0">
         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name..."
-          className="h-10 pl-9 text-sm"
+          placeholder="Поиск иконки…"
+          className="h-9 pl-9 text-sm"
           autoComplete="off"
           spellCheck={false}
         />
@@ -277,114 +368,101 @@ export function IconPickerPanel({ current, onPick }: Props) {
 
       {loadError ? (
         <p className="text-destructive shrink-0 text-xs">{loadError}</p>
-      ) : isLoading || booting || isHydratingGrid ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 rounded-xl border border-border/60 bg-muted/10 p-2">
-          <div className="bg-muted h-3 w-48 animate-pulse rounded" />
-          <div className="grid flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-2 overflow-hidden">
-            {Array.from({ length: 56 }).map((_, idx) => (
-              <div key={idx} className="bg-muted h-12 rounded-lg border border-border/50 animate-pulse" />
+      ) : isLoading ? (
+        /* Скелетон — показывается пока манифест грузится */
+        <div className="flex min-h-0 flex-1 flex-col gap-2 rounded-xl border border-[var(--aura-border-soft)] p-2 animate-in fade-in duration-200">
+          <div className="bg-muted/60 h-3 w-40 animate-pulse rounded" />
+          <div className="grid flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5 overflow-hidden">
+            {Array.from({ length: 48 }).map((_, idx) => (
+              <div key={idx} className="bg-muted/50 h-12 animate-pulse rounded-lg" style={{ animationDelay: `${(idx % 12) * 30}ms` }} />
             ))}
           </div>
         </div>
       ) : (
-        <>
-          <p className="text-muted-foreground shrink-0 text-xs leading-relaxed">
-            Total icons: {total}. In this group: {activeTotal}. Click an icon to pick it and close the picker.
-          </p>
-          <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 md:grid-cols-[12.5rem_minmax(0,1fr)]">
-            <ScrollArea className="min-h-0 rounded-xl border border-border/60 bg-muted/10 md:order-1">
-              <div className="flex w-max min-w-full flex-row gap-1 p-2 md:w-auto md:min-w-0 md:flex-col">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={activeGroup === 'all' ? 'default' : 'secondary'}
-                  className="h-8 justify-start gap-1.5 rounded-md px-2.5 text-xs"
-                  onClick={() => setActiveGroup('all')}
-                >
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:grid sm:grid-cols-[10rem_minmax(0,1fr)] animate-in fade-in duration-200">
+          {/* Панель групп — shrink-0 на мобильном, боковая колонка на sm+ */}
+          <div className="flex shrink-0 min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--aura-border-soft)] sm:order-1 sm:shrink sm:flex-1">
+            {/* Мобильный горизонтальный скролл */}
+            <div className="flex min-w-0 overflow-x-auto p-1.5 sm:hidden" style={{ scrollbarWidth: 'none' }}>
+              <div className="flex gap-1">
+                <button type="button" onClick={() => handleGroupClick('all')} className={groupTabCn('all', true)}>
                   <LayoutGrid className="size-3.5 shrink-0" />
-                  <span>All</span>
-                </Button>
+                  <span>Все</span>
+                </button>
                 {groups.map((group) => (
-                  <Button
-                    key={group}
-                    type="button"
-                    size="sm"
-                    variant={activeGroup === group ? 'default' : 'outline'}
-                    className="h-8 justify-start gap-1.5 rounded-md px-2.5 text-xs"
-                    onClick={() => setActiveGroup(group)}
-                  >
-                    {(() => {
-                      const Icon = groupIcon(group);
-                      const fallbackIconName = firstIconByGroup[group];
-                      return (
-                        <>
-                          {GROUP_ICON_MAP[group.trim().toLowerCase()] ? (
-                            <Icon className="size-3.5 shrink-0" />
-                          ) : fallbackIconName ? (
-                            <AuraThemedIcon name={fallbackIconName} className="size-3.5 shrink-0" />
-                          ) : (
-                            <Icon className="size-3.5 shrink-0" />
-                          )}
-                          <span>{groupLabelOriginal(group)}</span>
-                        </>
-                      );
-                    })()}
-                  </Button>
+                  <button key={group} type="button" onClick={() => handleGroupClick(group)} className={groupTabCn(group, true)}>
+                    <GroupIcon group={group} active={activeGroup === group} firstIconName={firstIconByGroup[group]} />
+                    <span>{groupLabel(group)}</span>
+                  </button>
                 ))}
               </div>
-            </ScrollArea>
-            <div className="min-h-0 rounded-xl border border-border/60 bg-muted/10 md:order-2">
-              {filtered.length === 0 ? (
-                <div className="text-muted-foreground flex h-full min-h-[11rem] items-center justify-center px-3 text-center text-sm">
-                  No icons found for your filter.
-                </div>
-              ) : (
-                <div
-                  ref={viewportRef}
-                  className="h-full overflow-auto"
-                  onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-                >
-                  <div style={{ height: totalHeight }} className="relative p-2">
-                    <div
-                      className={cn(
-                        'grid auto-rows-fr gap-2',
-                        'motion-safe:[&_button]:transition-transform motion-safe:[&_button]:duration-aura-fast motion-safe:[&_button]:ease-aura',
-                        'motion-safe:[&_button]:hover:scale-[1.03] motion-safe:[&_button]:active:scale-[0.98]'
-                      )}
-                      data-columns={columns}
-                      style={{
-                        transform: `translateY(${offsetY}px)`,
-                        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-                      }}
-                    >
-                      {visible.map((id) => {
-                        const active = current === id;
-                        return (
-                          <Button
-                            key={id}
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            title={id}
-                            aria-label={id}
-                            className={cn(
-                              'border-border/70 h-12 w-full rounded-lg border bg-background/90 p-0 shadow-sm',
-                              'items-center justify-center [&_[role=img]]:mx-auto',
-                              active && 'border-primary ring-primary/35 ring-2'
-                            )}
-                            onClick={() => onPick(id)}
-                          >
-                            <AuraThemedIcon name={id} className="size-6 shrink-0" />
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
+            </div>
+            {/* Desktop вертикальный список */}
+            <div className="hidden min-h-0 flex-1 flex-col overflow-y-auto p-1.5 sm:flex">
+              <button type="button" onClick={() => handleGroupClick('all')} className={groupTabCn('all')}>
+                <LayoutGrid className="size-3.5 shrink-0" />
+                <span>Все</span>
+              </button>
+              {groups.map((group) => (
+                <button key={group} type="button" onClick={() => handleGroupClick(group)} className={groupTabCn(group)}>
+                  <GroupIcon group={group} active={activeGroup === group} firstIconName={firstIconByGroup[group]} />
+                  <span>{groupLabel(group)}</span>
+                </button>
+              ))}
             </div>
           </div>
-        </>
+
+          {/* Сетка иконок — flex-1 чтобы заполнить остаток высоты */}
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] sm:order-2">
+            {/* Оверлей во время смены группы */}
+            {isPending && (
+              <div className="pointer-events-none absolute inset-0 z-10 bg-[var(--aura-surface-panel)]/40 backdrop-blur-[1px] animate-in fade-in duration-100" />
+            )}
+            {filtered.length === 0 ? (
+              <div className="text-muted-foreground flex h-full min-h-[11rem] items-center justify-center px-3 text-center text-sm">
+                Иконки не найдены
+              </div>
+            ) : (
+              <div
+                ref={viewportRef}
+                className="h-full overflow-auto"
+                onScroll={handleScroll}
+              >
+                <div style={{ height: totalHeight }} className="relative p-1.5">
+                  <div
+                    className="grid gap-1.5"
+                    style={{
+                      transform: `translateY(${offsetY}px)`,
+                      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                      willChange: 'transform',
+                    }}
+                  >
+                    {visible.map((id) => {
+                      const active = current === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          title={id}
+                          aria-label={id}
+                          onClick={() => onPick(id)}
+                          className={cn(
+                            'flex h-[3.25rem] w-full items-center justify-center rounded-lg border aura-tx-colors',
+                            active
+                              ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                              : 'border-[var(--aura-border-soft)]/60 bg-transparent hover:border-primary/30 hover:bg-[var(--aura-action-hover-bg)]'
+                          )}
+                        >
+                          <AuraThemedIcon name={id} size={22} tint={active ? 'var(--primary)' : undefined} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

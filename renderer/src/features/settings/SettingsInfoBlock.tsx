@@ -9,7 +9,7 @@ export function SettingsInfoBlock({ entry }: Props) {
   const paragraph = entry.description.join(' ').trim();
   const tips = entry.tips.slice(0, 3);
   return (
-    <section className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3">
+    <section className="rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-4 py-3">
       <p className="text-muted-foreground text-sm leading-relaxed">{paragraph}</p>
       <ul className="mt-3 space-y-1.5">
         {tips.map((text, idx) => (

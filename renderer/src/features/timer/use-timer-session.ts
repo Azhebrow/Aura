@@ -93,7 +93,7 @@ export function useTimerSession(db: AuraDatabase | null, dateString: string, day
 
       try {
         const sessionId = `timer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-        runAuraMutation('timer', () => {
+        runAuraMutation({ type: 'timer', date: dateString, entityId: task.id }, () => {
           db.addTimerSession({
             id: sessionId,
             date: dateString,
@@ -102,7 +102,7 @@ export function useTimerSession(db: AuraDatabase | null, dateString: string, day
             timer_type: m.timerType,
             target_duration: m.timerType === 'timer' ? m.targetDuration : null,
           });
-        });
+        }, dateString);
         sendTimerCompleted({
           isNaturalCompletion,
           taskTitle: task.title || null,

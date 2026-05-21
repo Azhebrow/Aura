@@ -7,17 +7,17 @@ type IconWithBadgeProps = {
   tint?: string;
   badge?: ReactNode;
   className?: string;
-  /** Переопределение стилей “плитки” под иконкой (фон/рамка/размер контейнера). */
+  /** Переопределение контейнера под иконкой для мест, где нужна отдельная плитка. */
   surfaceClassName?: string;
   surfaceStyle?: CSSProperties;
   size?: 'xs' | 'sm' | 'md' | 'lg';
 };
 
 const sizeConfig = {
-  xs: { container: 'size-5', icon: 12, badge: 'size-2.5' },
-  sm: { container: 'size-6', icon: 14, badge: 'size-3' },
-  md: { container: 'size-8', icon: 18, badge: 'size-4' },
-  lg: { container: 'size-10', icon: 20, badge: 'size-5' },
+  xs: { container: 'size-5', icon: 11, badge: 'size-2.5' },
+  sm: { container: 'size-6', icon: 13, badge: 'size-3' },
+  md: { container: 'size-7', icon: 14, badge: 'size-4' },
+  lg: { container: 'size-8', icon: 16, badge: 'size-5' },
 };
 
 export function IconWithBadge({
@@ -30,16 +30,21 @@ export function IconWithBadge({
   size = 'md',
 }: IconWithBadgeProps) {
   const config = sizeConfig[size];
+  const defaultSurfaceStyle = {
+    ['--aura-list-icon-tint' as string]: tint,
+    backgroundColor: 'color-mix(in oklab, var(--aura-list-icon-tint) 10%, transparent)',
+    borderColor: 'color-mix(in oklab, var(--aura-list-icon-tint) 20%, transparent)',
+  } satisfies CSSProperties;
 
   return (
     <div className={cn('relative shrink-0', className)}>
       <span
         className={cn(
-          'flex items-center justify-center rounded-md',
+          'flex items-center justify-center rounded-lg border',
           config.container,
-          surfaceClassName ?? 'bg-muted/50 ring-border/80 ring-1'
+          surfaceClassName
         )}
-        style={surfaceStyle}
+        style={surfaceStyle ?? defaultSurfaceStyle}
       >
         <ColoredAuraIcon
           name={iconName}

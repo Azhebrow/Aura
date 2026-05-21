@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, FolderOpen, ListPlus, Music2, Palette, Pencil, Settings, Trash2, XIcon } from 'lucide-react';
+import { AlertTriangle, ChevronDown, FolderOpen, ListPlus, Music2, Palette, Pencil, Settings, Trash2, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddListButton } from '@/components/ui/add-list-button';
 import {
@@ -36,6 +36,7 @@ import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import { SettingsDialogHeader } from '@/features/settings/settings-form-primitives';
 import { ColorPickerPanel } from '@/features/settings/color-picker-panel';
 import { IconPickerPanel } from '@/features/settings/icon-picker-panel';
+import { warmIconsManifest } from '@/features/settings/load-icons-manifest';
 import { SettingsDialogLayout } from '@/features/settings/settings-dialog-layout';
 import {
   CFG_ACCOUNT_COLOR_PRESETS,
@@ -63,9 +64,11 @@ const COLOR_PICKER_DEFAULT = '#64748b';
 
 /** Единый ритм правой колонки CFG-модалки (высота как у `h-9`). */
 const CFG_INPUT_CN =
-  'border-input bg-background h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-xs';
+  'border-[var(--aura-border-soft)] bg-transparent h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-none';
 const CFG_ICON_TRIGGER_CN =
-  'border-input bg-background hover:bg-muted/50 flex h-9 w-full min-w-0 flex-row items-center justify-center gap-2 rounded-md border px-3 text-center text-sm font-normal aura-tx-colors shadow-xs';
+  'border-[var(--aura-border-soft)] bg-transparent hover:bg-[var(--aura-action-hover-bg)] flex h-9 w-full min-w-0 flex-row items-center justify-center gap-2 rounded-md border px-3 text-center text-sm font-normal aura-tx-colors shadow-none';
+const CFG_LIST_ITEM_CN =
+  'rounded-xl border-border/55 bg-card/55 shadow-none hover:border-border/75 hover:bg-muted/25';
 type DialogSub = 'form' | { k: 'color'; field: string } | { k: 'preset-products'; field: string };
 
 function sectionColorPresets(sectionId: string): CfgColorPreset[] | null {
@@ -219,7 +222,7 @@ function CfgAffixValueField({
         id={id}
         aria-label={ariaLabel}
         onClick={start}
-        className="border-input bg-background text-foreground hover:bg-muted/20 flex h-9 w-full min-w-0 items-center justify-center rounded-md border px-3 text-center text-sm shadow-xs aura-tx-colors"
+        className="border-[var(--aura-border-soft)] bg-transparent text-foreground hover:bg-[var(--aura-action-hover-bg)] flex h-9 w-full min-w-0 items-center justify-center rounded-md border px-3 text-center text-sm shadow-none aura-tx-colors"
       >
         <span className={cn('max-w-full truncate', inputKind === 'number' && 'tabular-nums')}>{displayLine}</span>
       </button>
@@ -248,7 +251,7 @@ function CfgAffixValueField({
         }
       }}
       className={cn(
-        'border-input bg-background h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-xs',
+        'border-[var(--aura-border-soft)] bg-transparent h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-none',
         inputKind === 'number' && 'tabular-nums'
       )}
     />
@@ -265,8 +268,8 @@ function CfgModalGridRow({
   children: ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-1 border-b border-border last:border-b-0 sm:grid-cols-[minmax(9rem,28%)_1fr] sm:divide-x sm:divide-border">
-      <div className="flex items-center justify-center bg-muted/30 px-2 py-2 text-center sm:min-h-9 sm:px-3">
+    <div className="grid grid-cols-1 sm:grid-cols-[minmax(9rem,28%)_1fr] sm:items-stretch sm:divide-x sm:divide-[var(--aura-border-soft)]/70">
+      <div className="flex items-center px-3 py-2.5 text-left sm:min-h-9">
         <Label
           htmlFor={htmlFor}
           className="text-foreground cursor-default text-xs font-semibold leading-snug break-words"
@@ -274,7 +277,7 @@ function CfgModalGridRow({
           {label}
         </Label>
       </div>
-      <div className="flex min-w-0 w-full flex-col items-center justify-center px-2 py-2 sm:min-h-9 sm:px-3">
+      <div className="flex min-w-0 w-full flex-col items-center justify-center px-3 py-2 sm:min-h-9">
         {children}
       </div>
     </div>
@@ -425,10 +428,11 @@ function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | undefin
 
   if (parts.length > 0) {
     return (
-      <div className="flex flex-wrap gap-1.5 mt-1.5">
+      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-caption font-medium leading-snug text-[var(--aura-text-subtle)]">
         {parts.map((part, idx) => (
-          <span key={idx} className="inline-flex items-center rounded-md bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground/80">
-            {part}
+          <span key={idx} className="inline-flex min-w-0 items-center gap-1">
+            {idx > 0 ? <span className="text-[var(--aura-text-disabled)]" aria-hidden>·</span> : null}
+            <span className="truncate">{part}</span>
           </span>
         ))}
       </div>
@@ -748,6 +752,10 @@ function rowListAccent(spec: CfgSectionSpec, row: AuraRow): string {
   return 'var(--muted-foreground)';
 }
 
+function cfgListIconTint(accent: string): string {
+  return `color-mix(in oklab, ${accent} 76%, var(--foreground) 24%)`;
+}
+
 function buildPayloadFromForm(
   spec: CfgSectionSpec,
   form: Record<string, string>,
@@ -759,7 +767,7 @@ function buildPayloadFromForm(
     Object.assign(out, spec.filter ?? {}, spec.createExtra ?? {});
   }
   if (mode === 'edit' && editId != null) out.id = editId;
-  for (const f of translatedSpec.fields) {
+  for (const f of spec.fields) {
     if (spec.sectionId === 'finance-expense' && f.key === 'type') {
       out[f.key] = form[f.key] === '1' ? 'compulsive' : '';
     } else {
@@ -1172,7 +1180,7 @@ export function CfgSectionCard({ spec }: Props) {
           id={fid}
           type="button"
           onClick={() => setDialogSub({ k: 'preset-products', field: f.key })}
-          className="border-input bg-background hover:bg-muted/40 flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-md border px-3 text-sm shadow-xs aura-tx-colors"
+          className="border-[var(--aura-border-soft)] bg-transparent hover:bg-[var(--aura-action-hover-bg)] flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-md border px-3 text-sm shadow-none aura-tx-colors"
         >
           <span className="truncate">{ingredientsCount > 0 ? `Ингредиентов: ${ingredientsCount}` : 'Добавить ингредиенты'}</span>
           <span className="text-muted-foreground shrink-0 text-xs">Настроить</span>
@@ -1189,7 +1197,7 @@ export function CfgSectionCard({ spec }: Props) {
           placeholder={f.placeholder}
           rows={tall ? 8 : 4}
           className={cn(
-            'border-input bg-background w-full min-w-0 resize-y rounded-md border px-3 py-2 text-sm shadow-xs',
+            'border-[var(--aura-border-soft)] bg-transparent w-full min-w-0 resize-y rounded-md border px-3 py-2 text-sm shadow-none',
             tall ? 'text-left font-mono text-xs leading-relaxed' : 'text-center'
           )}
         />
@@ -1201,6 +1209,8 @@ export function CfgSectionCard({ spec }: Props) {
         <button
           id={fid}
           type="button"
+          onMouseEnter={warmIconsManifest}
+          onFocus={warmIconsManifest}
           onClick={() => setCfgIconField(f.key)}
           className={CFG_ICON_TRIGGER_CN}
         >
@@ -1219,7 +1229,7 @@ export function CfgSectionCard({ spec }: Props) {
             <SelectTrigger
               id={fid}
               contentAlign="start"
-              className="border-input bg-background h-9 w-full min-w-0 justify-center shadow-xs"
+              className="border-[var(--aura-border-soft)] bg-transparent h-9 w-full min-w-0 justify-center shadow-none"
             >
               <SelectValue placeholder={ambientMusicFiles.length > 0 ? 'Выберите файл' : 'Файлы не найдены'} />
             </SelectTrigger>
@@ -1286,7 +1296,7 @@ export function CfgSectionCard({ spec }: Props) {
             setColorDraft(pickerSeed);
             setDialogSub({ k: 'color', field: f.key });
           }}
-          className="border-input focus-visible:ring-ring/70 h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-xs aura-tx-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
+          className="border-[var(--aura-border-soft)] focus-visible:ring-ring/70 h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-none aura-tx-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
           style={{
             backgroundColor: paint ?? undefined,
             backgroundImage: paint ? undefined : emptyPattern,
@@ -1322,7 +1332,7 @@ export function CfgSectionCard({ spec }: Props) {
           <SelectTrigger
             id={fid}
             contentAlign="center"
-            className="border-input bg-background h-9 w-full min-w-0 justify-center shadow-xs"
+            className="border-[var(--aura-border-soft)] bg-transparent h-9 w-full min-w-0 justify-center shadow-none"
           >
             <SelectValue placeholder="Выберите" />
           </SelectTrigger>
@@ -1377,9 +1387,10 @@ export function CfgSectionCard({ spec }: Props) {
                           <ListItem
                             mode="edit-delete"
                             icon={NUTRITION_PRODUCT_GROUP_ICON[gKey]}
-                            iconTint={tint}
+                            iconTint={cfgListIconTint(tint)}
                             title={rowTitle(r, spec.rowTitleKeys)}
-                            description={rowMetaSummary(spec, r)}
+                            description={rowMetaSummary(translatedSpec, r)}
+                            className={CFG_LIST_ITEM_CN}
                             actionsAlwaysVisible
                             showDisabledMoveButtons
                             onMoveUp={
@@ -1428,9 +1439,10 @@ export function CfgSectionCard({ spec }: Props) {
                           <ListItem
                             mode="edit-delete"
                             icon={iconName}
-                            iconTint={tint}
+                            iconTint={cfgListIconTint(tint)}
                             title={rowTitle(r, spec.rowTitleKeys)}
-                            description={rowMetaSummary(spec, r)}
+                            description={rowMetaSummary(translatedSpec, r)}
+                            className={CFG_LIST_ITEM_CN}
                             actionsAlwaysVisible
                             showDisabledMoveButtons
                             onMoveUp={
@@ -1467,7 +1479,7 @@ export function CfgSectionCard({ spec }: Props) {
                   <ListItem
                     mode="edit-delete"
                     icon={typeof r.icon === 'string' ? r.icon : null}
-                    iconTint={tint}
+                    iconTint={cfgListIconTint(tint)}
                     title={
                       spec.table === 'cfg_expense_categories' && String(r.type ?? '') === 'compulsive' ? (
                         <span className="inline-flex min-w-0 items-center gap-1.5">
@@ -1483,7 +1495,8 @@ export function CfgSectionCard({ spec }: Props) {
                         rowTitle(r, spec.rowTitleKeys)
                       )
                     }
-                    description={rowMetaSummary(spec, r)}
+                    description={rowMetaSummary(translatedSpec, r)}
+                    className={CFG_LIST_ITEM_CN}
                     actionsAlwaysVisible
                     showDisabledMoveButtons
                     onMoveUp={
@@ -1612,7 +1625,7 @@ export function CfgSectionCard({ spec }: Props) {
                     {dialogError}
                   </p>
                 ) : null}
-                <div className="overflow-hidden rounded-lg border border-border">
+                <div className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)] divide-y divide-[var(--aura-border-soft)]/70">
                   {baseVisibleFields.map((f) => {
                     const fid = `cfg-${spec.sectionId}-${f.key}`;
                     if (f.kind === 'checkbox') {
@@ -1622,7 +1635,7 @@ export function CfgSectionCard({ spec }: Props) {
                       const maxedOut = isHomeVisible && !checked && visibleHomeAccountsCount >= 2 && !currentRowVisible;
                       return (
                         <CfgModalGridRow key={f.key} label={f.label} htmlFor={fid}>
-                          <div className="border-input bg-background flex min-h-9 w-full items-center justify-center rounded-md border px-3 shadow-xs">
+                          <div className="border-[var(--aura-border-soft)] bg-transparent flex min-h-9 w-full items-center justify-center rounded-md border px-3 shadow-none">
                             <Switch
                               id={fid}
                               checked={checked}
@@ -1638,12 +1651,12 @@ export function CfgSectionCard({ spec }: Props) {
                                 </span>
                               ) : null}
                               {isHomeVisible ? (
-                                <p className="text-muted-foreground text-[11px] leading-snug">
+                                <p className="text-muted-foreground text-caption leading-snug">
                                   {maxedOut
-                                    ? 'Максимум 3 счета уже выбрано для главной.'
+                                    ? 'Максимум 2 счета уже выбрано для главной.'
                                     : checked
                                       ? `Показывается на главной. После выключения останется ${Math.max(0, visibleHomeAccountsCount - 1)}.`
-                                      : `Сейчас видно ${visibleHomeAccountsCount} из 3.`}
+                                      : `Сейчас видно ${visibleHomeAccountsCount} из 2.`}
                                 </p>
                               ) : null}
                             </div>
@@ -1658,17 +1671,17 @@ export function CfgSectionCard({ spec }: Props) {
                     );
                   })}
                   {conditionalVisibleFields.length > 0 ? (
-                    <div className="border-t border-border/70 bg-muted/10 p-2">
+                    <div>
                       <button
                         type="button"
-                        className="border-input bg-background hover:bg-muted/40 flex h-8 w-full items-center justify-between rounded-md border px-2.5 text-xs font-medium aura-tx-colors"
+                        className="flex w-full items-center justify-between px-3 py-2.5 text-xs font-semibold text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground aura-tx-colors"
                         onClick={() => setAdvancedOpen((v) => !v)}
                       >
                         <span>Параметры типа: {taskTypeLabel(translatedSpec, currentTaskType)}</span>
-                        <span className="text-muted-foreground">{advancedOpen ? 'Свернуть' : 'Развернуть'}</span>
+                        <ChevronDown className={cn('size-3.5 text-[var(--aura-text-disabled)] transition-transform duration-200', advancedOpen && 'rotate-180')} />
                       </button>
                       {advancedOpen ? (
-                        <div className="mt-2 overflow-hidden rounded-md border border-border/70">
+                        <div className="divide-y divide-[var(--aura-border-soft)]/70 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)]/30">
                           {conditionalVisibleFields.map((f) => {
                             const fid = `cfg-${spec.sectionId}-${f.key}`;
                             if (f.kind === 'checkbox') {
@@ -1678,7 +1691,7 @@ export function CfgSectionCard({ spec }: Props) {
                               const maxedOut = isHomeVisible && !checked && visibleHomeAccountsCount >= 2 && !currentRowVisible;
                               return (
                                 <CfgModalGridRow key={f.key} label={f.label} htmlFor={fid}>
-                                  <div className="border-input bg-background flex min-h-9 w-full items-center justify-center rounded-md border px-3 shadow-xs">
+                                  <div className="border-[var(--aura-border-soft)] bg-transparent flex min-h-9 w-full items-center justify-center rounded-md border px-3 shadow-none">
                                     <Switch
                                       id={fid}
                                       checked={checked}
@@ -1694,7 +1707,7 @@ export function CfgSectionCard({ spec }: Props) {
                                         </span>
                                       ) : null}
                                       {isHomeVisible ? (
-                                        <p className="text-muted-foreground text-[11px] leading-snug">
+                                        <p className="text-muted-foreground text-caption leading-snug">
                                           {maxedOut
                                             ? 'Максимум 2 счета уже выбрано для главной.'
                                             : checked
@@ -1718,8 +1731,8 @@ export function CfgSectionCard({ spec }: Props) {
                     </div>
                   ) : null}
                   {(spec.table === 'cfg_tasks' || spec.table === 'cfg_leisure_tasks') && currentTaskType === 'list' ? (
-                    <div className="border-t border-border/70 bg-muted/10 p-2">
-                      <div className="border-input bg-background overflow-hidden rounded-md border p-2">
+                    <div className="rounded-lg border border-[var(--aura-border-soft)]/55 bg-transparent p-2">
+                      <div className="border-[var(--aura-border-soft)] bg-transparent overflow-hidden rounded-md border p-2">
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <p className="text-xs font-medium">Элементы списка</p>
                           <Button
@@ -1833,7 +1846,7 @@ export function CfgSectionCard({ spec }: Props) {
               </div>
             ) : dialogSub.k === 'preset-products' ? (
               <div className="flex flex-col gap-3">
-                <div className="border-input bg-muted/20 flex items-center justify-between rounded-md border px-3 py-2">
+                <div className="border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] flex items-center justify-between rounded-md border px-3 py-2">
                   <p className="text-muted-foreground text-xs">Добавьте продукты и укажите порции или граммовку.</p>
                   <Button
                     type="button"
@@ -2074,7 +2087,7 @@ export function CfgSectionCard({ spec }: Props) {
               {categoryError ? (
                 <p className="text-destructive bg-destructive/10 rounded-md px-3 py-2 text-sm">{categoryError}</p>
               ) : null}
-              <div className="overflow-hidden rounded-lg border border-border">
+              <div className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)] divide-y divide-[var(--aura-border-soft)]/70">
                 <CfgModalGridRow label="Название">
                   <Input
                     value={categoryForm.title}

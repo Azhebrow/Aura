@@ -17,7 +17,7 @@ export function LoadingShell({ rows = 3, className }: Props) {
     <div
       role="status"
       aria-label="Загрузка"
-      className={cn('flex flex-col gap-aura-sm p-aura-lg', className)}
+      className={cn('flex flex-col gap-aura-sm rounded-lg bg-transparent p-aura-lg', className)}
     >
       {Array.from({ length: rows }).map((_, i) => (
         <div

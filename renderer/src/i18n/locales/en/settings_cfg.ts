@@ -86,7 +86,7 @@ export default {
     config: { label: 'config (JSON for list)', hint: 'Service field for "List" type; empty list by default.' },
     is_optional: { label: 'Optional', hint: 'Does not affect category progress if enabled.' },
     type: { label: 'Type', hint: 'Savings account can be highlighted for savings goals.' },
-    home_visible: { label: 'Show on Home', hint: 'A maximum of 3 accounts can be visible on the home page.' },
+    home_visible: { label: 'Show on Home', hint: 'A maximum of 2 accounts can be visible on the home page.' },
     color: { label: 'Color', hint: 'Category accent in UI.' },
     balance: { label: 'Balance', hint: 'Current value in the app currency.' },
     target: { label: 'Goal', hint: 'Optional: planned amount on the account.' },

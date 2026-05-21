@@ -2,7 +2,6 @@ import { Droplet, Dumbbell, Flame, Wheat } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
 import type { NutritionTotals } from '@/shared/lib/nutrition-aggregate';
 
 type Props = {
@@ -16,91 +15,112 @@ function pct(current: number, target: number): number {
   return Math.min(100, Math.round((current / target) * 100));
 }
 
-const PROGRESS_NEUTRAL =
-  'bg-muted/80 [&_[data-slot=progress-indicator]]:bg-foreground/25 dark:[&_[data-slot=progress-indicator]]:bg-foreground/35';
-
-function MacroCell({
-  Icon,
-  label,
-  current,
-  target,
-  unit,
-}: {
+type MacroItem = {
   Icon: LucideIcon;
   label: string;
   current: number;
   target: number;
-  unit: string;
-}) {
-  const hasT = target > 0;
-  const p = hasT ? pct(current, target) : current > 0 ? 100 : 0;
+  color: string;
+};
+
+function FlushBar({ value, color, className }: { value: number; color: string; className?: string }) {
   return (
-    <div className="border-border/50 bg-background/80 flex min-h-[4.25rem] min-w-0 flex-col gap-1.5 rounded-md border px-2.5 py-2">
-      <div className="flex items-center gap-2">
-        <div className="bg-muted/60 text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded border border-border/50">
-          <Icon className="size-3.5" strokeWidth={1.75} aria-hidden />
-        </div>
-        <span className="text-muted-foreground truncate text-xs font-medium uppercase tracking-wide">{label}</span>
-      </div>
-      <p className="text-foreground font-mono text-sm font-semibold tabular-nums">
-        {Math.round(current)}
-        {hasT ? (
-          <span className="text-muted-foreground text-xs font-normal">
-            {' '}
-            / {Math.round(target)}
-            {unit}
-          </span>
-        ) : (
-          <span className="text-muted-foreground text-xs font-normal">{unit}</span>
-        )}
-      </p>
-      <Progress value={hasT ? p : current > 0 ? 100 : 0} className={cn('h-1', PROGRESS_NEUTRAL, !hasT && current <= 0 && 'opacity-40')} />
+    <div className={cn('h-1 w-full bg-[var(--aura-surface-panel)]', className)}>
+      <div
+        className="h-full opacity-75 transition-all duration-[400ms] ease-out"
+        style={{ width: `${Math.max(0, Math.min(100, value))}%`, backgroundColor: color }}
+      />
     </div>
   );
 }
 
-/** Сводка КБЖУ: строгая сетка, нейтральная палитра токенов темы. */
+/** Сводка КБЖУ: единая монолитная панель. */
 export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
   const { t } = useTranslation('common');
   const kcalHas = targets.calories > 0;
   const kcalPct = pct(totals.calories, targets.calories);
+  const kcalColor = 'var(--chart-7)';
+
+  const macros: MacroItem[] = [
+    { Icon: Dumbbell, label: t('macros.proteins'), current: totals.proteins, target: targets.proteins, color: 'var(--nutrition-proteins)' },
+    { Icon: Droplet,  label: t('macros.fats'),     current: totals.fats,     target: targets.fats,     color: 'var(--nutrition-fats)'     },
+    { Icon: Wheat,    label: t('macros.carbs'),    current: totals.carbs,    target: targets.carbs,    color: 'var(--nutrition-carbs)'    },
+  ];
 
   return (
-    <div className={cn('flex min-w-0 flex-col gap-3', className)}>
-      <div className="border-border/50 flex flex-col gap-2 border-b pb-3">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="bg-muted/60 text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded border border-border/50">
-              <Flame className="size-4" strokeWidth={1.75} aria-hidden />
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{t('macros.calories')}</p>
-              <p className="text-foreground font-mono text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">
-                {Math.round(totals.calories)}
-                {kcalHas ? (
-                  <span className="text-muted-foreground text-sm font-normal sm:text-base">
-                    {' '}
-                    / {Math.round(targets.calories)}
-                  </span>
-                ) : null}
-                <span className="text-muted-foreground ml-1 text-xs font-normal normal-case">{t('macros.kcal')}</span>
-              </p>
-            </div>
+    <div className={cn('overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs', className)}>
+      {/* Calories row */}
+      <div
+        className="flex items-center justify-between gap-3 px-3 py-2.5"
+        style={{ '--kcal-color': kcalColor } as React.CSSProperties}
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--kcal-color)_25%,transparent)] bg-[color-mix(in_oklab,var(--kcal-color)_12%,transparent)] text-[var(--kcal-color)]">
+            <Flame className="size-4" strokeWidth={1.75} aria-hidden />
           </div>
-          {kcalHas ? (
-            <span className="text-muted-foreground font-mono text-xs tabular-nums">{kcalPct}%</span>
-          ) : null}
+          <div className="min-w-0">
+            <p className="text-nano font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">
+              {t('macros.calories')}
+            </p>
+            <p className="font-mono text-base font-semibold tabular-nums tracking-tight text-foreground">
+              {Math.round(totals.calories)}
+              {kcalHas ? (
+                <span className="text-xs font-normal text-[var(--aura-text-subtle)]">
+                  {' '}/ {Math.round(targets.calories)}
+                </span>
+              ) : null}
+              <span className="ml-1 text-nano font-normal normal-case text-[var(--aura-text-subtle)]">
+                {t('macros.kcal')}
+              </span>
+            </p>
+          </div>
         </div>
-        <Progress
-          value={kcalHas ? kcalPct : totals.calories > 0 ? 100 : 0}
-          className={cn('h-1.5', PROGRESS_NEUTRAL, !kcalHas && totals.calories <= 0 && 'opacity-40')}
-        />
+        {kcalHas ? (
+          <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--aura-text-muted)]">{kcalPct}%</span>
+        ) : null}
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2">
-        <MacroCell Icon={Dumbbell} label={t('macros.proteins')} current={totals.proteins} target={targets.proteins} unit=" г" />
-        <MacroCell Icon={Droplet} label={t('macros.fats')} current={totals.fats} target={targets.fats} unit=" г" />
-        <MacroCell Icon={Wheat} label={t('macros.carbs')} current={totals.carbs} target={targets.carbs} unit=" г" />
+      {/* Full-width flush progress bar */}
+      <FlushBar
+        value={kcalHas ? kcalPct : totals.calories > 0 ? 100 : 0}
+        color={kcalColor}
+        className={cn(!kcalHas && totals.calories <= 0 && 'opacity-30')}
+      />
+
+      {/* Macros — 3-column grid */}
+      <div className="grid grid-cols-3 divide-x divide-[var(--aura-border-soft)] border-t border-[var(--aura-border-soft)]">
+        {macros.map(({ Icon, label, current, target, color }) => {
+          const hasT = target > 0;
+          const p = hasT ? pct(current, target) : current > 0 ? 100 : 0;
+          return (
+            <div
+              key={label}
+              className="flex flex-col gap-1.5 px-2.5 py-2"
+              style={{ '--macro-color': color } as React.CSSProperties}
+            >
+              <div className="flex items-center gap-1.5">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--macro-color)_25%,transparent)] bg-[color-mix(in_oklab,var(--macro-color)_12%,transparent)] text-[var(--macro-color)]">
+                  <Icon className="size-3" strokeWidth={1.75} aria-hidden />
+                </div>
+                <span className="truncate text-nano font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">
+                  {label}
+                </span>
+              </div>
+              <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                {Math.round(current)}
+                <span className="text-nano font-normal text-[var(--aura-text-subtle)]">
+                  {hasT ? ` / ${Math.round(target)} г` : ' г'}
+                </span>
+              </p>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--aura-surface-control)]">
+                <div
+                  className="h-full rounded-full opacity-75 transition-all duration-[400ms] ease-out"
+                  style={{ width: `${p}%`, backgroundColor: color }}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

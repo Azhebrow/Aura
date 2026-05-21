@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom';
 import { XIcon, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { UniversalRadioGroup, type UniversalRadioOption } from '@/components/ui/header-segmented-radio';
 import { DialogClose, DialogTitle } from '@/components/ui/dialog';
 import type { ModalSizePreset } from '@/components/ui/modal-tokens';
 import { UniversalModalContent, UniversalModalLayout } from '@/components/ui/universal-modal';
@@ -63,7 +64,7 @@ export function ActModal({
                 {headerStart ? <div className="shrink-0">{headerStart}</div> : null}
                 {Icon ? (
                   <div
-                    className="bg-muted/70 text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-md border border-border/60"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--primary)_25%,transparent)] bg-[color-mix(in_oklab,var(--primary)_10%,transparent)] text-primary"
                     aria-hidden
                   >
                     <Icon className="size-4" />
@@ -78,7 +79,7 @@ export function ActModal({
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="border-border/60 bg-muted/70 text-muted-foreground hover:bg-muted/90 h-8 w-8 shrink-0 rounded-md border p-0"
+                  className="h-8 w-8 shrink-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] p-0 text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground"
                 >
                   <XIcon className="size-4" />
                   <span className="sr-only">{t('action.close')}</span>
@@ -87,7 +88,7 @@ export function ActModal({
             </div>
           }
           footer={footer ?? null}
-          bodyClassName="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-3 sm:px-5 sm:py-4"
+          bodyClassName="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-2.5 sm:px-4 sm:py-3"
         >
           {children}
         </UniversalModalLayout>
@@ -97,7 +98,7 @@ export function ActModal({
 }
 
 export function ActTableBox({ children }: { children: ReactNode }) {
-  return <div className="overflow-hidden rounded-lg border border-border">{children}</div>;
+  return <div className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)]">{children}</div>;
 }
 
 type ActFieldProps = {
@@ -111,11 +112,11 @@ export function ActField({ id, label, children, className }: ActFieldProps) {
   return (
     <div
       className={cn(
-        'grid grid-cols-1 border-b border-border last:border-b-0 sm:grid-cols-[minmax(9rem,28%)_1fr] sm:divide-x sm:divide-border',
+        'grid grid-cols-1 border-b border-[var(--aura-border-soft)] last:border-b-0 sm:grid-cols-[minmax(9rem,28%)_1fr] sm:divide-x sm:divide-[var(--aura-border-soft)]',
         className
       )}
     >
-      <div className="flex items-center justify-center bg-muted/30 px-2 py-2 text-center sm:min-h-9 sm:px-3">
+      <div className="flex items-center justify-center bg-[var(--aura-surface-panel)] px-2 py-2 text-center sm:min-h-9 sm:px-3">
         <label
           htmlFor={id}
           className="text-foreground cursor-default text-xs font-semibold leading-snug break-words"
@@ -146,26 +147,21 @@ type ActModeSwitchProps<T extends string> = {
 };
 
 export function ActModeSwitch<T extends string>({ value, options, onValueChange }: ActModeSwitchProps<T>) {
+  const radioOptions: UniversalRadioOption<T>[] = options.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    Icon: opt.icon,
+  }));
+
   return (
-    <div className="bg-muted/80 border-border/60 flex h-10 w-full min-w-0 max-w-full items-center gap-0.5 rounded-lg border p-1">
-      {options.map((opt) => {
-        const Icon = opt.icon;
-        const active = opt.value === value;
-        return (
-          <Button
-            key={opt.value}
-            type="button"
-            size="sm"
-            variant={active ? 'default' : 'ghost'}
-            className="h-8 min-h-0 min-w-0 flex-1 basis-0 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium leading-none"
-            onClick={() => onValueChange(opt.value)}
-          >
-            <Icon className="size-3.5 shrink-0" />
-            <span className="min-w-0 truncate">{opt.label}</span>
-          </Button>
-        );
-      })}
-    </div>
+    <UniversalRadioGroup
+      value={value}
+      onValueChange={onValueChange}
+      options={radioOptions}
+      ariaLabel="Тип записи"
+      fullWidth
+      className="h-10"
+    />
   );
 }
 
@@ -280,7 +276,7 @@ export function ActAffixValueField({
         disabled={disabled}
         onClick={start}
         className={cn(
-          'border-input bg-background text-foreground hover:bg-muted/20 flex h-9 w-full min-w-0 items-center justify-center rounded-md border px-3 text-center text-sm shadow-xs aura-tx-colors',
+          'flex h-9 w-full min-w-0 items-center justify-center rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 text-center text-sm text-foreground shadow-xs aura-tx-colors hover:bg-[var(--aura-action-hover-bg)]',
           disabled && 'disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50'
         )}
       >
@@ -331,7 +327,7 @@ export function ActAffixValueField({
         }
       }}
       className={cn(
-        'border-input bg-background h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-xs',
+        'h-9 w-full min-w-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 text-center text-sm shadow-xs',
         (inputKind === 'number' || inputKind === 'integer') && 'tabular-nums'
       )}
     />
@@ -358,7 +354,7 @@ export function ActModalFooter({
   const { t } = useTranslation('common');
   const displayCancelLabel = cancelLabel ?? t('action.cancel');
   return (
-    <div data-modal-footer="true" className="border-border/80 bg-background/95 grid shrink-0 grid-cols-2 gap-2 border-t px-4 py-3 sm:px-5">
+    <div data-modal-footer="true" className="grid shrink-0 grid-cols-2 gap-2 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-4 py-3 sm:px-5">
       <Button data-modal-cancel="true" type="button" variant="outline" className="h-10 w-full rounded-md" onClick={onCancel}>
         {displayCancelLabel}
       </Button>

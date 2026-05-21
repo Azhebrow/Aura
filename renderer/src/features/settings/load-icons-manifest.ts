@@ -125,12 +125,9 @@ export function warmIconsManifest() {
       /* silent warmup fail */
     });
   };
-  if ('requestIdleCallback' in window) {
-    const ric = window.requestIdleCallback as (cb: IdleRequestCallback, opts?: IdleRequestOptions) => number;
-    ric(() => run(), { timeout: 2500 });
-    return;
-  }
-  const timeout = globalThis.setTimeout(run, 1200);
+  // Запускаем через короткий таймаут чтобы не блокировать первый paint,
+  // но манифест был готов задолго до открытия диалога иконок.
+  const timeout = globalThis.setTimeout(run, 300);
   void timeout;
 }
 

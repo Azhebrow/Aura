@@ -102,7 +102,7 @@ export function RitualsPage() {
   return (
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
       <Card className={MEGA_SHELL_CARD_CN}>
-        <CardContent className={MEGA_SHELL_CONTENT_CN}>
+        <CardContent className={`${MEGA_SHELL_CONTENT_CN} aura-content-fade-in`}>
           <MobilePageShell sections={mobileSections} value={mobileTab} onChange={setMobileTab} />
           {twoColumns ? (
             <div className="hidden min-h-0 flex-1 overflow-hidden lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:divide-x lg:divide-border/60">

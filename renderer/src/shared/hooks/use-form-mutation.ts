@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
+import type { AuraDataChangedDetail } from '@/shared/lib/aura-data-events';
 import type { MutationState } from '@/shared/types/operations';
 
 type Options = {
@@ -7,6 +8,8 @@ type Options = {
   onError?:   (err: string) => void;
   /** runAuraMutation event type string. Default: 'generic' */
   eventType?: string;
+  eventDate?: string;
+  eventDetail?: Omit<AuraDataChangedDetail, 'type' | 'date'>;
 };
 
 /**
@@ -36,7 +39,10 @@ export function useFormMutation<TArgs>(
       setError(null);
       setSuccess(false);
       try {
-        runAuraMutation(options.eventType ?? 'generic', () => mutate(args));
+        runAuraMutation(
+          { type: options.eventType ?? 'generic', date: options.eventDate, ...options.eventDetail },
+          () => mutate(args)
+        );
         setSuccess(true);
         options.onSuccess?.();
       } catch (e) {
@@ -48,7 +54,7 @@ export function useFormMutation<TArgs>(
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mutate, options.eventType, options.onSuccess, options.onError]
+    [mutate, options.eventType, options.eventDate, options.eventDetail, options.onSuccess, options.onError]
   );
 
   return { submitting, error, success, submit };

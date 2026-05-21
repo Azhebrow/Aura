@@ -3,7 +3,7 @@ import { Pause, Play, RotateCcw, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActAffixValueField } from '@/features/act/ActModal';
 import { Label } from '@/components/ui/label';
-import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
+import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import { cn } from '@/lib/utils';
 import type { TimerTaskSelection } from '@/features/timer/use-timer-session';
 import { SectionControlCard } from '@/shared/ui/section-control-card';
@@ -112,8 +112,15 @@ function TimerRing({
         ) : (
           <>
             {taskInRing && visibleDialMode === 'time' ? (
-              <div className="relative flex size-9 shrink-0 items-center justify-center sm:size-10" aria-hidden>
-                <ColoredAuraIcon name={taskInRing.icon} tint={taskInRing.accent} size={26} className="relative z-[1]" />
+              <div
+                className="relative flex size-9 shrink-0 items-center justify-center rounded-xl border bg-transparent sm:size-10"
+                style={{
+                  borderColor: `color-mix(in srgb, ${taskInRing.accent} 36%, transparent)`,
+                  color: taskInRing.accent,
+                }}
+                aria-hidden
+              >
+                <AuraThemedIcon name={taskInRing.icon} tint="currentColor" size={20} />
               </div>
             ) : visibleDialMode === 'time' ? (
               isRunning ? (
@@ -159,7 +166,7 @@ function TimerRing({
                     }}
                   />
                 </div>
-                <span className="text-[11px] font-medium leading-tight text-muted-foreground">
+                <span className="text-caption font-medium leading-tight text-muted-foreground">
                   {progressHint}
                 </span>
               </div>
@@ -175,11 +182,11 @@ function TimerRing({
                     }}
                   />
                 </div>
-                <span className="text-[11px] font-semibold tracking-[0.24em] text-muted-foreground/80">клик для режима</span>
+                <span className="text-caption font-semibold tracking-[0.24em] text-muted-foreground/80">клик для режима</span>
               </div>
             )}
             {visibleDialMode === 'percent' || visibleDialMode === 'bar' ? (
-              <span className="max-w-[8.5rem] text-balance text-[11px] font-medium leading-tight text-muted-foreground">
+              <span className="max-w-[8.5rem] text-balance text-caption font-medium leading-tight text-muted-foreground">
                 {visibleDialMode === 'percent' ? progressHint : remainingTimeText}
               </span>
             ) : null}
@@ -287,28 +294,19 @@ export function TimerSessionHero({
             )}
           >
             <div className="flex min-h-0 w-full min-w-0 flex-1 items-center justify-center py-0.5">
-              <div className="relative aspect-square w-[min(100%,min(15rem,52vmin))] max-w-[15rem] shrink-0">
+              <div
+                className="relative aspect-square w-[min(100%,min(14rem,48vmin))] max-w-[14rem] shrink-0"
+                style={selectedTask ? taskColorStyle : undefined}
+              >
                 {selectedTask ? (
-                  <>
-                    <div
-                      aria-hidden
-                      className="timer-task-ambient-a pointer-events-none absolute left-1/2 top-1/2 z-0 h-[88%] w-[88%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl sm:blur-3xl"
-                      style={{
-                        ...taskColorStyle,
-                        background:
-                          'radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--task-color) 44%, transparent) 0%, color-mix(in srgb, var(--task-color) 18%, transparent) 42%, transparent 72%)',
-                      }}
-                    />
-                    <div
-                      aria-hidden
-                      className="timer-task-ambient-b pointer-events-none absolute left-1/2 top-1/2 z-0 h-[58%] w-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-xl sm:blur-2xl"
-                      style={{
-                        ...taskColorStyle,
-                        background:
-                          'radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--task-color) 32%, transparent) 0%, color-mix(in srgb, var(--task-color) 12%, transparent) 48%, transparent 78%)',
-                      }}
-                    />
-                  </>
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[74%] w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-70"
+                    style={{
+                      background:
+                        'radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--task-color) 14%, transparent) 0%, color-mix(in srgb, var(--task-color) 7%, transparent) 42%, transparent 72%)',
+                    }}
+                  />
                 ) : null}
                 <div className="relative z-[1] size-full">
                   <TimerRing

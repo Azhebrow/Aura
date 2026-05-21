@@ -6,7 +6,6 @@ import { dateToYmd, useSelectedDate } from '@/features/selected-date/selected-da
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
 import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
-import { getCategoryProgresses } from '@/shared/bridge/get-category-progresses';
 import { TASK_CATEGORY_IDS } from '@/shared/config/domain-taxonomy';
 
 function parseYmd(s: string): Date | null {
@@ -97,16 +96,12 @@ export function DateCellStrip() {
     'date-strip',
     bootstrapParams,
     [dataTick],
-    {
-      keepStaleOnError: true,
-      cacheMs: 0,
-      dedupeKey: `date-strip:${windowStart}:${visibleCount}:${dataTick}`,
-    }
+    { keepStaleOnError: true }
   );
   const bootstrapRows = useMemo(
     () =>
       Array.isArray(bootstrapRowsRaw)
-        ? (bootstrapRowsRaw as Array<{ date: string; categoryProgresses?: Record<string, number> }>)
+        ? (bootstrapRowsRaw as Array<{ date: string; categoryProgresses?: Record<string, number>; completionPercent?: number }>)
         : null,
     [bootstrapRowsRaw]
   );
@@ -143,6 +138,10 @@ export function DateCellStrip() {
     if (!db) return map;
     if (bootstrapRows && bootstrapRows.length) {
       for (const row of bootstrapRows) {
+        if (row.completionPercent != null && Number.isFinite(Number(row.completionPercent))) {
+          map[row.date] = Math.min(100, Math.max(0, Number(row.completionPercent)));
+          continue;
+        }
         const values = CAT_IDS.map((cat) => Number(row.categoryProgresses?.[cat] ?? 0));
         map[row.date] = values.reduce((acc, value) => acc + value, 0) / CAT_IDS.length;
       }
@@ -156,20 +155,12 @@ export function DateCellStrip() {
     });
     let cur = windowStart;
     for (let i = 0; i < visibleCount; i++) {
-      const categoryMap = getCategoryProgresses(db, cur, CAT_IDS);
-      const values = CAT_IDS.map((cat) => categoryMap[cat]).filter((v) => Number.isFinite(Number(v))) as number[];
-      const sum = values.reduce((acc, value) => acc + Number(value), 0);
-      const n = values.length;
-      if (n) {
-        map[cur] = sum / n;
-      } else {
-        const row = byDate.get(cur);
-        const fromDaily =
-          row && row.completion_percent != null && Number.isFinite(Number(row.completion_percent))
-            ? Math.min(100, Math.max(0, Number(row.completion_percent)))
-            : 0;
-        map[cur] = fromDaily;
-      }
+      const row = byDate.get(cur);
+      const fromDaily =
+        row && row.completion_percent != null && Number.isFinite(Number(row.completion_percent))
+          ? Math.min(100, Math.max(0, Number(row.completion_percent)))
+          : 0;
+      map[cur] = fromDaily;
       cur = addDaysToYmd(cur, 1);
     }
     return map;
@@ -196,7 +187,7 @@ export function DateCellStrip() {
   return (
     <div
       ref={wrapRef}
-      className="border-border bg-muted/20 flex min-w-0 max-w-full flex-1 items-stretch gap-0.5 rounded-xl border p-0.5 sm:gap-1"
+      className="flex min-w-0 max-w-full flex-1 items-stretch gap-0.5 rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-0.5 sm:gap-1"
     >
       <Button
         type="button"

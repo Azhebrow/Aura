@@ -263,7 +263,7 @@ export function AddTransactionDialog({
       runAuraMutation('transaction', () => {
         if (isEditMode) db.updateTransaction(id, payload);
         else db.addTransaction(payload);
-      });
+      }, dateString);
       onOpenChange(false);
       onSaved();
     } catch (e) {
@@ -335,7 +335,7 @@ export function AddTransactionDialog({
                           typeof a.color === 'string' && a.color.trim() ? String(a.color) : 'var(--primary)';
                         const typ = String(a.type ?? '');
                         return (
-                          <SelectItem key={String(a.id)} value={String(a.id)}>
+                          <SelectItem key={String(a.id)} value={String(a.id)} tint={tint}>
                             <span className="flex items-center gap-2">
                               {iconName ? (
                                 <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />
@@ -367,7 +367,7 @@ export function AddTransactionDialog({
                           typeof a.color === 'string' && a.color.trim() ? String(a.color) : 'var(--primary)';
                         const typ = String(a.type ?? '');
                         return (
-                          <SelectItem key={String(a.id)} value={String(a.id)}>
+                          <SelectItem key={String(a.id)} value={String(a.id)} tint={tint}>
                             <span className="flex items-center gap-2">
                               {iconName ? (
                                 <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />
@@ -400,7 +400,7 @@ export function AddTransactionDialog({
                           typeof a.color === 'string' && a.color.trim() ? String(a.color) : 'var(--primary)';
                         const typ = String(a.type ?? '');
                         return (
-                          <SelectItem key={String(a.id)} value={String(a.id)}>
+                          <SelectItem key={String(a.id)} value={String(a.id)} tint={tint}>
                             <span className="flex items-center gap-2">
                               {iconName ? (
                                 <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />
@@ -433,7 +433,7 @@ export function AddTransactionDialog({
                         const tint =
                           typeof c.color === 'string' && c.color.trim() ? String(c.color) : 'var(--primary)';
                         return (
-                          <SelectItem key={String(c.id)} value={String(c.id)}>
+                          <SelectItem key={String(c.id)} value={String(c.id)} tint={tint}>
                             <span className="flex items-center gap-2">
                               {iconName ? (
                                 <ColoredAuraIcon name={iconName} tint={tint} size={16} className="shrink-0" />

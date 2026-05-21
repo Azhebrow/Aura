@@ -1,4 +1,3 @@
-import { Label } from '@/components/ui/label';
 import type { StatsAggregation } from '@/shared/stats/types';
 import { UniversalRadioGroup, type UniversalRadioOption } from '@/components/ui/header-segmented-radio';
 
@@ -22,17 +21,15 @@ export function StatsAggregationSelector({ value, onChange }: Props) {
   }));
   return (
     <div className="space-y-1.5">
-      <Label className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Агрегация</Label>
+      <p className="text-[var(--aura-text-muted)] text-nano font-medium uppercase tracking-wider">Агрегация</p>
       <UniversalRadioGroup
         value={value}
         onValueChange={onChange}
         options={options}
         ariaLabel="Агрегация времени"
         fullWidth
-        className="border-border/60 bg-background p-0.5 shadow-none"
-        optionClassName="h-8 justify-center rounded-md px-1 text-xs font-medium"
       />
-      {active ? <p className="text-muted-foreground px-0.5 text-xs leading-snug">{active.hint}</p> : null}
+      {active ? <p className="text-[var(--aura-text-muted)] px-0.5 text-nano leading-snug">{active.hint}</p> : null}
     </div>
   );
 }

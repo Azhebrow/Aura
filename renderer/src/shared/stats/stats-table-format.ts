@@ -1,5 +1,6 @@
 import type { StatsAggregation, StatsCellValue, StatsGroupBy, StatsMode } from './types';
 import { getColumnOrder } from './stats-column-order';
+import { currencySymbol } from '@/shared/lib/money';
 
 function getMonthNameShort(monthIndex: number): string {
   const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
@@ -31,16 +32,8 @@ function formatCurrencyRu(value: number, db?: { getAppSettings: () => { currency
   } catch {
     /* ignore */
   }
-  try {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: code,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return `${value.toFixed(2)} ${code}`;
-  }
+  const sym = currencySymbol(code);
+  return `${value.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${sym}`;
 }
 
 export function formatDateLabel(dateString: string, aggregation: string = 'day', dateRange: { startDate: string; endDate: string } | null = null): string {

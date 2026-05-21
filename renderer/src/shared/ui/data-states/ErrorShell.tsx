@@ -19,17 +19,17 @@ export function ErrorShell({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-aura-md p-aura-xl text-center',
+        'flex flex-col items-center justify-center gap-aura-sm rounded-lg border border-dashed border-[var(--aura-border-soft)] bg-transparent p-aura-lg text-center',
         className
       )}
     >
       <AlertCircle className="text-semantic-negative size-8" aria-hidden />
-      <p className="text-muted-foreground text-sm leading-snug">{message}</p>
+      <p className="aura-body-muted text-sm leading-snug">{message}</p>
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="text-primary aura-focus text-sm underline underline-offset-2"
+          className="aura-action-soft px-3 py-1.5 text-sm text-primary"
         >
           Повторить
         </button>

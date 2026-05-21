@@ -12,7 +12,8 @@
     "build:mac": "echo '🍎 Создание установщика AURA для macOS...' && vite build && electron-builder --mac",
     "build:mac:arm64": "echo '🍎 ARM Создание установщика AURA для Apple Silicon...' && vite build && electron-builder --mac --arm64",
     "build:mac:universal": "echo '🍎 Universal Создание универсального установщика для всех macOS...' && vite build && electron-builder --mac -p always",
-    "clear-db": "echo '🗑️  Очистка базы данных...' && node scripts/clear-db-standalone.js"
+    "clear-db": "echo '🗑️  Очистка базы данных...' && node scripts/clear-db-standalone.js",
+    "web": "concurrently \"ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron server-mini-app/index.js\" \"node ./node_modules/vite/bin/vite.js --host 127.0.0.1\""
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.4",

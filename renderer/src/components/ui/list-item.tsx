@@ -80,8 +80,8 @@ export function ListItem({
       <div
         onClick={handleMainClick}
         className={cn(
-          'group border-border/40 bg-muted/8 overflow-hidden rounded-lg border aura-tx-surface',
-          'hover:bg-muted/12 hover:border-border/50 cursor-pointer',
+        'group overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs aura-tx-surface',
+        'hover:bg-[var(--aura-action-hover-bg)] cursor-pointer',
           className
         )}
       >
@@ -92,23 +92,23 @@ export function ListItem({
               {moodTotal > 0 ? <ProgressDots filled={moodLevel ?? 0} total={moodTotal} size="xs" /> : null}
             </div>
           </div>
-          <div className="w-px self-stretch bg-border/55" aria-hidden />
+          <div className="w-px self-stretch bg-[var(--aura-border-soft)]" aria-hidden />
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-1.5">
               <div
                 className={cn(
-                  'truncate text-sm font-semibold leading-snug text-foreground/90',
-                  isDone && 'line-through text-muted-foreground/60'
+                  'truncate text-sm font-semibold leading-snug text-foreground',
+                  isDone && 'line-through text-[var(--aura-text-disabled)]'
                 )}
               >
                 {title}
               </div>
-              <span className="text-muted-foreground/60 text-xs" aria-hidden>
+              <span className="text-[var(--aura-text-disabled)] text-xs" aria-hidden>
                 •
               </span>
-              <div className="text-muted-foreground truncate text-xs font-medium">{metaLabel ?? t('aria.entry')}</div>
+              <div className="text-[var(--aura-text-muted)] truncate text-xs font-medium">{metaLabel ?? t('aria.entry')}</div>
             </div>
-            {description && <div className="text-muted-foreground/80 mt-1.5 text-xs leading-relaxed">{description}</div>}
+            {description && <div className="text-[var(--aura-text-subtle)] mt-1.5 text-xs leading-relaxed">{description}</div>}
           </div>
         </div>
       </div>
@@ -129,8 +129,8 @@ export function ListItem({
     <div
       onClick={handleMainClick}
       className={cn(
-        'group border-border/40 bg-muted/8 grid overflow-hidden rounded-lg border aura-tx-surface',
-        'hover:bg-muted/12 hover:border-border/50 cursor-pointer',
+        'group grid overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs aura-tx-surface',
+        'hover:bg-[var(--aura-action-hover-bg)] cursor-pointer',
         gridClass,
         className
       )}
@@ -148,33 +148,33 @@ export function ListItem({
       )}
 
       {/* Левая часть: иконка, название, amount, описание */}
-      <div className="flex w-full min-w-0 items-start gap-3 px-3 py-2 text-left">
+      <div className="flex w-full min-w-0 items-center gap-3 px-3 py-2 text-left">
         {/* ИСПРАВЛЕНИЕ #4: Иконка должна быть во всех режимах кроме diary */}
         {icon && (
-          <div className="shrink-0 pt-0.5">
+          <div className="shrink-0">
             <IconWithBadge iconName={icon} tint={iconTint} size="md" />
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div
             className={cn(
-              'text-sm font-semibold leading-snug text-foreground/85',
-              isDone && 'line-through text-muted-foreground/60'
+              'text-sm font-semibold leading-snug text-foreground',
+              isDone && 'line-through text-[var(--aura-text-disabled)]'
             )}
           >
             {title}
           </div>
           {/* ИСПРАВЛЕНИЕ #7: Amount для edit-delete */}
           {amount && mode === 'edit-delete' && (
-            <div className="text-xs text-foreground/85 mt-0.5 font-medium aura-tx-colors">
+            <div className="text-[var(--aura-text-muted)] mt-0.5 text-xs font-medium aura-tx-colors">
               {amount}
             </div>
           )}
           {description ? (
             <div
               className={cn(
-                'text-muted-foreground/80 mt-1 text-xs leading-relaxed',
-                isDone && 'line-through text-muted-foreground/60'
+                'text-[var(--aura-text-subtle)] mt-1 text-xs leading-relaxed',
+                isDone && 'line-through text-[var(--aura-text-disabled)]'
               )}
             >
               {description}
@@ -186,13 +186,13 @@ export function ListItem({
       {/* ИСПРАВЛЕНИЕ #1: Правая часть контейнер - SINGLE opacity управление */}
       <div
         className={cn(
-          'border-border/40 flex shrink-0 items-center min-h-0',
+          'border-[var(--aura-border-soft)] flex shrink-0 items-center min-h-0',
           borderVisibility
         )}
       >
         {/* ИСПРАВЛЕНИЕ #5: Trailing контент - явная логика по режимам */}
         {trailing && (mode === 'checkbox' || mode === 'active') && (
-          <div className="flex items-center gap-1.5 px-2 py-2 text-xs text-muted-foreground/70">
+          <div className="flex items-center gap-1.5 px-2 py-2 text-xs text-[var(--aura-text-subtle)]">
             {trailing}
           </div>
         )}
@@ -209,7 +209,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  onMoveUp ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
+                  onMoveUp ? 'text-[var(--aura-text-muted)] hover:text-foreground hover:bg-[var(--aura-action-hover-bg)]' : 'text-[var(--aura-text-disabled)]'
                 )}
                 aria-label={t('aria.move_up')}
                 disabled={!onMoveUp}
@@ -227,7 +227,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  onMoveDown ? 'text-muted-foreground hover:text-foreground hover:bg-muted/20' : 'text-muted-foreground/30'
+                  onMoveDown ? 'text-[var(--aura-text-muted)] hover:text-foreground hover:bg-[var(--aura-action-hover-bg)]' : 'text-[var(--aura-text-disabled)]'
                 )}
                 aria-label={t('aria.move_down')}
                 disabled={!onMoveDown}
@@ -245,7 +245,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+                  'text-[var(--aura-text-muted)] hover:text-destructive hover:bg-destructive/10'
                 )}
                 aria-label={t('aria.delete_item')}
               >
@@ -279,7 +279,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-muted-foreground hover:text-foreground hover:bg-muted/20'
+                  'text-[var(--aura-text-muted)] hover:text-foreground hover:bg-[var(--aura-action-hover-bg)]'
                 )}
                 aria-label={t('aria.move_up')}
               >
@@ -295,7 +295,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-muted-foreground hover:text-foreground hover:bg-muted/20'
+                  'text-[var(--aura-text-muted)] hover:text-foreground hover:bg-[var(--aura-action-hover-bg)]'
                 )}
                 aria-label={t('aria.move_down')}
               >
@@ -311,7 +311,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+                  'text-[var(--aura-text-muted)] hover:text-destructive hover:bg-destructive/10'
                 )}
                 aria-label={t('aria.delete_item')}
               >

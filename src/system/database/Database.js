@@ -578,10 +578,21 @@ class DB {
         console.warn('[DB] Предупреждение при добавлении title/color в cfg_diary_moods:', e.message);
       }
 
-      // Миграция колонок app_settings
-      this.migrateAppSettingsColumns();
-      
-      // Миграция: добавление колонки group в cfg_nutrition_products
+	      // Миграция колонок app_settings
+	      this.migrateAppSettingsColumns();
+
+	      try {
+	        const tableInfo = this.db.prepare(`PRAGMA table_info(act_daily_plans)`).all();
+	        const columnNames = tableInfo.map(col => col.name);
+	        if (!columnNames.includes('icon')) {
+	          console.log('[DB] Добавляем колонку icon в act_daily_plans...');
+	          this.db.exec(`ALTER TABLE act_daily_plans ADD COLUMN icon TEXT NOT NULL DEFAULT '📝'`);
+	        }
+	      } catch (e) {
+	        console.warn('[DB] Ошибка при добавлении колонки icon в act_daily_plans:', e.message);
+	      }
+	      
+	      // Миграция: добавление колонки group в cfg_nutrition_products
       try {
         const tableInfo = this.db.prepare(`PRAGMA table_info(cfg_nutrition_products)`).all();
         const columnNames = tableInfo.map(col => col.name);
@@ -1021,12 +1032,13 @@ class DB {
 
       // act_daily_plans (планы на день)
       this.db.exec(`
-        CREATE TABLE IF NOT EXISTS act_daily_plans (
-          id TEXT PRIMARY KEY,
-          date TEXT NOT NULL,
-          title TEXT NOT NULL,
-          completed INTEGER DEFAULT 0,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	        CREATE TABLE IF NOT EXISTS act_daily_plans (
+	          id TEXT PRIMARY KEY,
+	          date TEXT NOT NULL,
+	          icon TEXT NOT NULL DEFAULT '📝',
+	          title TEXT NOT NULL,
+	          completed INTEGER DEFAULT 0,
+	          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
@@ -2920,16 +2932,17 @@ class DB {
   addDailyPlan(plan) {
     try {
       const stmt = this.db.prepare(`
-        INSERT INTO act_daily_plans 
-        (id, date, title, completed, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      stmt.run(
-        plan.id,
-        plan.date,
-        plan.title,
-        plan.completed || 0,
-        plan.created_at || new Date().toISOString(),
+	        INSERT INTO act_daily_plans 
+	        (id, date, icon, title, completed, created_at, updated_at)
+	        VALUES (?, ?, ?, ?, ?, ?, ?)
+	      `);
+	      stmt.run(
+	        plan.id,
+	        plan.date,
+	        plan.icon || '📝',
+	        plan.title,
+	        plan.completed || 0,
+	        plan.created_at || new Date().toISOString(),
         plan.updated_at || new Date().toISOString()
       );
       
@@ -3538,16 +3551,18 @@ class DB {
       // Загружаем пресеты заново после очистки
       // ВАЖНО: сбрасываем кастомные названия/иконки/цвета категорий задач,
       // иначе UI продолжит брать старые значения из app_settings.task_categories_config.
+      // Полная очистка также должна снова показать first-run onboarding.
       try {
         this.db.exec(`
           UPDATE app_settings
           SET task_categories_config = NULL,
+              onboarding_complete = 0,
               updated_at = CURRENT_TIMESTAMP
           WHERE id = 'app_settings_1'
         `);
-        console.log('[DB] Сброшен task_categories_config в app_settings');
+        console.log('[DB] Сброшены task_categories_config и onboarding_complete в app_settings');
       } catch (e) {
-        console.warn('[DB] Не удалось сбросить task_categories_config:', e.message);
+        console.warn('[DB] Не удалось сбросить app_settings после очистки:', e.message);
       }
 
       // Загружаем пресеты заново после очистки
@@ -4693,11 +4708,15 @@ class DB {
           devtools_tab_enabled: 0,
           page_transitions_enabled: 1,
           app_scale: 1.0,
+          text_scale: 1.0,
           ambient_default_timer: null,
           ambient_default_stopwatch: null,
           ambient_default_break: null,
           gradient_intensity: 1,
           background_animation_type: 'glow',
+          onboarding_complete: 0,
+          theme_mode: 'dark',
+          accent_preset: 'violet',
           nutrition_target_calories: 0,
           nutrition_target_proteins: 0,
           nutrition_target_fats: 0,
@@ -4769,8 +4788,8 @@ class DB {
       
       const stmt = this.db.prepare(`
         INSERT OR REPLACE INTO app_settings 
-        (id, currency, points_start_date, points_open_hours, icon_theme, bottom_nav_show_labels, devtools_tab_enabled, page_transitions_enabled, app_scale, ambient_default_timer, ambient_default_stopwatch, ambient_default_break, shadow_level, gradient_intensity, background_animation_type, nutrition_initial_weight, nutrition_target_weight, nutrition_target_calories, nutrition_target_proteins, nutrition_target_fats, nutrition_target_carbs, task_categories_config, bottom_nav_pages_order, tasks_hide_completion_percent, category_percent_highlight_enabled, page_sections_visibility, sidebar_widget_enabled_metrics, sidebar_widget_order, sidebar_widget_max_items, sidebar_widget_style_variant, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM app_settings WHERE id = ?), CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
+        (id, currency, points_start_date, points_open_hours, icon_theme, bottom_nav_show_labels, devtools_tab_enabled, page_transitions_enabled, app_scale, text_scale, ambient_default_timer, ambient_default_stopwatch, ambient_default_break, shadow_level, gradient_intensity, background_animation_type, onboarding_complete, theme_mode, accent_preset, nutrition_initial_weight, nutrition_target_weight, nutrition_target_calories, nutrition_target_proteins, nutrition_target_fats, nutrition_target_carbs, task_categories_config, bottom_nav_pages_order, tasks_hide_completion_percent, category_percent_highlight_enabled, page_sections_visibility, sidebar_widget_enabled_metrics, sidebar_widget_order, sidebar_widget_max_items, sidebar_widget_style_variant, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM app_settings WHERE id = ?), CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
       `);
       
       const taskCategoriesConfig = settings.task_categories_config != null
@@ -4794,6 +4813,9 @@ class DB {
           ? settings.sidebar_widget_order
           : JSON.stringify(settings.sidebar_widget_order))
         : JSON.stringify(['day-progress', 'daily-points', 'focus-time', 'rituals', 'calories', 'transactions', 'balance', 'streak']);
+      const onboardingComplete = settings.onboarding_complete === true ||
+        settings.onboarding_complete === 1 ||
+        settings.onboarding_complete === '1';
 
       stmt.run(
         settings.id,
@@ -4805,12 +4827,16 @@ class DB {
         settings.devtools_tab_enabled !== undefined && settings.devtools_tab_enabled !== null ? settings.devtools_tab_enabled : 0,
         settings.page_transitions_enabled !== undefined && settings.page_transitions_enabled !== null ? settings.page_transitions_enabled : 1,
         settings.app_scale !== undefined && settings.app_scale !== null ? settings.app_scale : 1.0,
+        settings.text_scale !== undefined && settings.text_scale !== null ? settings.text_scale : 1.0,
         settings.ambient_default_timer || null,
         settings.ambient_default_stopwatch || null,
         settings.ambient_default_break || null,
         settings.shadow_level || 'subtle',
         settings.gradient_intensity !== undefined && settings.gradient_intensity !== null ? settings.gradient_intensity : 1,
         settings.background_animation_type || 'glow',
+        onboardingComplete ? 1 : 0,
+        settings.theme_mode || 'dark',
+        settings.accent_preset || 'violet',
         settings.nutrition_initial_weight !== undefined && settings.nutrition_initial_weight !== null ? settings.nutrition_initial_weight : 0,
         settings.nutrition_target_weight !== undefined && settings.nutrition_target_weight !== null ? settings.nutrition_target_weight : 0,
         settings.nutrition_target_calories !== undefined && settings.nutrition_target_calories !== null ? settings.nutrition_target_calories : 0,
@@ -4928,6 +4954,11 @@ class DB {
         this.db.exec(`ALTER TABLE app_settings ADD COLUMN app_scale REAL DEFAULT 1.0`);
       }
 
+      if (!columnNames.includes('text_scale')) {
+        console.log('[DB] Добавляем колонку text_scale в app_settings...');
+        this.db.exec(`ALTER TABLE app_settings ADD COLUMN text_scale REAL DEFAULT 1.0`);
+      }
+
       // Добавляем page_transitions_enabled, если нет
       if (!columnNames.includes('page_transitions_enabled')) {
         console.log('[DB] Добавляем колонку page_transitions_enabled в app_settings...');
@@ -4983,6 +5014,21 @@ class DB {
       if (!columnNames.includes('background_animation_type')) {
         console.log('[DB] Добавляем колонку background_animation_type в app_settings...');
         this.db.exec(`ALTER TABLE app_settings ADD COLUMN background_animation_type TEXT DEFAULT 'glow'`);
+      }
+
+      if (!columnNames.includes('onboarding_complete')) {
+        console.log('[DB] Добавляем колонку onboarding_complete в app_settings...');
+        this.db.exec(`ALTER TABLE app_settings ADD COLUMN onboarding_complete INTEGER DEFAULT 0`);
+      }
+
+      if (!columnNames.includes('theme_mode')) {
+        console.log('[DB] Добавляем колонку theme_mode в app_settings...');
+        this.db.exec(`ALTER TABLE app_settings ADD COLUMN theme_mode TEXT DEFAULT 'dark'`);
+      }
+
+      if (!columnNames.includes('accent_preset')) {
+        console.log('[DB] Добавляем колонку accent_preset в app_settings...');
+        this.db.exec(`ALTER TABLE app_settings ADD COLUMN accent_preset TEXT DEFAULT 'violet'`);
       }
     } catch (e) {
       console.warn('[DB] Ошибка миграции колонок app_settings:', e);

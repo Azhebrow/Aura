@@ -58,6 +58,8 @@ import { buildTimerTaskGroupById, getSessionGroup } from '@/features/timer/timer
 import { MobileSectionTabs } from '@/shared/ui/mobile';
 import { LoadingShell } from '@/shared/ui/data-states';
 import { ANIM } from '@/shared/lib/animation-classes';
+import { getNavigationIntent } from '@/shared/lib/navigation-intent';
+import { STORAGE_KEYS } from '@/shared/config/storage-keys';
 
 const QUICK_MINUTES = [5, 15, 25, 45, 60, 120];
 
@@ -188,6 +190,7 @@ export function TimerStatusPage() {
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [sessionHeroExpanded, setSessionHeroExpanded] = useState(true);
   const [mobileSection, setMobileSection] = useState<'tasks' | 'timer' | 'sessions'>('timer');
+  const [pendingIntentTaskId, setPendingIntentTaskId] = useState<string | null>(null);
   const wasRunningRef = useRef(timer.model.isRunning);
   const timerHydrating = !!ipc && !timer.isHydrated;
 
@@ -287,7 +290,7 @@ export function TimerStatusPage() {
   // Логика выбора цвета зависит от группы:
   // - Фокус: всегда цвет категории (группа), игнорирует цвет задачи
   // - Эскапизм/Наполнение: цвет из задачи, fallback на группу
-  const getTaskColor = (group: TimerTaskTab, taskColor?: string): string => {
+  const getTaskColor = useCallback((group: TimerTaskTab, taskColor?: string): string => {
     if (group === 'tasks') {
       return getCategoryColor('time', db);
     }
@@ -295,7 +298,7 @@ export function TimerStatusPage() {
       return taskColor;
     }
     return groupAccentByKey[group] ?? 'var(--primary)';
-  };
+  }, [db, groupAccentByKey]);
 
   // Определяем группу выбранной задачи
   const selectedTaskGroup = useMemo<TimerTaskTab>(() => {
@@ -354,6 +357,60 @@ export function TimerStatusPage() {
     };
   }, [sessionTaskGroupById, sessions]);
 
+  const selectTimerTaskById = useCallback((taskId: string) => {
+    const id = String(taskId || '');
+    if (!id || dayLocked || timer.model.isRunning || !timer.isHydrated) return false;
+    const groupOrder: TimerTaskTab[] = ['tasks', 'escape', 'filling'];
+    for (const group of groupOrder) {
+      const task = byGroup[group].find((item) => item.id === id);
+      if (!task) continue;
+      timer.selectTask({
+        id: task.id,
+        title: task.title,
+        cfg_target_hours: task.cfg_target_hours,
+        color: getTaskColor(group, task.color),
+        icon: task.icon,
+      });
+      setMobileSection('timer');
+      return true;
+    }
+    return false;
+  }, [byGroup, dayLocked, getTaskColor, timer]);
+
+  useEffect(() => {
+    const applyIntent = (detail: unknown) => {
+      if (!detail || typeof detail !== 'object') return;
+      const taskId = (detail as { taskId?: unknown }).taskId;
+      if (typeof taskId !== 'string' && typeof taskId !== 'number') return;
+      const id = String(taskId);
+      setPendingIntentTaskId(id);
+    };
+
+    applyIntent(getNavigationIntent(STORAGE_KEYS.TIMER_TASK_ID));
+
+    const onIntent = (event: Event) => {
+      applyIntent((event as CustomEvent).detail);
+    };
+    window.addEventListener(STORAGE_KEYS.TIMER_TASK_INTENT_EVENT, onIntent);
+    return () => window.removeEventListener(STORAGE_KEYS.TIMER_TASK_INTENT_EVENT, onIntent);
+  }, [selectTimerTaskById]);
+
+  useEffect(() => {
+    if (!pendingIntentTaskId) return;
+    selectTimerTaskById(pendingIntentTaskId);
+  }, [pendingIntentTaskId, selectTimerTaskById]);
+
+  useEffect(() => {
+    if (!pendingIntentTaskId) return;
+    if (timer.model.selectedTask?.id !== pendingIntentTaskId) return;
+    setPendingIntentTaskId(null);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.TIMER_TASK_ID);
+    } catch {
+      /* ignore */
+    }
+  }, [pendingIntentTaskId, timer.model.selectedTask?.id]);
+
   useEffect(() => {
     const selected = timer.model.selectedTask;
     if (!selected) return;
@@ -385,9 +442,10 @@ export function TimerStatusPage() {
       color: getTaskColor(found.group, found.task.color),
       icon: found.task.icon,
     });
-  }, [byGroup, groupAccentByKey, timer]);
+  }, [byGroup, getTaskColor, timer]);
 
   useEffect(() => {
+    if (pendingIntentTaskId) return;
     if (timer.model.selectedTask) return;
     const groupOrder: TimerTaskTab[] = ['tasks', 'escape', 'filling'];
     for (const group of groupOrder) {
@@ -403,7 +461,7 @@ export function TimerStatusPage() {
         return;
       }
     }
-  }, [byGroup, groupAccentByKey, timer]);
+  }, [byGroup, getTaskColor, pendingIntentTaskId, timer]);
 
   useLayoutEffect(() => {
     if (!db) {
@@ -435,7 +493,7 @@ export function TimerStatusPage() {
     return (
       <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
         <Card className={MEGA_SHELL_CARD_CN}>
-          <CardContent className={cn(MEGA_SHELL_CONTENT_CN, 'items-center justify-center')}>
+          <CardContent className={cn(MEGA_SHELL_CONTENT_CN, 'items-center justify-center aura-content-fade-in')}>
             <p className="text-muted-foreground text-sm">Восстанавливаем состояние таймера…</p>
           </CardContent>
         </Card>
@@ -446,10 +504,10 @@ export function TimerStatusPage() {
   return (
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
       <Card className={MEGA_SHELL_CARD_CN}>
-        <CardContent className={MEGA_SHELL_CONTENT_CN}>
-          <div className="grid h-full min-h-0 flex-1 grid-cols-1 divide-y divide-border/60 overflow-hidden aura-content-fade-in lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,1.48fr)_minmax(0,1fr)] lg:divide-x lg:divide-y-0">
+        <CardContent className={`${MEGA_SHELL_CONTENT_CN} aura-content-fade-in`}>
+          <div className="grid h-full min-h-0 flex-1 grid-cols-1 divide-y divide-[var(--aura-border-soft)] overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,1.48fr)_minmax(0,1fr)] lg:divide-x lg:divide-y-0">
           {!ipc ? (
-            <div className="col-span-full border-b border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            <div className="col-span-full border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 py-2 text-xs text-[var(--aura-text-muted)]">
               Локальный режим: таймер и задачи работают без Electron, но без трея и фоновой синхронизации.
             </div>
           ) : null}
@@ -469,11 +527,11 @@ export function TimerStatusPage() {
                       return (
                         <div key={key} className="flex flex-col gap-2.5">
                           <div className="flex items-center gap-3">
-                            <div className="h-px min-w-0 flex-1 bg-border/55" aria-hidden />
+                            <div className="h-px min-w-0 flex-1 bg-[var(--aura-border-soft)]" aria-hidden />
                             <p className={cn(MEGA_PANEL_MICRO_TITLE_CN, 'shrink-0')}>
                               {title}
                             </p>
-                            <div className="h-px min-w-0 flex-1 bg-border/55" aria-hidden />
+                            <div className="h-px min-w-0 flex-1 bg-[var(--aura-border-soft)]" aria-hidden />
                           </div>
                           {tasks.length === 0 ? (
                             <EmptyState
@@ -497,8 +555,8 @@ export function TimerStatusPage() {
                                     className={cn(
                                       'overflow-hidden rounded-lg border bg-transparent aura-tx-colors cursor-pointer',
                                       selected
-                                        ? 'border-primary/55 bg-primary/5'
-                                        : 'border-border/60 hover:border-border',
+                                        ? 'border-primary/45 bg-primary/6'
+                                        : 'border-[var(--aura-border-soft)] hover:bg-[var(--aura-action-hover-bg)]',
                                       dayLocked && 'pointer-events-none opacity-55'
                                     )}
                                     onClick={() => {
@@ -527,8 +585,8 @@ export function TimerStatusPage() {
                                       )}
                                       onEdit={undefined}
                                     />
-                                    <div className="border-border/50 space-y-1.5 border-t bg-muted/15 px-2.5 py-2 sm:px-3">
-                                      <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide">
+                                    <div className="space-y-1.5 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-2.5 py-2 sm:px-3">
+                                      <div className="text-[var(--aura-text-subtle)] flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide">
                                         <span>Цель за день</span>
                                         <span className="tabular-nums text-foreground">
                                           {hasTarget ? `${dailyPct}%` : '—'}
@@ -541,11 +599,11 @@ export function TimerStatusPage() {
                                         >
                                           <Progress
                                             value={dailyPct}
-                                            className="h-1.5 bg-muted/80 [&_[data-slot=progress-indicator]]:bg-[var(--row-accent)]"
+                                            className="h-1.5 bg-[var(--aura-surface-control)] [&_[data-slot=progress-indicator]]:bg-[var(--row-accent)]"
                                           />
                                         </div>
                                       ) : (
-                                        <p className="text-muted-foreground text-xs leading-snug">Цель не задана в CFG</p>
+                                        <p className="text-[var(--aura-text-subtle)] text-xs leading-snug">Цель не задана в CFG</p>
                                       )}
                                     </div>
                                   </li>
@@ -576,9 +634,9 @@ export function TimerStatusPage() {
               />
               <div className={cn(MEGA_PANEL_INSET_CN, 'gap-3')}>
                 <div className="flex shrink-0 flex-col items-center gap-2 text-center">
-                  <div className="border-border/60 bg-muted/25 flex w-full max-w-md flex-col gap-1.5 rounded-md border px-2 py-1.5">
+                  <div className="flex w-full max-w-md flex-col gap-1.5 rounded-lg border border-[var(--aura-border-soft)]/60 bg-[var(--aura-surface-control)]/60 px-2 py-1.5">
                     <div
-                      className="bg-muted h-1.5 w-full overflow-hidden rounded-full"
+                      className="bg-[var(--aura-surface-panel)] h-1.5 w-full overflow-hidden rounded-full"
                       role="img"
                       aria-label="Соотношение времени: фокус, эскапизм, наполнение"
                     >
@@ -610,10 +668,10 @@ export function TimerStatusPage() {
                           />
                         </div>
                       ) : (
-                        <div className="bg-muted-foreground/25 h-full w-full" />
+                        <div className="bg-[var(--aura-border-soft)]/40 h-full w-full" />
                       )}
                     </div>
-                    <p className="text-muted-foreground text-center text-xs leading-none tabular-nums">
+                    <p className="text-[var(--aura-text-subtle)] text-center text-xs leading-none tabular-nums">
                       {timerShare.totalSec > 0
                         ? `${Math.round(timerShare.focusPct)} / ${Math.round(timerShare.escapePct)} / ${Math.round(timerShare.fillingPct)}`
                         : '0 / 0 / 0'}
@@ -635,9 +693,9 @@ export function TimerStatusPage() {
                     type="button"
                     onClick={() => setSessionHeroExpanded(true)}
                     className={cn(
-                      'text-foreground flex w-full min-w-0 shrink-0 items-center gap-3 rounded-lg border border-border/60 bg-muted/10 px-3 py-2.5 text-left shadow-sm',
+                      'text-foreground flex w-full min-w-0 shrink-0 items-center gap-3 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 py-2.5 text-left shadow-sm',
                       'motion-safe:transition-[transform,box-shadow,opacity] motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]',
-                      'hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
+                      'hover:bg-[var(--aura-action-hover-bg)] focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
                       'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.99] motion-safe:duration-300'
                     )}
                   >
@@ -704,7 +762,7 @@ export function TimerStatusPage() {
                     compact
                   />
                 ) : (
-                  <ul className="flex flex-col gap-2">
+                  <ul className="mb-2 flex flex-col gap-2">
                     {sessions.map((s) => {
                       const tid = String(s.task_id ?? '');
                       const meta = taskMetaById.get(tid);
@@ -740,7 +798,6 @@ export function TimerStatusPage() {
                 <AddListButton
                   onClick={openCreateSession}
                   disabled={dayLocked || !db || pickerTasks.length === 0}
-                  className="mt-3"
                 />
               </div>
             </section>
@@ -799,19 +856,24 @@ export function TimerStatusPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {pickerGroupOrder.map((g) => {
+                    const groupKey = g === 'Фокус' ? 'tasks' : g === 'Эскапизм' ? 'escape' : 'filling';
+                    const groupTint = groupAccentByKey[groupKey];
                     const items = pickerTasks.filter((t) => t.group === g);
                     if (items.length === 0) return null;
                     return (
                       <SelectGroup key={g}>
                         <SelectLabel>{g}</SelectLabel>
-                        {items.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            <span className="flex items-center gap-2">
-                              <AuraThemedIcon name={typeof t.icon === 'string' ? t.icon : null} className="size-4 shrink-0" />
-                              <span className="truncate">{t.title}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
+                        {items.map((t) => {
+                          const tint = getTaskColor(groupKey, t.color);
+                          return (
+                            <SelectItem key={t.id} value={t.id} tint={tint}>
+                              <span className="flex items-center gap-2">
+                                <AuraThemedIcon name={typeof t.icon === 'string' ? t.icon : null} tint={tint} className="size-4 shrink-0" />
+                                <span className="truncate">{t.title}</span>
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectGroup>
                     );
                   })}
@@ -879,6 +941,7 @@ export function TimerStatusPage() {
         displayTime={timer.displayTime}
         accent={accent}
         onOpenChange={setFullscreenOpen}
+        onTimerTypeChange={timer.setTimerType}
         onStart={timer.start}
         onPause={timer.pause}
         onStopAndSave={timer.stopAndSave}

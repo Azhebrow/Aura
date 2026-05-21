@@ -15,8 +15,8 @@ function DockPageButton({ pageId, active, onSelect }: { pageId: PageId; active: 
         'relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 py-2 aura-tx-interactive',
         'focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
         active
-          ? 'text-primary'
-          : 'text-muted-foreground hover:text-foreground active:scale-[0.95]'
+          ? 'bg-primary/10 text-primary'
+          : 'text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground active:scale-[0.95]'
       )}
       aria-current={active ? 'page' : undefined}
       onClick={onSelect}
@@ -47,10 +47,10 @@ export function AppMobileDock() {
 
   return (
     <nav
-      className="aura-mobile-dock bg-background shrink-0 border-t border-border/40 px-4 pb-[calc(env(safe-area-inset-bottom,0)+0.7rem)] pt-2 md:hidden"
+      className="aura-mobile-dock shrink-0 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-shell)] px-4 pb-[calc(env(safe-area-inset-bottom,0)+0.7rem)] pt-2 aura-tx-surface md:hidden"
       aria-label="Мобильная навигация"
     >
-      <div className="mx-auto flex w-full items-stretch gap-1 rounded-lg border border-border/60 bg-card/95 p-1 shadow-sm">
+      <div className="aura-surface-panel mx-auto flex w-full items-stretch gap-1 rounded-lg border p-1">
         <div className="flex min-w-0 flex-1 flex-row items-stretch gap-1" role="group" aria-label="Разделы приложения">
           {pages.map((pageId) => (
             <DockPageButton

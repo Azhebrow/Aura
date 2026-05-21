@@ -20,9 +20,7 @@ type UniversalRadioGroupProps<T extends string> = {
   /** When true, all segment buttons are disabled (e.g. while timer is running). */
   disabled?: boolean;
   className?: string;
-  optionClassName?: string;
-  selectedOptionClassName?: string;
-  unselectedOptionClassName?: string;
+  variant?: 'default' | 'header';
 };
 
 export function UniversalRadioGroup<T extends string>({
@@ -34,32 +32,30 @@ export function UniversalRadioGroup<T extends string>({
   fullWidth = false,
   disabled = false,
   className,
-  optionClassName,
-  selectedOptionClassName,
-  unselectedOptionClassName,
+  variant = 'default',
 }: UniversalRadioGroupProps<T>) {
+  const isHeader = variant === 'header';
   return (
     <div
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
-        'rounded-lg border border-border/50 p-0.5',
+        isHeader
+          ? 'rounded-none border-0 bg-transparent p-0'
+          : 'rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] p-1',
         fullWidth && orientation === 'horizontal'
-          ? 'bg-muted/50 flex h-10 min-h-10 w-full min-w-0 flex-1 items-stretch gap-0.5'
+          ? cn('flex w-full min-w-0 flex-1 items-center', isHeader ? 'gap-1.5 px-2 py-1.5 sm:px-3' : 'gap-0.5')
           : orientation === 'horizontal'
-            ? 'bg-muted/50 inline-flex shrink-0 w-fit max-w-full items-center gap-0.5 self-start'
+            ? cn('inline-flex shrink-0 w-fit max-w-full items-center self-start', isHeader ? 'gap-1.5' : 'gap-0.5')
             : fullWidth
-              ? 'bg-muted/50 flex w-full min-w-0 max-w-full flex-col gap-1 self-stretch'
-              : 'bg-muted/50 flex w-fit max-w-full flex-col gap-1 self-start',
+              ? 'flex w-full min-w-0 max-w-full flex-col gap-1 self-stretch'
+              : 'flex w-fit max-w-full flex-col gap-1 self-start',
         className
       )}
     >
       {options.map(({ value: optionValue, label, Icon, icon }) => {
         const selected = optionValue === value;
-        if (options.length === 2) {
-          console.log(`[RadioButton] optionValue=${optionValue}, value=${value}, selected=${selected}`);
-        }
-        const iconNode = icon ?? (Icon ? <Icon className="size-3.5 shrink-0" /> : null);
+        const iconNode = icon ?? (Icon ? <Icon className="size-3.5 shrink-0 self-center" /> : null);
         return (
           <Button
             key={optionValue}
@@ -67,29 +63,50 @@ export function UniversalRadioGroup<T extends string>({
             role="radio"
             aria-checked={selected}
             size="sm"
-            variant={selected ? 'outline' : 'ghost'}
+            variant={selected ? 'default' : 'ghost'}
             disabled={disabled}
             className={cn(
-              'min-h-9 gap-1.5 px-2.5 text-xs active:!scale-100 active:!translate-y-0',
+              'gap-1.5 text-xs font-medium leading-none active:!scale-100 active:!translate-y-0',
+              isHeader ? 'min-h-8 px-2.5' : 'min-h-9 px-2.5',
               !(fullWidth && orientation === 'horizontal') && 'h-9',
               fullWidth &&
                 orientation === 'horizontal' &&
-                'h-full min-h-0 min-w-0 flex-1 basis-0 justify-center gap-0 rounded-md px-2',
+                cn(
+                  'min-h-0 min-w-0 flex-1 basis-0 items-center justify-center gap-1.5 py-0',
+                  isHeader ? 'h-8 rounded-lg px-2' : 'h-8 rounded-md px-2'
+                ),
               fullWidth && orientation === 'vertical' && 'w-full min-w-0 justify-start',
-              selected ? selectedOptionClassName : unselectedOptionClassName,
-              optionClassName
+              isHeader
+                ? selected
+                  ? 'border border-primary/20 bg-primary/10 text-primary shadow-none hover:bg-primary/12'
+                  : 'border border-transparent bg-transparent text-[var(--aura-text-subtle)] hover:border-border/50 hover:bg-muted/25 hover:text-foreground'
+                : selected
+                  ? 'border border-transparent bg-primary text-primary-foreground hover:bg-primary/90'
+                  : 'border border-transparent text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
             )}
             onClick={() => onValueChange(optionValue)}
           >
             {fullWidth && orientation === 'horizontal' ? (
-              <span className="flex min-w-0 w-full items-center justify-center gap-1.5">
-                {iconNode}
-                <span className="min-w-0 max-w-full truncate text-center">{label}</span>
+              <span className="flex min-h-0 w-full min-w-0 items-center justify-center gap-1.5 leading-none">
+                {iconNode ? (
+                  <span
+                    className={cn(
+                      'flex shrink-0 items-center justify-center',
+                      isHeader &&
+                        (selected
+                          ? '[&_svg]:text-primary'
+                          : '[&_svg]:text-muted-foreground/80 group-hover/button:[&_svg]:text-foreground')
+                    )}
+                  >
+                    {iconNode}
+                  </span>
+                ) : null}
+                <span className="min-w-0 max-w-full translate-y-px truncate text-center leading-none">{label}</span>
               </span>
             ) : (
               <>
                 {iconNode}
-                <span className={cn(fullWidth && orientation === 'vertical' && 'min-w-0 truncate text-left')}>
+                <span className={cn('translate-y-px leading-none', fullWidth && orientation === 'vertical' && 'min-w-0 truncate text-left')}>
                   {label}
                 </span>
               </>

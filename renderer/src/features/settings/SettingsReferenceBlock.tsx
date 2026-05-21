@@ -1,299 +1,327 @@
 import { useState } from 'react';
-import { ChevronDown, MapPin, Zap, Link2, Layers, Sparkles, CheckSquare, Hash, Sun, ListTodo, Clock, Apple, Lightbulb } from 'lucide-react';
+import {
+  AlignJustify,
+  AlignLeft,
+  Apple,
+  Braces,
+  CheckSquare,
+  ChevronDown,
+  Clock,
+  Hash,
+  List,
+  ListTodo,
+  Palette,
+  Sun,
+} from 'lucide-react';
 import type { SettingsReference, TaskTypeGuide } from '@/features/settings/settings-references';
 import { SETTINGS_REFERENCES } from '@/features/settings/settings-references';
 import { cn } from '@/lib/utils';
 
-type Props = {
+/* ─── type metadata ──────────────────────────────────────────────────────── */
+
+type FieldMeta = { icon: React.ElementType; label: string; color: string; bg: string; border: string };
+
+const FIELD_META: Record<string, FieldMeta> = {
+  text:     { icon: AlignLeft,    label: 'текст',   color: 'text-slate-400',   bg: 'bg-slate-500/10',   border: 'border-slate-500/25'   },
+  number:   { icon: Hash,         label: 'число',   color: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/25'    },
+  select:   { icon: List,         label: 'выбор',   color: 'text-violet-400',  bg: 'bg-violet-500/10',  border: 'border-violet-500/25'  },
+  color:    { icon: Palette,      label: 'цвет',    color: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/25'   },
+  checkbox: { icon: CheckSquare,  label: 'флаг',    color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/25' },
+  textarea: { icon: AlignJustify, label: 'текст+',  color: 'text-cyan-400',    bg: 'bg-cyan-500/10',    border: 'border-cyan-500/25'    },
+  json:     { icon: Braces,       label: 'json',    color: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/25'  },
+};
+
+const TASK_META: Record<string, { icon: React.ElementType; color: string }> = {
+  checkbox:  { icon: CheckSquare, color: 'text-violet-400'  },
+  number:    { icon: Hash,        color: 'text-blue-400'    },
+  list:      { icon: ListTodo,    color: 'text-amber-400'   },
+  timer:     { icon: Clock,       color: 'text-cyan-400'    },
+  nutrition: { icon: Apple,       color: 'text-emerald-400' },
+  ritual:    { icon: Sun,         color: 'text-orange-400'  },
+};
+
+function normalizeFieldName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[()]/g, '')
+    .trim();
+}
+
+/* ─── field row ──────────────────────────────────────────────────────────── */
+
+function FieldRow({ field }: { field: SettingsReference['fields'][number] }) {
+  const [open, setOpen] = useState(false);
+  const m = FIELD_META[field.type];
+  const Icon = m?.icon ?? Hash;
+
+  return (
+    <div
+      className={cn(
+        'rounded-md transition-all duration-200 cursor-pointer select-none overflow-hidden',
+        open
+          ? cn(m?.bg ?? 'bg-muted/20', m?.border ? `border ${m.border}` : 'border border-[var(--aura-border-soft)]')
+          : 'border border-transparent hover:bg-[var(--aura-surface-item)] hover:border-[var(--aura-border-soft)]'
+      )}
+      onClick={() => setOpen(p => !p)}
+    >
+      {/* Compact main row */}
+      <div className="flex items-center gap-2 px-2 py-1">
+        <Icon className={cn('size-3 shrink-0 transition-colors', open ? (m?.color ?? 'text-muted-foreground') : 'text-[var(--aura-text-subtle)]')} aria-hidden />
+        <span className={cn('flex-1 min-w-0 truncate text-xs font-medium transition-colors', open ? 'text-foreground' : 'text-foreground/75')}>
+          {field.name}
+        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          {field.required && <span className={cn('font-bold transition-colors', open ? 'text-primary' : 'text-primary/60')}>*</span>}
+          <span className={cn('text-micro font-bold uppercase tracking-wider transition-colors', open ? (m?.color ?? 'text-muted-foreground') : 'text-[var(--aura-text-subtle)]')}>
+            {m?.label ?? field.type}
+          </span>
+          <ChevronDown className={cn('size-3 shrink-0 text-[var(--aura-text-subtle)] transition-transform duration-200 ml-0.5', open && 'rotate-180')} />
+        </div>
+      </div>
+
+      {/* Expanded description */}
+      <div className={cn('grid transition-all duration-200', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+        <div className="overflow-hidden">
+          <p className="px-2 pb-2 pt-0.5 text-caption leading-relaxed text-[var(--aura-text-muted)]">
+            {field.description}
+            {field.required && <span className="ml-1.5 font-semibold text-primary/60">· обязательное</span>}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── task type detail ───────────────────────────────────────────────────── */
+
+function TaskDetail({ guide }: { guide: TaskTypeGuide }) {
+  return (
+    <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2 text-xs">
+      <div className="rounded-md bg-[var(--aura-surface-raised)] px-2.5 py-2">
+        <p className="text-micro font-bold uppercase tracking-widest text-[var(--aura-text-muted)] mb-1">Как выполнять</p>
+        <p className="leading-relaxed text-foreground/75">{guide.howToComplete}</p>
+      </div>
+      <div className="rounded-md bg-[var(--aura-surface-raised)] px-2.5 py-2">
+        <p className="text-micro font-bold uppercase tracking-widest text-[var(--aura-text-muted)] mb-1">Пример</p>
+        <p className="leading-relaxed text-foreground/75">{guide.example}</p>
+      </div>
+      {guide.note && (
+        <p className="sm:col-span-2 text-[var(--aura-text-subtle)] italic leading-relaxed">{guide.note}</p>
+      )}
+    </div>
+  );
+}
+
+/* ─── section label ──────────────────────────────────────────────────────── */
+
+function SLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-micro font-bold uppercase tracking-[0.15em] text-[var(--aura-text-muted)] mb-2">
+      {children}
+    </p>
+  );
+}
+
+/* ─── main ───────────────────────────────────────────────────────────────── */
+
+export function SettingsReferenceBlock({
+  reference,
+  onNavigate,
+  visibleFieldNames,
+}: {
   reference: SettingsReference;
   onNavigate?: (sectionId: string) => void;
-};
+  visibleFieldNames?: readonly string[];
+}) {
+  const [openTaskType, setOpenTaskType] = useState<string | null>(null);
+  const [openFuncIdx, setOpenFuncIdx] = useState<number | null>(null);
 
-const FIELD_TYPE_LABELS: Record<string, string> = {
-  text: 'Текст',
-  number: 'Число',
-  select: 'Выбор из списка',
-  color: 'Цвет',
-  checkbox: 'Флажок',
-  textarea: 'Многострочный текст',
-  json: 'JSON-объект',
-};
+  const available   = reference.taskTypeGuide?.filter((t) => t.available)  ?? [];
+  const unavailable = reference.taskTypeGuide?.filter((t) => !t.available) ?? [];
+  const visibleFieldNameSet = visibleFieldNames ? new Set(visibleFieldNames.map(normalizeFieldName)) : null;
+  const fields = visibleFieldNameSet
+    ? reference.fields.filter((field) => visibleFieldNameSet.has(normalizeFieldName(field.name)))
+    : reference.fields;
 
-const TASK_TYPE_ICONS: Record<string, React.ElementType> = {
-  checkbox: CheckSquare,
-  number: Hash,
-  ritual: Sun,
-  list: ListTodo,
-  timer: Clock,
-  nutrition: Apple,
-};
-
-function TaskTypeCard({ guide }: { guide: TaskTypeGuide }) {
-  const [open, setOpen] = useState(false);
-  const Icon = TASK_TYPE_ICONS[guide.type];
   return (
-    <div className={cn('rounded-lg border border-border/20 overflow-hidden', open ? 'bg-muted/10' : 'bg-muted/5')}>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setOpen(v => !v)}
-        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setOpen(v => !v)}
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/15 transition-colors select-none"
-      >
-        {Icon && <Icon className="size-5 shrink-0 text-foreground/70" aria-hidden />}
-        <div className="flex-1 min-w-0">
-          <span className="text-sm font-semibold text-foreground">{guide.name}</span>
-          {!open && (
-            <span className="ml-2 text-xs text-muted-foreground truncate">{guide.description.split('.')[0]}.</span>
-          )}
+    <div className="rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] overflow-hidden text-xs">
+
+      {/* ── Шапка ── */}
+      <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-[var(--aura-border-soft)] bg-[color-mix(in_oklab,var(--aura-surface-raised)_50%,transparent)]">
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+          <reference.icon className="size-3.5 text-primary" aria-hidden />
         </div>
-        <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground/50 transition-transform duration-200', open && 'rotate-180')} aria-hidden />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-sm font-semibold text-foreground">{reference.title}</span>
+            <span className="shrink-0 rounded border border-[var(--aura-border-soft)] bg-[var(--aura-surface-item)] px-1.5 py-px text-micro font-bold uppercase tracking-wider text-[var(--aura-text-subtle)]">
+              справочник
+            </span>
+          </div>
+          <p className="text-[var(--aura-text-muted)] leading-snug text-caption">{reference.definition}</p>
+        </div>
       </div>
-      {open && (
-        <div className="border-t border-border/15 px-4 pb-4 pt-3 space-y-3">
-          <p className="text-sm leading-relaxed text-muted-foreground">{guide.description}</p>
-          <div className="rounded-lg bg-muted/20 border border-border/15 px-4 py-3 space-y-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60">Как выполнять</p>
-            <p className="text-sm leading-relaxed text-foreground/80">{guide.howToComplete}</p>
-          </div>
-          <div className="rounded-lg border border-border/15 bg-muted/10 px-4 py-3 space-y-1.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60">Пример</p>
-            <p className="text-sm leading-relaxed text-muted-foreground">{guide.example}</p>
-          </div>
-          {guide.note && (
-            <div className="flex gap-2 rounded-lg border border-border/15 bg-muted/10 px-3.5 py-2.5">
-              <Lightbulb className="size-4 shrink-0 text-foreground/60 mt-0.5" aria-hidden />
-              <p className="text-xs leading-relaxed text-muted-foreground">{guide.note}</p>
+
+      <div className="divide-y divide-[var(--aura-border-soft)]">
+
+        {/* ── Где используется ── */}
+        {reference.usedOn.length > 0 && (
+          <div className="px-3.5 py-3">
+            <SLabel>Где используется</SLabel>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {reference.usedOn.map((u, i) =>
+                u.isNavLink && u.sectionId ? (
+                  <button key={i} type="button" onClick={() => onNavigate?.(u.sectionId!)}
+                    className="inline-flex items-center gap-1 text-[var(--aura-text-muted)] hover:text-foreground aura-tx-colors">
+                    <span>{u.page}</span>
+                    <span className="text-[var(--aura-text-disabled)]">›</span>
+                    <span className="font-medium text-primary/80 hover:text-primary">{u.section}</span>
+                  </button>
+                ) : (
+                  <span key={i} className="inline-flex items-center gap-1 text-[var(--aura-text-muted)]">
+                    <span>{u.page}</span>
+                    <span className="text-[var(--aura-text-disabled)]">›</span>
+                    <span>{u.section}</span>
+                  </span>
+                )
+              )}
             </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function UnavailableTypeChip({ guide }: { guide: TaskTypeGuide }) {
-  const Icon = TASK_TYPE_ICONS[guide.type];
-  return (
-    <div className="flex items-start gap-2.5 rounded-lg border border-border/15 bg-muted/5 px-3 py-2.5 opacity-60">
-      {Icon && <Icon className="size-4 shrink-0 text-foreground/40 mt-0.5" aria-hidden />}
-      <div className="min-w-0">
-        <p className="text-xs font-semibold text-foreground/60 line-through">{guide.name}</p>
-        <p className="text-[11px] leading-relaxed text-muted-foreground/70 mt-0.5">{guide.unavailableReason}</p>
-      </div>
-    </div>
-  );
-}
-
-function SectionHeading({ icon: Icon, label, color }: { icon: React.ElementType; label: string; color: string }) {
-  return (
-    <div className={cn('flex items-center gap-2.5 pb-3 border-b', color)}>
-      <Icon className="size-4 shrink-0" aria-hidden />
-      <span className="text-xs font-semibold uppercase tracking-widest">{label}</span>
-    </div>
-  );
-}
-
-export function SettingsReferenceBlock({ reference, onNavigate }: Props) {
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-
-  const toggle = (i: number) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
-
-  return (
-    <div className="rounded-xl border border-border/30 overflow-hidden">
-
-      {/* ── Header ── */}
-      <div className="flex items-start gap-4 px-3 sm:px-6 py-5 bg-muted/20">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-background border border-border/30">
-          <reference.icon className="size-5 text-foreground/70" aria-hidden />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">Справочник</p>
-          <h3 className="text-base font-semibold text-foreground">{reference.title}</h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{reference.definition}</p>
-        </div>
-      </div>
-
-      {/* ── Where used ── */}
-      {reference.usedOn.length > 0 && (
-        <div className="px-3 sm:px-6 py-5 border-t border-border/20">
-          <SectionHeading icon={MapPin} label="Где используется" color="border-border/15" />
-          <div className="mt-4 flex flex-wrap gap-2">
-            {reference.usedOn.map((usage, i) =>
-              usage.isNavLink && usage.sectionId ? (
-                <button
-                  key={i}
-                  onClick={() => onNavigate?.(usage.sectionId!)}
-                  className="flex items-center gap-1.5 rounded-md border border-border/40 bg-muted/20 px-3 py-1.5 text-xs font-medium text-foreground/80 hover:bg-muted/30 hover:border-border/50 transition-colors"
-                >
-                  <span className="opacity-60">{usage.page}</span>
-                  <span className="opacity-40">›</span>
-                  <span>{usage.section}</span>
-                </button>
-              ) : (
-                <span
-                  key={i}
-                  className="flex items-center gap-1.5 rounded-md border border-border/30 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground"
-                >
-                  <span className="font-medium text-foreground/70">{usage.page}</span>
-                  <span className="opacity-40">›</span>
-                  <span>{usage.section}</span>
-                </span>
-              )
-            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Impacts ── */}
-      {reference.impacts && reference.impacts.length > 0 && (
-        <div className="px-3 sm:px-6 py-5 border-t border-border/20">
-          <SectionHeading icon={Zap} label="На что влияет" color="border-border/15" />
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {reference.impacts.map((impact, i) => (
-              <div key={i} className="rounded-lg border border-border/15 bg-muted/10 p-2.5 sm:p-3.5">
-                <p className="text-xs font-semibold text-foreground mb-1.5">{impact.title}</p>
-                <p className="text-xs leading-relaxed text-muted-foreground">{impact.description}</p>
-              </div>
-            ))}
+        {/* ── Поля ── */}
+        {fields.length > 0 && (
+          <div className="px-3.5 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <SLabel>Поля</SLabel>
+              <span className="text-micro font-bold text-[var(--aura-text-subtle)] -mt-2">{fields.length} полей · нажмите для описания</span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {fields.map((f) => (
+                <FieldRow key={`${f.name}-${f.type}`} field={f} />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Task type guide ── */}
-      {reference.taskTypeGuide && reference.taskTypeGuide.length > 0 && (
-        <div className="px-3 sm:px-6 py-5 border-t border-border/20">
-          <SectionHeading icon={Sparkles} label="Типы задач" color="border-border/15" />
-          <div className="mt-4 space-y-4">
-            {(() => {
-              const available = reference.taskTypeGuide!.filter(t => t.available);
-              const unavailable = reference.taskTypeGuide!.filter(t => !t.available);
-              return (
-                <>
-                  <div className="space-y-3">
-                    {available.map(t => <TaskTypeCard key={t.type} guide={t} />)}
-                  </div>
-                  {unavailable.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">Недоступно в этой категории</p>
-                      <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                        {unavailable.map(t => <UnavailableTypeChip key={t.type} guide={t} />)}
-                      </div>
-                    </div>
-                  )}
-                </>
-              );
+        {/* ── Типы задач ── */}
+        {(available.length > 0 || unavailable.length > 0) && (
+          <div className="px-3.5 py-3">
+            <SLabel>Типы задач</SLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {available.map((t) => {
+                const m = TASK_META[t.type];
+                const Icon = m?.icon;
+                const isOpen = openTaskType === t.type;
+                return (
+                  <button key={t.type} type="button"
+                    onClick={() => setOpenTaskType(p => p === t.type ? null : t.type)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+                      isOpen
+                        ? 'border-primary/30 bg-primary/10 text-primary'
+                        : 'border-[var(--aura-border-soft)] bg-[var(--aura-surface-item)] text-[var(--aura-text-subtle)] hover:border-[var(--aura-border-strong)] hover:text-foreground'
+                    )}>
+                    {Icon && <Icon className={cn('size-3 shrink-0', isOpen ? 'text-primary' : (m?.color ?? ''))} aria-hidden />}
+                    {t.name}
+                    <ChevronDown className={cn('size-3 shrink-0 opacity-50 transition-transform', isOpen && 'rotate-180')} />
+                  </button>
+                );
+              })}
+              {unavailable.map((t) => {
+                const m = TASK_META[t.type];
+                const Icon = m?.icon;
+                return (
+                  <span key={t.type} title={t.unavailableReason}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--aura-border-soft)] px-2 py-1 text-xs opacity-35">
+                    {Icon && <Icon className="size-3 shrink-0 text-[var(--aura-text-disabled)]" aria-hidden />}
+                    <span className="line-through text-[var(--aura-text-disabled)]">{t.name}</span>
+                  </span>
+                );
+              })}
+            </div>
+            {openTaskType && (() => {
+              const guide = available.find(t => t.type === openTaskType);
+              return guide ? (
+                <div>
+                  <p className="mt-2.5 text-[var(--aura-text-muted)] leading-relaxed">{guide.description}</p>
+                  <TaskDetail guide={guide} />
+                </div>
+              ) : null;
             })()}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Fields ── */}
-      {reference.fields.length > 0 && (
-        <div className="px-3 sm:px-6 py-5 border-t border-border/20">
-          <SectionHeading icon={Layers} label="Поля" color="border-border/15" />
-          <div className="mt-4 rounded-lg border border-border/20 overflow-x-auto -mx-3 sm:mx-0">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-muted/25 border-b border-border/20">
-                  <th className="px-3 sm:px-4 py-2.5 text-left text-[11px] sm:text-xs font-semibold text-foreground whitespace-nowrap">Поле</th>
-                  <th className="px-3 sm:px-4 py-2.5 text-left text-[11px] sm:text-xs font-semibold text-foreground whitespace-nowrap">Тип</th>
-                  <th className="px-2 sm:px-3 py-2.5 text-center text-[11px] sm:text-xs font-semibold text-foreground shrink-0">Обязательно</th>
-                  <th className="px-3 sm:px-4 py-2.5 text-left text-[11px] sm:text-xs font-semibold text-foreground min-w-[12rem]">Описание</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reference.fields.map((field, i) => (
-                  <tr key={i} className={cn('border-b border-border/10 last:border-0', i % 2 === 1 && 'bg-muted/10')}>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-xs font-medium text-foreground whitespace-nowrap">{field.name}</td>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3">
-                      <span className="inline-flex rounded bg-muted/60 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                        {FIELD_TYPE_LABELS[field.type] ?? field.type}
-                      </span>
-                    </td>
-                    <td className="px-2 sm:px-3 py-2.5 sm:py-3 text-center shrink-0">
-                      {field.required ? (
-                        <span className="inline-flex size-4 sm:size-5 items-center justify-center rounded bg-green-500/15 text-[10px] sm:text-xs font-bold text-green-700">✓</span>
-                      ) : (
-                        <span className="text-[10px] sm:text-xs text-muted-foreground/40">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-xs leading-relaxed text-muted-foreground">{field.description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── Related ── */}
-      {reference.relatedSettings.length > 0 && (
-        <div className="px-3 sm:px-6 py-5 border-t border-border/20">
-          <SectionHeading icon={Link2} label="Связанные разделы" color="border-border/15" />
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {reference.relatedSettings.map((rel, i) => {
-              const ref = SETTINGS_REFERENCES[rel.sectionId];
-              return (
-                <button
-                  key={i}
-                  onClick={() => onNavigate?.(rel.sectionId)}
-                  className="rounded-lg border border-border/30 bg-muted/15 p-2.5 sm:p-3.5 text-left hover:bg-muted/25 hover:border-border/40 transition-colors group"
-                >
-                  <p className="text-xs font-semibold text-foreground mb-1">
-                    {ref?.title ?? rel.sectionId}
-                  </p>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{rel.reason}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Additional functions ── */}
-      {reference.additionalFunctions.length > 0 && (
-        <div className="px-3 sm:px-6 py-5 border-t border-border/20">
-          <SectionHeading icon={Sparkles} label="Дополнительные возможности" color="text-foreground/60 border-border/40" />
-          <div className="mt-4 flex flex-col divide-y divide-border/15 rounded-lg border border-border/20 overflow-hidden">
-            {reference.additionalFunctions.map((func, i) => {
-              const isOpen = expanded.has(i);
-              return (
-                <div key={i} className={cn('transition-colors', isOpen ? 'bg-muted/15' : 'bg-transparent')}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => toggle(i)}
-                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggle(i)}
-                    className="flex items-center justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 py-2.5 sm:py-3.5 cursor-pointer hover:bg-muted/20 transition-colors select-none"
-                  >
-                    <span className="text-sm font-medium text-foreground">{func.name}</span>
-                    <ChevronDown
-                      className={cn('size-4 shrink-0 text-muted-foreground/60 transition-transform duration-200', isOpen && 'rotate-180')}
-                      aria-hidden
-                    />
+        {/* ── На что влияет ── */}
+        {reference.impacts && reference.impacts.length > 0 && (
+          <div className="px-3.5 py-3">
+            <SLabel>На что влияет</SLabel>
+            <div className="space-y-1.5">
+              {reference.impacts.map((imp, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <span className="mt-[5px] size-1 shrink-0 rounded-full bg-primary/70" />
+                  <div className="min-w-0">
+                    <span className="font-semibold text-foreground">{imp.title}</span>
+                    <span className="text-[var(--aura-text-subtle)] mx-1.5">·</span>
+                    <span className="text-foreground/70">{imp.description}</span>
                   </div>
-                  {isOpen && (
-                    <div className="px-2.5 sm:px-4 pb-2.5 sm:pb-4 pt-0 space-y-2 sm:space-y-3 border-t border-border/15">
-                      <p className="text-sm leading-relaxed text-muted-foreground pt-3">{func.description}</p>
-                      <div className="rounded-md bg-muted/25 border border-border/20 px-2.5 sm:px-4 py-2 sm:py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">Пример</p>
-                        <p className="text-sm leading-relaxed text-muted-foreground">{func.example}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Связанные разделы ── */}
+        {reference.relatedSettings.length > 0 && (
+          <div className="px-3.5 py-3">
+            <SLabel>Связанные разделы</SLabel>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {reference.relatedSettings.map((rel, i) => {
+                const ref = SETTINGS_REFERENCES[rel.sectionId];
+                return (
+                  <button key={i} type="button" onClick={() => onNavigate?.(rel.sectionId)} title={rel.reason}
+                    className="inline-flex items-center gap-1 text-[var(--aura-text-muted)] hover:text-foreground aura-tx-colors">
+                    <span className="font-medium">{ref?.title ?? rel.sectionId}</span>
+                    <span className="text-[var(--aura-text-disabled)]">→</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Дополнительно ── */}
+        {reference.additionalFunctions.length > 0 && (
+          <div className="px-3.5 py-3">
+            <SLabel>Дополнительно</SLabel>
+            <div className="space-y-px">
+              {reference.additionalFunctions.map((func, i) => {
+                const isOpen = openFuncIdx === i;
+                return (
+                  <div key={i}>
+                    <button type="button" onClick={() => setOpenFuncIdx(p => p === i ? null : i)}
+                      className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-[var(--aura-action-hover-bg)]">
+                      <span className="font-medium text-foreground">{func.name}</span>
+                      <ChevronDown className={cn('size-3.5 shrink-0 text-[var(--aura-text-subtle)] transition-transform duration-150', isOpen && 'rotate-180')} />
+                    </button>
+                    <div className={cn('grid transition-all duration-200', isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+                      <div className="overflow-hidden">
+                        <div className="mx-2 mb-1.5 mt-0.5 rounded-md bg-[var(--aura-surface-raised)] px-3 py-2.5">
+                          <p className="leading-relaxed text-foreground/75 mb-2">{func.description}</p>
+                          <p className="text-micro font-bold uppercase tracking-widest text-[var(--aura-text-muted)] mb-1">Пример</p>
+                          <p className="font-mono text-caption text-foreground/70 leading-relaxed">{func.example}</p>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
+      </div>
     </div>
   );
 }

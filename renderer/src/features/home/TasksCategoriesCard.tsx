@@ -1,38 +1,27 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Check,
-  Flame,
+
   Lock,
   Moon,
   Sun,
   Sunrise,
   Timer,
 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import { readNutritionTargets, sumNutritionDay } from '@/shared/lib/nutrition-aggregate';
 import { Input } from '@/components/ui/input';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
-import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
-import { useBootstrapData } from '@/shared/hooks/use-bootstrap-data';
+import { useHomeDaySnapshot } from '@/shared/hooks/use-home-day-snapshot';
 import { useDayLocked } from '@/shared/hooks/use-day-locked';
 import { useShell } from '@/app/navigation/shell-context';
-import { IconWithBadge } from '@/components/ui/icon-with-badge';
 import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
+import { getHomeTaskDisplaySettings } from '@/shared/config/home-task-display';
 import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
 import { TASK_CATEGORY_DEFAULT_META, TASK_CATEGORY_IDS, type TaskCategoryId } from '@/shared/config/domain-taxonomy';
-import { getCategoryProgresses } from '@/shared/bridge/get-category-progresses';
 import { STORAGE_KEYS } from '@/shared/config/storage-keys';
 import { LoadingShell } from '@/shared/ui/data-states';
-import { useAsyncData } from '@/shared/hooks/use-async-data';
 import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
+import { setNavigationIntent } from '@/shared/lib/navigation-intent';
 import { cn } from '@/lib/utils';
 import type { AuraRow, AuraTaskProgress } from '@/types/aura';
 
@@ -79,29 +68,69 @@ function formatTimerDurationRu(totalSeconds: number): string {
   return `${m} м`;
 }
 
-const TASK_ICON_SIZE_CN = 'size-5';
+// Единые константы строки задачи
+const ROW_H = 'h-[4.5rem] [@container(min-width:720px)]:h-12';
+const CTRL_BTN = 'flex h-full w-full cursor-pointer items-center justify-center gap-1 px-2 [@container(min-width:720px)]:gap-1.5 [@container(min-width:720px)]:px-3 focus:outline-none';
+const CTRL_BTN_FLUSH = 'flex h-full w-full cursor-pointer items-center justify-center gap-0 px-0 focus:outline-none';
+const CTRL_TEXT = 'text-xs font-semibold tabular-nums leading-none';
 
-/** Один визуальный «слот» управления для любого типа задачи: размер, рамка, фон, фокус. */
-function TaskControlSlot({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+function formatPercentLabel(value: number): string {
+  const pct = Math.min(100, Math.max(0, value));
+  return `${Math.round(pct)}%`;
+}
+
+function formatTaskCountRu(count: number): string {
+  const abs = Math.abs(count);
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} задача`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} задачи`;
+  return `${count} задач`;
+}
+
+function TaskControlSlot({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div
-      className={cn(
-        'box-border flex min-h-11 w-full shrink-0 items-center overflow-hidden text-foreground lg:h-full lg:min-h-8',
-        className
-      )}
-    >
+    // mobile: full-width strip at bottom; lg: fixed-width column on right
+    <div className={cn('flex h-full w-full shrink-0 items-center justify-center [@container(min-width:720px)]:h-12 [@container(min-width:720px)]:w-[5.5rem]', className)}>
       {children}
     </div>
   );
 }
 
-const TASK_META_CN = 'text-xs font-medium tabular-nums tracking-tight';
+function LoopingTaskLabel({ children }: { children: string }) {
+  const measureRef = useRef<HTMLSpanElement | null>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+    const update = () => {
+      setOverflowing(el.scrollWidth > el.clientWidth + 1);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [children]);
+
+  if (!overflowing) {
+    return (
+      <span ref={measureRef} className={cn(CTRL_TEXT, 'block min-w-0 max-w-full truncate text-center')}>
+        {children}
+      </span>
+    );
+  }
+
+  return (
+    <span ref={measureRef} className={cn(CTRL_TEXT, 'aura-looping-task-label block min-w-0 max-w-full overflow-hidden whitespace-nowrap text-left')}>
+      <span className="aura-looping-task-label-track" aria-hidden="true">
+        <span>{children}</span>
+        <span className="pl-4">{children}</span>
+      </span>
+      <span className="sr-only">{children}</span>
+    </span>
+  );
+}
 
 function taskRowSatisfied(
   taskType: string,
@@ -124,277 +153,80 @@ function TaskRowFrame({
   accent,
   title,
   pct,
-  doneTitle,
   satisfied,
   disabled,
   control,
-  onOpenDetail,
+  showPercentBadges,
 }: {
   icon: string | null;
   accent: string;
   title: string;
   pct: number;
   doneTitle?: boolean;
-  /** Прогресс закрыт — лёгкий фон строки и акцент у процента */
   satisfied?: boolean;
   disabled?: boolean;
   control: ReactNode;
-  onOpenDetail?: () => void;
+  showPercentBadges: boolean;
 }) {
-  const rowRef = useRef<HTMLDivElement | null>(null);
-  const iconSegRef = useRef<HTMLDivElement | null>(null);
-  const titleSegRef = useRef<HTMLDivElement | null>(null);
-  const pctSegRef = useRef<HTMLButtonElement | null>(null);
-
-  const [segClip, setSegClip] = useState<{ iconPx: number; iconW: number; titlePct: number; pctPct: number }>({
-    iconPx: 0,
-    iconW: 0,
-    titlePct: 0,
-    pctPct: 0,
-  });
-  const rafRecompute = useRef<number | null>(null);
-
-  const safePct = Math.min(100, Math.max(0, pct));
-  const uiPct = Math.min(100, Math.max(0, Math.round(safePct)));
-  const fillOpacity = satisfied ? 1 : 0.96;
-
-  const recomputeSegClips = useCallback(() => {
-    const row = rowRef.current;
-    const iconEl = iconSegRef.current;
-    const titleEl = titleSegRef.current;
-    const pctEl = pctSegRef.current;
-    if (!row || !iconEl || !titleEl || !pctEl) return;
-
-    const rowRect = row.getBoundingClientRect();
-    const rowW = rowRect.width;
-    if (!Number.isFinite(rowW) || rowW <= 0) return;
-
-    const fillW = (uiPct / 100) * rowW;
-
-    const coveredPx = (el: HTMLElement) => {
-      const r = el.getBoundingClientRect();
-      const left = r.left - rowRect.left;
-      const w = r.width;
-      if (!Number.isFinite(left) || !Number.isFinite(w) || w <= 0) return 0;
-      return Math.min(w, Math.max(0, fillW - left));
-    };
-
-    const pctFor = (covered: number, w: number) => {
-      if (!Number.isFinite(covered) || !Number.isFinite(w) || w <= 0) return 0;
-      return Math.min(100, Math.max(0, (covered / w) * 100));
-    };
-
-    const iconW = iconEl.getBoundingClientRect().width;
-    const titleW = titleEl.getBoundingClientRect().width;
-    const pctW = pctEl.getBoundingClientRect().width;
-
-    const iconCovered = coveredPx(iconEl);
-
-    const next = {
-      iconPx: iconCovered,
-      iconW,
-      titlePct: pctFor(coveredPx(titleEl), titleW),
-      pctPct: pctFor(coveredPx(pctEl), pctW),
-    };
-
-    setSegClip((prev) => {
-      const same =
-        Math.abs(prev.iconPx - next.iconPx) < 0.35 &&
-        Math.abs(prev.iconW - next.iconW) < 0.35 &&
-        Math.abs(prev.titlePct - next.titlePct) < 0.05 &&
-        Math.abs(prev.pctPct - next.pctPct) < 0.05;
-      return same ? prev : next;
-    });
-  }, [uiPct]);
-
-  const scheduleRecomputeSegClips = useCallback(() => {
-    if (rafRecompute.current != null) cancelAnimationFrame(rafRecompute.current);
-    rafRecompute.current = requestAnimationFrame(() => {
-      rafRecompute.current = null;
-      recomputeSegClips();
-    });
-  }, [recomputeSegClips]);
-
-  useLayoutEffect(() => {
-    scheduleRecomputeSegClips();
-  }, [scheduleRecomputeSegClips, title, icon, pct, doneTitle, uiPct]);
-
-  useEffect(() => {
-    const row = rowRef.current;
-    if (!row) return;
-
-    const ro = new ResizeObserver(() => {
-      scheduleRecomputeSegClips();
-    });
-    ro.observe(row);
-    const iconEl = iconSegRef.current;
-    const titleEl = titleSegRef.current;
-    const pctEl = pctSegRef.current;
-    if (iconEl) ro.observe(iconEl);
-    if (titleEl) ro.observe(titleEl);
-    if (pctEl) ro.observe(pctEl);
-
-    const onWin = () => scheduleRecomputeSegClips();
-    window.addEventListener('resize', onWin);
-
-    let fontsDone: Promise<void> | null = null;
-    try {
-      const fonts = (document as unknown as { fonts?: { ready?: Promise<void> } }).fonts;
-      fontsDone = fonts?.ready ?? null;
-    } catch {
-      fontsDone = null;
-    }
-    if (fontsDone) {
-      fontsDone.then(() => scheduleRecomputeSegClips()).catch(() => undefined);
-    }
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', onWin);
-      if (rafRecompute.current != null) cancelAnimationFrame(rafRecompute.current);
-      rafRecompute.current = null;
-    };
-  }, [scheduleRecomputeSegClips]);
-
-  function SegmentedDualText({
-    clipPct,
-    children,
-    className,
-  }: {
-    clipPct: number;
-    children: string;
-    className?: string;
-  }) {
-    const safe = Math.min(100, Math.max(0, clipPct));
-    return (
-      <span className={cn('relative inline-block max-w-full', className)}>
-        <span className="block truncate text-sm font-semibold leading-tight tracking-tight text-foreground">{children}</span>
-        <span
-          className="pointer-events-none absolute inset-0 overflow-hidden text-white hidden lg:block"
-          style={{ width: `${safe}%` }}
-          aria-hidden
-        >
-          <span className="block truncate text-sm font-semibold leading-tight tracking-tight">{children}</span>
-        </span>
+  const uiPct = Math.min(100, Math.max(0, pct));
+  const showTaskPercent = showPercentBadges && (!satisfied || uiPct < 100);
+  const labelContent = (
+    <>
+      <span
+        className="pointer-events-none absolute inset-y-0 left-0 [@container(min-width:720px)]:hidden"
+        style={{ width: `${uiPct}%`, backgroundColor: accent, opacity: satisfied ? 0.16 : uiPct > 0 ? 0.12 : 0.05 }}
+        aria-hidden
+      />
+      <ColoredAuraIcon
+        name={icon}
+        size={14}
+        tint={satisfied ? accent : uiPct > 0 ? accent : 'var(--aura-text-muted)'}
+        className="relative z-10 shrink-0"
+      />
+      <span className={cn('relative z-10 min-w-0 max-w-[7rem] truncate text-sm leading-none [@container(min-width:720px)]:max-w-none', satisfied ? 'text-foreground font-medium' : 'text-foreground')}>
+        {title}
       </span>
-    );
-  }
-
+      {showPercentBadges ? (
+        <span className="relative z-10 flex shrink-0 items-center pl-0.5 [@container(min-width:720px)]:ml-auto [@container(min-width:720px)]:pl-1">
+          {showTaskPercent ? (
+            <span
+              className="text-[0.65rem] font-bold tabular-nums leading-none"
+              style={{ color: uiPct > 0 ? accent : 'var(--aura-text-muted)' }}
+            >
+              {formatPercentLabel(uiPct)}
+            </span>
+          ) : (
+            <Check className="size-3" style={{ color: accent }} strokeWidth={2.5} />
+          )}
+        </span>
+      ) : null}
+    </>
+  );
+  const labelClassName = cn(
+    'relative flex min-h-0 min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden px-2 text-center [@container(min-width:720px)]:h-auto [@container(min-width:720px)]:justify-start [@container(min-width:720px)]:gap-2 [@container(min-width:720px)]:px-3 [@container(min-width:720px)]:text-left',
+    'cursor-default'
+  );
   return (
     <li
       className={cn(
-          'group/task relative isolate flex flex-1 items-center overflow-hidden border rounded-lg transition-[background-color,border-color,opacity] duration-aura-base ease-aura',
-          'border-border/40 bg-muted/35',
-          satisfied ? 'border-foreground/15' : 'hover:border-border/70',
-          disabled && 'opacity-45'
+        'relative grid grid-rows-2 overflow-hidden [@container(min-width:720px)]:flex [@container(min-width:720px)]:flex-row [@container(min-width:720px)]:items-stretch',
+        ROW_H,
+        disabled && 'pointer-events-none opacity-45'
       )}
     >
-      {disabled ? <div className="absolute inset-0 z-20 bg-background/35 backdrop-blur-[1px]" aria-hidden /> : null}
-      <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
-        <div
-          className={cn(
-            'absolute inset-y-0 left-0 transition-[width] duration-aura-glide ease-aura'
-          )}
-          style={{
-            width: `${uiPct}%`,
-            backgroundColor: accent,
-            opacity: fillOpacity,
-          }}
-        />
-      </div>
-
-      {/* Мобильный вид: две равные половины */}
+      {/* Прогресс-заливка — только на lg */}
       <div
-        className="lg:hidden flex min-w-0 flex-1 items-center basis-1/2 gap-2 px-2.5 py-2 pointer-events-none border-r border-border/40"
-      >
-        <div className="shrink-0">
-          <IconWithBadge
-            iconName={icon}
-            tint={accent}
-            size="md"
-            surfaceClassName="bg-transparent ring-0 shadow-none"
-          />
-        </div>
-        <button
-          type="button"
-          className="relative min-w-0 flex-1 text-left pointer-events-auto"
-          onClick={onOpenDetail}
-          disabled={disabled}
-        >
-          <span className="block truncate text-base font-semibold sm:text-sm">{title}</span>
-        </button>
-      </div>
+        className="pointer-events-none absolute inset-y-0 left-0 hidden [@container(min-width:720px)]:block"
+        style={{ width: `${uiPct}%`, backgroundColor: accent, opacity: satisfied ? 0.16 : uiPct > 0 ? 0.12 : 0.05 }}
+        aria-hidden
+      />
 
-      {/* Стандартный вид (десктоп): иконка, название, процент */}
-      <div
-        ref={rowRef}
-        className={cn(
-          'relative z-10 hidden lg:flex min-w-0 flex-1 items-center gap-x-2 px-2.5 py-1.5 pointer-events-none',
-          'lg:gap-x-2.5 lg:px-3 lg:py-2 lg:transition-opacity lg:duration-aura-fast lg:ease-aura lg:group-hover/task:pointer-events-none lg:group-hover/task:opacity-0',
-          disabled && 'pointer-events-none opacity-70'
-        )}
-      >
-        <div ref={iconSegRef} className="shrink-0">
-          <div className="relative">
-            <IconWithBadge
-              iconName={icon}
-              tint={accent}
-              size="md"
-              surfaceClassName="bg-transparent ring-0 shadow-none"
-            />
-            <div
-              className="pointer-events-none absolute inset-0 overflow-hidden"
-              style={{ width: uiPct >= 100 ? '100%' : `${Math.max(0, segClip.iconPx)}px` }}
-              aria-hidden
-            >
-              <div className="absolute inset-0">
-                <IconWithBadge
-                  iconName={icon}
-                  tint="#ffffff"
-                  size="md"
-                  surfaceClassName="bg-transparent ring-0 shadow-none"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <button
-          type="button"
-          className="relative min-w-0 flex-1 rounded-lg px-2 text-left aura-tx-colors hover:bg-muted/30 pointer-events-auto disabled:hover:bg-transparent"
-          onClick={onOpenDetail}
-          disabled={disabled}
-        >
-          <div ref={titleSegRef} className="min-w-0">
-            <SegmentedDualText clipPct={segClip.titlePct} className="w-full min-w-0">
-              {title}
-            </SegmentedDualText>
-          </div>
-        </button>
-        <button
-          type="button"
-          className="relative min-w-max shrink-0 items-center justify-end flex rounded-lg px-2 aura-tx-colors hover:bg-muted/30 pointer-events-auto disabled:hover:bg-transparent"
-          onClick={onOpenDetail}
-          ref={pctSegRef}
-          disabled={disabled}
-        >
-          <SegmentedDualText clipPct={segClip.pctPct} className="tabular-nums">
-            {`${uiPct}%`}
-          </SegmentedDualText>
-        </button>
-      </div>
+      {/* Строка: иконка + название + бейдж */}
+      <div className={labelClassName}>{labelContent}</div>
 
-      {/* Контрол управления */}
-      <div
-        className={cn(
-          'relative z-20 flex items-center justify-center basis-1/2 shrink-0 pointer-events-none',
-          'lg:min-w-[3rem] lg:border-l lg:border-border/40 lg:bg-background/92 lg:pr-0',
-          'lg:absolute lg:inset-0 lg:z-30 lg:min-h-0 lg:min-w-[auto] lg:basis-auto lg:items-stretch lg:justify-stretch lg:bg-popover lg:text-popover-foreground lg:pr-0 lg:opacity-0 lg:shadow-sm lg:ring-1 lg:ring-border/60 lg:transition-opacity lg:duration-aura-fast lg:ease-aura lg:group-hover/task:opacity-100',
-          disabled && 'lg:opacity-0'
-        )}
-      >
-        <div className="pointer-events-auto flex h-full w-full">
-          {control}
-        </div>
+      {/* Строка управления (мобайл — снизу, lg — справа) */}
+      <div className="relative z-10 flex min-h-0 shrink-0 items-stretch border-t border-[var(--aura-border-soft)]/50 [@container(min-width:720px)]:border-t-0 [@container(min-width:720px)]:border-l">
+        {control}
       </div>
     </li>
   );
@@ -403,44 +235,16 @@ function TaskRowFrame({
 export function TasksCategoriesCard() {
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
-  const preferBootstrap = typeof window !== 'undefined' && Boolean(window.__auraMiniApi);
   const dayLocked = useDayLocked(db, Boolean(db), dateString);
   const { setActivePageId } = useShell();
-  const dataTick = useAuraDataRefresh({ types: ['task-progress', 'timer', 'ritual', 'nutrition'] });
-  const [sheetTask, setSheetTask] = useState<AuraRow | null>(null);
-  const [localReloadTick, setLocalReloadTick] = useState(0);
-  const [progress, setProgress] = useState<AuraTaskProgress | null>(null);
+  const { data: daySnapshot } = useHomeDaySnapshot(dateString);
+  const [showPercentBadges, setShowPercentBadges] = useState(true);
   const [optimisticProgressById, setOptimisticProgressById] = useState<Record<string, AuraTaskProgress>>({});
-  const bootstrapParams = useMemo(() => ({ date: dateString }), [dateString]);
-  const { data: homeBootstrap } = useBootstrapData<{
-    cfgTasks?: AuraRow[];
-    cfgRitualsMorning?: AuraRow[];
-    cfgRitualsEvening?: AuraRow[];
-    ritualsMorningRows?: AuraRow[];
-    ritualsEveningRows?: AuraRow[];
-    taskProgressById?: Record<string, AuraTaskProgress | null>;
-    timerTotalsByTaskId?: Record<string, number>;
-    categoryProgresses?: Record<string, number>;
-  }>(
-    'home',
-    bootstrapParams,
-    [dataTick, localReloadTick],
-    {
-      keepStaleOnError: true,
-      dedupeKey: `home:${dateString}:${dataTick}:${localReloadTick}`,
-      cacheMs: 0,
-    }
-  );
   const [numberDrafts, setNumberDrafts] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const numberSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const { data: nutritionEntries } = useAsyncData(
-    (database) => database.getNutritionEntries(dateString),
-    [dateString],
-    { events: ['nutrition'] }
-  );
-  const nutritionTotals = useMemo(() => sumNutritionDay(nutritionEntries ?? []), [nutritionEntries]);
-  const nutritionTargets = useMemo(() => readNutritionTargets(db?.getAppSettings() as Record<string, unknown> | null), [db, dataTick]);
+  const nutritionTotals = daySnapshot?.nutritionTotals ?? { calories: 0, proteins: 0, fats: 0, carbs: 0 };
+  const nutritionTargets = daySnapshot?.nutritionTargets ?? { calories: 0, proteins: 0, fats: 0, carbs: 0 };
   const nutritionProgressPct = useMemo(() => {
     const target = Number(nutritionTargets.calories) || 0;
     if (target <= 0) return nutritionTotals.calories > 0 ? 100 : 0;
@@ -448,43 +252,10 @@ export function TasksCategoriesCard() {
   }, [nutritionTargets.calories, nutritionTotals.calories]);
 
   const allCfgTasks = useMemo(() => {
-    // Try to use bootstrap data if available
-    if (homeBootstrap?.cfgTasks?.length) {
-      console.log('[TasksCategoriesCard] allCfgTasks from homeBootstrap:', homeBootstrap.cfgTasks.length);
-      return homeBootstrap.cfgTasks;
-    }
-
-    // Fall back to direct database access if bootstrap data is not available
-    if (!db) {
-      console.log('[TasksCategoriesCard] db not available');
-      return [] as AuraRow[];
-    }
-    const tasks = db.getAll('cfg_tasks');
-    console.log('[TasksCategoriesCard] allCfgTasks from db.getAll():', tasks.length, tasks);
-    return tasks;
-  }, [db, homeBootstrap?.cfgTasks]);
-
-  const activeRitualIds = useMemo(() => {
-    if (!db) return { morning: new Set<string>(), evening: new Set<string>() };
-    if (preferBootstrap && !homeBootstrap?.cfgRitualsMorning && !homeBootstrap?.cfgRitualsEvening) {
-      return { morning: new Set<string>(), evening: new Set<string>() };
-    }
-    const morningSource = homeBootstrap?.cfgRitualsMorning ?? db.getAll('cfg_rituals_morning');
-    const eveningSource = homeBootstrap?.cfgRitualsEvening ?? db.getAll('cfg_rituals_evening');
-    const morning = new Set(
-      morningSource
-        .filter((row) => Number(row.active) !== 0)
-        .map((row) => String(row.id ?? ''))
-        .filter(Boolean)
-    );
-    const evening = new Set(
-      eveningSource
-        .filter((row) => Number(row.active) !== 0)
-        .map((row) => String(row.id ?? ''))
-        .filter(Boolean)
-    );
-    return { morning, evening };
-  }, [db, homeBootstrap?.cfgRitualsEvening, homeBootstrap?.cfgRitualsMorning, preferBootstrap]);
+    if (daySnapshot?.cfgTasks) return daySnapshot.cfgTasks;
+    if (!db) return [] as AuraRow[];
+    return db.getAll('cfg_tasks');
+  }, [daySnapshot?.cfgTasks, db]);
 
   const categoryUi = useMemo(() => {
     const cfg = loadTaskCategoryConfig(db);
@@ -501,44 +272,46 @@ export function TasksCategoriesCard() {
   }, [dateString]);
 
   useEffect(() => {
+    setOptimisticProgressById({});
+  }, [daySnapshot?.taskProgressById, dateString]);
+
+  useEffect(() => {
     const timers = numberSaveTimers.current;
     return () => {
       Object.values(timers).forEach(clearTimeout);
     };
   }, []);
 
+  useEffect(() => {
+    if (!db) return;
+    const reloadDisplaySettings = () => {
+      setShowPercentBadges(getHomeTaskDisplaySettings(db.getAppSettings() as AuraRow | null).showPercentBadges);
+    };
+    reloadDisplaySettings();
+    window.addEventListener('settings-saved', reloadDisplaySettings);
+    return () => window.removeEventListener('settings-saved', reloadDisplaySettings);
+  }, [db]);
+
   const values = useMemo(() => {
-    if (!db) return {} as Record<string, number>;
-    const categoryProgresses = homeBootstrap?.categoryProgresses;
-    if (categoryProgresses) {
-      const next: Record<string, number> = {};
-      for (const categoryId of CATEGORY_IDS) {
-        next[categoryId] = Number(categoryProgresses[categoryId] ?? 0);
-      }
-      return next;
-    }
-    return getCategoryProgresses(db, dateString, CATEGORY_IDS);
-  }, [db, dateString, homeBootstrap?.categoryProgresses, dataTick, localReloadTick]);
+    if (!daySnapshot) return {} as Record<string, number>;
+    return daySnapshot.categoryProgresses;
+  }, [daySnapshot]);
 
   const tasksByCat = useMemo(() => {
     if (!db) return {} as Record<string, AuraRow[]>;
     const m: Record<string, AuraRow[]> = {};
-    CATEGORY_IDS.forEach((c) => {
-      m[c] = tasksForCategory(allCfgTasks, c);
-      console.log(`[TasksCategoriesCard] tasks for category ${c}:`, m[c].length, m[c]);
-    });
+    CATEGORY_IDS.forEach((c) => { m[c] = tasksForCategory(allCfgTasks, c); });
     return m;
   }, [allCfgTasks, db]);
 
   const taskProgressById = useMemo(() => {
     const map = new Map<string, AuraTaskProgress | null>();
-    if (homeBootstrap?.taskProgressById && Object.keys(homeBootstrap.taskProgressById).length) {
-      for (const [taskId, raw] of Object.entries(homeBootstrap.taskProgressById)) {
+    if (daySnapshot?.taskProgressById) {
+      for (const [taskId, raw] of Object.entries(daySnapshot.taskProgressById)) {
         map.set(taskId, (raw as AuraTaskProgress | null) ?? null);
       }
       return map;
     }
-    if (preferBootstrap) return map;
     if (!db) return map;
     const allTasks = CATEGORY_IDS.flatMap((categoryId) => tasksByCat[categoryId] ?? []);
     for (const task of allTasks) {
@@ -551,7 +324,7 @@ export function TasksCategoriesCard() {
       }
     }
     return map;
-  }, [db, dateString, homeBootstrap?.taskProgressById, preferBootstrap, tasksByCat]);
+  }, [db, dateString, daySnapshot?.taskProgressById, tasksByCat]);
 
   const effectiveTaskProgressById = useMemo(() => {
     const merged = new Map(taskProgressById);
@@ -563,13 +336,12 @@ export function TasksCategoriesCard() {
 
   const timerTotalsByTaskId = useMemo(() => {
     const map = new Map<string, number>();
-    if (homeBootstrap?.timerTotalsByTaskId && Object.keys(homeBootstrap.timerTotalsByTaskId).length) {
-      for (const [taskId, total] of Object.entries(homeBootstrap.timerTotalsByTaskId)) {
+    if (daySnapshot?.timerTotalsByTaskId) {
+      for (const [taskId, total] of Object.entries(daySnapshot.timerTotalsByTaskId)) {
         map.set(taskId, Number(total) || 0);
       }
       return map;
     }
-    if (preferBootstrap) return map;
     if (!db) return map;
     const allTasks = CATEGORY_IDS.flatMap((categoryId) => tasksByCat[categoryId] ?? []);
     for (const task of allTasks) {
@@ -583,46 +355,14 @@ export function TasksCategoriesCard() {
       }
     }
     return map;
-  }, [db, dateString, homeBootstrap?.timerTotalsByTaskId, preferBootstrap, tasksByCat]);
+  }, [db, dateString, daySnapshot?.timerTotalsByTaskId, tasksByCat]);
 
   const ritualCountsByType = useMemo(() => {
     const out = new Map<string, { completed: number; total: number }>();
-    if (!db) return out;
-    if (preferBootstrap && !homeBootstrap?.ritualsMorningRows && !homeBootstrap?.ritualsEveningRows) {
-      return out;
-    }
-    const morningRows = homeBootstrap?.ritualsMorningRows ?? db.getRitualsMorning(dateString);
-    const eveningRows = homeBootstrap?.ritualsEveningRows ?? db.getRitualsEvening(dateString);
-    const morningCompleted = morningRows.reduce((acc, row) => {
-      const ritualId = String(row.ritual_id ?? '');
-      if (!ritualId || !activeRitualIds.morning.has(ritualId)) return acc;
-      return acc + (Number(row.completed) === 1 ? 1 : 0);
-    }, 0);
-    const eveningCompleted = eveningRows.reduce((acc, row) => {
-      const ritualId = String(row.ritual_id ?? '');
-      if (!ritualId || !activeRitualIds.evening.has(ritualId)) return acc;
-      return acc + (Number(row.completed) === 1 ? 1 : 0);
-    }, 0);
-    out.set('sunrise', { completed: morningCompleted, total: activeRitualIds.morning.size });
-    out.set('sunset', { completed: eveningCompleted, total: activeRitualIds.evening.size });
+    if (!daySnapshot?.ritualCountsByType) return out;
+    for (const [type, counts] of Object.entries(daySnapshot.ritualCountsByType)) out.set(type, counts);
     return out;
-  }, [
-    activeRitualIds.evening,
-    activeRitualIds.morning,
-    db,
-    dateString,
-    dataTick,
-    homeBootstrap?.ritualsEveningRows,
-    homeBootstrap?.ritualsMorningRows,
-    preferBootstrap,
-  ]);
-
-  const openTask = (task: AuraRow) => {
-    if (!db) return;
-    setSheetTask(task);
-    const id = String(task.id ?? '');
-    setProgress(id ? (effectiveTaskProgressById.get(id) ?? null) : null);
-  };
+  }, [daySnapshot?.ritualCountsByType]);
 
   const persist = (taskId: string, data: Record<string, unknown>) => {
     setSaveError(null);
@@ -645,8 +385,7 @@ export function TasksCategoriesCard() {
       });
       runAuraMutation('task-progress', () => {
         db.saveTaskProgress(taskId, dateString, data);
-      });
-      setLocalReloadTick((v) => v + 1);
+      }, dateString);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
     }
@@ -666,15 +405,18 @@ export function TasksCategoriesCard() {
   const goRituals = (ritualType: string) => {
     const rt = String(ritualType);
     const kind = rt === 'sunset' ? 'evening' : 'morning';
-    console.log(`[goRituals] ritualType=${ritualType}, kind=${kind}`);
     try {
       localStorage.setItem(STORAGE_KEYS.RITUALS_KIND, kind);
-      console.log(`[goRituals] localStorage set to ${kind}`);
-    } catch (e) {
-      console.error(`[goRituals] Error setting localStorage:`, e);
+    } catch {
+      /* ignore */
     }
-    console.log(`[goRituals] Calling setActivePageId('rituals')`);
+    window.dispatchEvent(new CustomEvent(STORAGE_KEYS.RITUALS_KIND_INTENT_EVENT, { detail: { kind } }));
     setActivePageId('rituals');
+  };
+
+  const goTimerTask = (taskId: string) => {
+    setNavigationIntent(STORAGE_KEYS.TIMER_TASK_ID, STORAGE_KEYS.TIMER_TASK_INTENT_EVENT, { taskId });
+    setActivePageId('timer');
   };
 
   const renderTaskLine = (t: AuraRow, catId: CategoryId) => {
@@ -699,13 +441,8 @@ export function TasksCategoriesCard() {
       pct = nutritionProgressPct;
     }
     if (taskType === 'ritual') {
-      const rtPct = String(t.ritual_type ?? 'sunrise');
-      try {
-        const rp = db.calculateRitualProgress(rtPct, dateString);
-        if (rp != null && Number.isFinite(Number(rp))) pct = Math.min(100, Math.max(0, Number(rp)));
-      } catch {
-        /* оставляем pct из act_tasks */
-      }
+      const counts = ritualCountsByType.get(String(t.ritual_type ?? 'sunrise'));
+      pct = counts && counts.total > 0 ? Math.min(100, Math.max(0, (counts.completed / counts.total) * 100)) : 0;
     }
     const disabled = dayLocked;
     const accent = `var(--task-${catId})`;
@@ -730,7 +467,6 @@ export function TasksCategoriesCard() {
     if (taskType === 'checkbox') {
       const done = prog ? Number(prog.completed) === 1 : false;
       const isDeps = catId === 'deps';
-      const depsLabel = done ? 'Держусь' : 'Не держусь';
       
       return (
         <TaskRowFrame
@@ -742,46 +478,33 @@ export function TasksCategoriesCard() {
           doneTitle={done}
           satisfied={satisfied}
           disabled={disabled}
-          onOpenDetail={() => openTask(t)}
+          showPercentBadges={showPercentBadges}
           control={
-            <TaskControlSlot
-              className={cn('p-0', disabled && 'pointer-events-none opacity-50')}
-            >
+            <TaskControlSlot className={disabled ? 'pointer-events-none opacity-50' : ''}>
               <button
                 type="button"
                 role="checkbox"
                 aria-checked={done}
-                aria-label={done ? 'Отметить как невыполненную' : 'Отметить как выполненную'}
+                aria-label={done ? 'Снять отметку' : 'Отметить выполненным'}
                 disabled={disabled}
-                className={cn(
-                  'flex min-h-8 w-full cursor-pointer items-center justify-center gap-2 px-2.5 text-foreground transition-[background-color,color] duration-aura-base ease-aura lg:h-full lg:px-3',
-                  'hover:bg-muted/55 active:bg-muted/70',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-1 focus-visible:ring-offset-popover'
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  persist(id, { completed: done ? 0 : 1 });
-                }}
+                className={CTRL_BTN}
+                onClick={(e) => { e.stopPropagation(); persist(id, { completed: done ? 0 : 1 }); }}
               >
                 <span
-                  className={cn(TASK_ICON_SIZE_CN, 'relative inline-flex shrink-0 items-center justify-center rounded-lg border-2 transition-[background-color,border-color] duration-aura-base ease-aura')}
+                  className="relative inline-flex size-5 shrink-0 items-center justify-center rounded-full border-2"
                   style={{
                     borderColor: accent,
                     backgroundColor: done ? accent : 'transparent',
                   }}
                   aria-hidden
                 >
-                  <Check
-                    className={cn(
-                      'size-3.5 text-white transition-opacity duration-aura-base ease-aura',
-                      done ? 'opacity-100' : 'opacity-0'
-                    )}
-                    strokeWidth={2.6}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                  <Check className="size-3 text-white" strokeWidth={3} style={{ opacity: done ? 1 : 0, transition: 'opacity 150ms' }} />
                 </span>
-                {isDeps && <span className="text-sm font-semibold tracking-tight text-foreground">{depsLabel}</span>}
+                {isDeps && (
+                  <span className={cn(CTRL_TEXT, 'text-foreground')} style={{ color: done ? accent : undefined }}>
+                    {done ? 'Да' : 'Нет'}
+                  </span>
+                )}
               </button>
             </TaskControlSlot>
           }
@@ -803,46 +526,23 @@ export function TasksCategoriesCard() {
           pct={pct}
           satisfied={satisfied}
           disabled={disabled}
-          onOpenDetail={() => openTask(t)}
+          showPercentBadges={showPercentBadges}
           control={
-            <TaskControlSlot
-              className={cn(disabled && 'pointer-events-none opacity-50')}
-            >
-              <div className="flex min-h-8 w-full min-w-0 flex-row items-stretch rounded-lg bg-popover/80 lg:h-full lg:rounded-none lg:bg-transparent">
-                <div className="flex min-w-0 flex-1 items-center justify-center">
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    className={cn(
-                      TASK_META_CN,
-                      'h-full w-full min-w-0 border-0 bg-transparent text-center text-foreground shadow-none aura-tx-colors focus-visible:ring-0 placeholder:text-muted-foreground/40 lg:rounded-none'
-                    )}
-                    disabled={disabled}
-                    value={draft}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setNumberDrafts((m) => ({ ...m, [id]: next }));
-                      scheduleNumberPersist(id, next);
-                    }}
-                    onBlur={(e) => {
-                      const n = parseFloat(String(e.target.value).replace(',', '.'));
-                      if (Number.isFinite(n)) persist(id, { current_value: n });
-                    }}
-                  />
-                </div>
-                <div className="bg-border/30 my-2 w-px shrink-0 self-stretch" aria-hidden />
-                <div
-                  className={cn('flex min-w-[2.5rem] shrink-0 flex-col items-center justify-center gap-0.5 px-1 text-center text-muted-foreground/70')}
-                >
-                  {unitStr ? (
-                    <span className={cn(TASK_META_CN, 'max-w-full truncate leading-none')} title={unitStr}>
-                      {unitStr}
-                    </span>
-                  ) : null}
-                  <span className={cn(TASK_META_CN, 'leading-none opacity-80')}>{target ? `/${target}` : '—'}</span>
-                </div>
-              </div>
+            <TaskControlSlot className={cn('flex-col gap-0 p-0', disabled && 'pointer-events-none opacity-50')}>
+              <Input
+                type="number"
+                inputMode="decimal"
+                className="h-[55%] w-full border-0 bg-transparent text-center text-xs font-semibold tabular-nums text-foreground shadow-none focus-visible:ring-0 rounded-none"
+                disabled={disabled}
+                value={draft}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => { const v = e.target.value; setNumberDrafts((m) => ({ ...m, [id]: v })); scheduleNumberPersist(id, v); }}
+                onBlur={(e) => { const n = parseFloat(String(e.target.value).replace(',', '.')); if (Number.isFinite(n)) persist(id, { current_value: n }); }}
+              />
+              <div className="w-full border-t border-[var(--aura-border-soft)]/50" />
+              <span className={cn(CTRL_TEXT, 'text-[var(--aura-text-disabled)] h-[40%] flex items-center justify-center')}>
+                {target ? `/${target}${unitStr ? ` ${unitStr}` : ''}` : '—'}
+              </span>
             </TaskControlSlot>
           }
         />
@@ -855,12 +555,7 @@ export function TasksCategoriesCard() {
       const listIdxRaw = rawList !== null && rawList !== undefined && rawList !== '' ? Number(rawList) : NaN;
       const hasSelection = Number.isFinite(listIdxRaw) && listIdxRaw >= 0;
       const selectedIndex = hasSelection ? Math.max(0, Math.min(items.length - 1, Math.floor(listIdxRaw))) : -1;
-      const listButtonLabel =
-        items.length === 0
-          ? 'Нет списка'
-          : selectedIndex < 0
-            ? 'Не выбрано'
-            : `${selectedIndex + 1}. ${listItemLabel(items[selectedIndex]!, selectedIndex)}`;
+      const selectedLabel = selectedIndex < 0 ? '—' : listItemLabel(items[selectedIndex], selectedIndex);
       return (
         <TaskRowFrame
           key={id}
@@ -870,24 +565,19 @@ export function TasksCategoriesCard() {
           pct={pct}
           satisfied={satisfied}
           disabled={disabled}
-          onOpenDetail={() => openTask(t)}
+          showPercentBadges={showPercentBadges}
           control={
             items.length === 0 ? (
-              <TaskControlSlot className="justify-center">
-                <span className={cn(TASK_META_CN, 'text-muted-foreground text-center')}>Нет списка</span>
+              <TaskControlSlot>
+                <span className={cn(CTRL_TEXT, 'text-[var(--aura-text-disabled)]')}>—</span>
               </TaskControlSlot>
             ) : (
-              <TaskControlSlot className={cn(disabled && 'pointer-events-none opacity-50')}>
+              <TaskControlSlot className={disabled ? 'pointer-events-none opacity-50' : ''}>
                 <button
                   type="button"
                   disabled={disabled}
                   aria-label="Переключить пункт списка"
-                  className={cn(
-                    'flex min-h-8 w-full min-w-0 cursor-pointer items-center justify-center gap-2 px-2.5 text-foreground transition-[background-color] duration-aura-base ease-aura lg:h-full lg:px-3',
-                    'hover:bg-muted/55 active:bg-muted/70',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-popover',
-                    satisfied && 'hover:bg-primary/12'
-                  )}
+                  className={CTRL_BTN_FLUSH}
                   onClick={(e) => {
                     e.stopPropagation();
                     const rv = prog?.value;
@@ -901,16 +591,11 @@ export function TasksCategoriesCard() {
                     } else {
                       const it = items[next];
                       const completion_percent = Number(it?.percent ?? it?.percentage ?? 0);
-                      const label = listItemLabel(it, next);
-                      persist(id, {
-                        value: next,
-                        selected_list_item: label,
-                        completion_percent,
-                      });
+                      persist(id, { value: next, selected_list_item: listItemLabel(it, next), completion_percent });
                     }
                   }}
                 >
-                  <span className={cn(TASK_META_CN, 'min-w-0 truncate text-center font-semibold')}>{listButtonLabel}</span>
+                  <LoopingTaskLabel>{selectedLabel}</LoopingTaskLabel>
                 </button>
               </TaskControlSlot>
             )
@@ -938,27 +623,13 @@ export function TasksCategoriesCard() {
           pct={pct}
           satisfied={satisfied}
           disabled={disabled}
-          onOpenDetail={() => openTask(t)}
+          showPercentBadges={showPercentBadges}
           control={
-            <TaskControlSlot
-              className={cn('p-0', disabled && 'pointer-events-none opacity-50')}
-            >
-              <button
-                type="button"
-                disabled={disabled}
-                className={cn(
-                  'flex min-h-8 w-full cursor-pointer items-center justify-center gap-2 px-2.5 text-foreground transition-[background-color] duration-aura-base ease-aura lg:h-full lg:px-3',
-                  'hover:bg-muted/55 active:bg-muted/70',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-popover',
-                  satisfied && 'hover:bg-primary/12'
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActivePageId('timer');
-                }}
-              >
-                <Timer className={cn(TASK_ICON_SIZE_CN, 'shrink-0')} style={{ color: accent }} />
-                <span className="text-sm font-semibold tabular-nums">{timerBtnLabel}</span>
+            <TaskControlSlot className={disabled ? 'pointer-events-none opacity-50' : ''}>
+              <button type="button" disabled={disabled} className={CTRL_BTN}
+                onClick={(e) => { e.stopPropagation(); goTimerTask(id); }}>
+                <Timer className="size-3.5 shrink-0" style={{ color: accent }} />
+                <span className={CTRL_TEXT}>{timerBtnLabel}</span>
               </button>
             </TaskControlSlot>
           }
@@ -969,7 +640,6 @@ export function TasksCategoriesCard() {
     if (taskType === 'nutrition') {
       const kcal = Math.round(nutritionTotals.calories);
       const target = Math.round(nutritionTargets.calories);
-      const targetLabel = target > 0 ? `${kcal} / ${target} ккал` : `${kcal} ккал`;
       return (
         <TaskRowFrame
           key={id}
@@ -979,25 +649,13 @@ export function TasksCategoriesCard() {
           pct={pct}
           satisfied={satisfied}
           disabled={disabled}
-          onOpenDetail={() => openTask(t)}
+          showPercentBadges={showPercentBadges}
           control={
-            <TaskControlSlot className={cn('p-0', disabled && 'pointer-events-none opacity-50')}>
-              <button
-                type="button"
-                disabled={disabled}
-                className={cn(
-                  'flex min-h-8 w-full cursor-pointer items-center justify-center gap-2 px-2.5 text-foreground transition-[background-color] duration-aura-base ease-aura lg:h-full lg:px-3',
-                  'hover:bg-muted/55 active:bg-muted/70',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-popover',
-                  satisfied && 'hover:bg-primary/12'
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActivePageId('diary');
-                }}
-              >
-                <Flame className={cn(TASK_ICON_SIZE_CN, 'shrink-0')} style={{ color: accent }} />
-                <span className="text-sm font-semibold tabular-nums">{targetLabel}</span>
+            <TaskControlSlot className={cn('flex-col gap-0 p-0', disabled && 'pointer-events-none opacity-50')}>
+              <button type="button" disabled={disabled} className={cn(CTRL_BTN, 'flex-col gap-0.5')}
+                onClick={(e) => { e.stopPropagation(); setActivePageId('diary'); }}>
+                <span className={CTRL_TEXT}>{kcal}</span>
+                <span className={cn(CTRL_TEXT, 'text-[var(--aura-text-disabled)]')}>{target > 0 ? `/${target}` : 'ккал'}</span>
               </button>
             </TaskControlSlot>
           }
@@ -1020,29 +678,13 @@ export function TasksCategoriesCard() {
           pct={pct}
           satisfied={satisfied}
           disabled={disabled}
-          onOpenDetail={() => openTask(t)}
+          showPercentBadges={showPercentBadges}
           control={
-            <TaskControlSlot
-              className={cn('p-0', disabled && 'pointer-events-none opacity-50')}
-            >
-              <button
-                type="button"
-                disabled={disabled}
-                className={cn(
-                  'flex h-9 w-full cursor-pointer items-center justify-center gap-2 px-2.5 text-foreground transition-[background-color] duration-aura-base ease-aura lg:h-full lg:px-3',
-                  'hover:bg-muted/55 active:bg-muted/70',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-popover',
-                  satisfied && 'hover:bg-primary/12'
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goRituals(rt);
-                }}
-              >
-                <RitIcon className={cn(TASK_ICON_SIZE_CN, 'shrink-0')} style={{ color: accent }} />
-                <span className="text-sm font-semibold tabular-nums">
-                  {completed}/{total}
-                </span>
+            <TaskControlSlot className={disabled ? 'pointer-events-none opacity-50' : ''}>
+              <button type="button" disabled={disabled} className={CTRL_BTN}
+                onClick={(e) => { e.stopPropagation(); goRituals(rt); }}>
+                <RitIcon className="size-3.5 shrink-0" style={{ color: accent }} />
+                <span className={CTRL_TEXT}>{completed}/{total}</span>
               </button>
             </TaskControlSlot>
           }
@@ -1059,10 +701,10 @@ export function TasksCategoriesCard() {
         pct={pct}
         satisfied={satisfied}
         disabled={disabled}
-        onOpenDetail={() => openTask(t)}
+        showPercentBadges={showPercentBadges}
         control={
-          <TaskControlSlot className="justify-center">
-            <span className={cn(TASK_META_CN, 'text-muted-foreground')}>—</span>
+          <TaskControlSlot>
+            <span className={cn(CTRL_TEXT, 'text-[var(--aura-text-disabled)]')}>—</span>
           </TaskControlSlot>
         }
       />
@@ -1070,13 +712,15 @@ export function TasksCategoriesCard() {
   };
 
   return (
-    <>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="@container flex min-h-0 flex-1 flex-col overflow-hidden">
         {saveError ? <p className="text-destructive mb-2 text-xs">{saveError}</p> : null}
         {!db ? (
           <LoadingShell />
         ) : (
-          <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 rounded-none border-0 bg-transparent p-0 lg:grid-cols-4 lg:gap-0">
+          <div
+            className="grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto overscroll-y-contain p-2 sm:grid-cols-2 sm:gap-3 sm:p-3 [@container(min-width:720px)]:grid-cols-4 [@container(min-width:720px)]:gap-0 [@container(min-width:720px)]:overflow-hidden [@container(min-width:720px)]:p-0"
+            style={{ gridAutoRows: 'max-content' }}
+          >
             {CATEGORY_IDS.map((catId, idx) => {
               const n = values[catId] ?? 0;
               const tasks = tasksByCat[catId] ?? [];
@@ -1088,57 +732,66 @@ export function TasksCategoriesCard() {
                 <section
                   key={catId}
                   className={cn(
-                    'flex min-h-[13rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-card/80 px-0 py-0 shadow-sm lg:min-h-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none',
-                    idx !== 3 && 'lg:border-r lg:border-border/40',
+                    'flex min-h-max flex-col overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] shadow-sm [@container(min-width:720px)]:min-h-0 [@container(min-width:720px)]:rounded-none [@container(min-width:720px)]:border-0 [@container(min-width:720px)]:bg-transparent [@container(min-width:720px)]:shadow-none',
+                    idx !== 3 && '[@container(min-width:720px)]:border-r [@container(min-width:720px)]:border-[var(--aura-border-soft)]/60',
                     dayLocked && 'pointer-events-none opacity-50'
                   )}
                 >
-                  <div className="flex flex-col gap-2 px-3.5 py-3 sm:px-4 sm:py-3">
+                  {/* Хедер категории */}
+                  <div
+                    className="flex flex-col"
+                    style={{ '--acc': accent } as React.CSSProperties}
+                  >
                     <div
-                      className="flex items-center justify-between gap-2 px-0 py-0"
-                      style={{ '--accent-color': accent } as React.CSSProperties}
+                      className="flex h-16 items-center gap-2.5 px-2.5 sm:gap-3 sm:px-3.5"
+                      style={{ background: `color-mix(in oklab, ${accent} 8%, transparent)` }}
                       aria-label={`${label}: ${Math.round(n)}%`}
                     >
-                      <div className="min-w-0 flex items-center gap-2">
-                        <div className="flex size-8 shrink-0 items-center justify-center" aria-hidden>
-                          {dayLocked ? (
-                            <Lock size={17} className="shrink-0 text-foreground" />
-                          ) : (
-                            <ColoredAuraIcon name={headerIcon} size={17} tint={accent} className="shrink-0" />
-                          )}
-                        </div>
+                      <div
+                        className="flex size-8 shrink-0 items-center justify-center rounded-lg sm:size-9 sm:rounded-xl"
+                        style={{ background: `color-mix(in oklab, ${accent} 16%, transparent)` }}
+                        aria-hidden
+                      >
+                        {dayLocked
+                          ? <Lock size={12} className="text-[var(--aura-text-muted)]" />
+                          : <ColoredAuraIcon name={headerIcon} size={14} tint={accent} />}
+                      </div>
+                      <div className="min-w-0 flex-1">
                         <h3
-                          className="min-w-0 truncate text-sm font-bold leading-none tracking-[0.08em] uppercase sm:text-[18px] sm:font-extrabold sm:tracking-[0.05em]"
+                          className="min-w-0 truncate text-sm font-black leading-none sm:text-base"
                           style={{ color: accent }}
                         >
-                          {label.toUpperCase()}
+                          {label}
                         </h3>
+                        <p className="mt-1 text-[0.65rem] font-semibold leading-none text-[var(--aura-text-muted)] sm:text-caption">
+                          {tasks.length ? formatTaskCountRu(tasks.length) : 'Нет задач'}
+                        </p>
                       </div>
-                      <span
-                        className="shrink-0 text-sm font-bold leading-none tracking-[0.08em] tabular-nums uppercase sm:text-[18px] sm:font-extrabold sm:tracking-[0.05em]"
-                        style={{ color: accent }}
-                      >
-                        {`${Math.round(n)}%`}
-                      </span>
+                      <div className="flex shrink-0 flex-col items-end">
+                        <span
+                          className="text-[1.45rem] font-black tabular-nums leading-none sm:text-[1.7rem]"
+                          style={{ color: accent }}
+                        >
+                          {Math.round(n)}
+                          <span className="text-[0.6rem] font-bold opacity-70 sm:text-sm">%</span>
+                        </span>
+                      </div>
                     </div>
-
-                    <div className="rounded-full bg-muted/55 p-[3px]" style={{ '--accent-color': accent } as React.CSSProperties}>
-                      <Progress
-                        value={n}
-                        className={cn(
-                          'h-1.5 w-full rounded-full bg-transparent',
-                          '[&_[data-slot=progress-indicator]]:bg-[var(--accent-color)]',
-                          '[&_[data-slot=progress-indicator]]:transition-transform',
-                          '[&_[data-slot=progress-indicator]]:duration-aura-task-fill',
-                          '[&_[data-slot=progress-indicator]]:ease-aura'
-                        )}
+                    {/* Прогресс-полоска */}
+                    <div className="h-[3px] w-full" style={{ background: `color-mix(in oklab, ${accent} 12%, transparent)` }}>
+                      <div
+                        className="h-full"
+                        style={{ width: `${n}%`, backgroundColor: accent }}
                       />
                     </div>
                   </div>
+                  {/* Список задач */}
                   {tasks.length === 0 ? (
-                    <p className="text-muted-foreground/50 px-3 text-center text-xs sm:px-4">—</p>
+                    <div className="flex h-11 items-center justify-center">
+                      <span className="text-xs text-[var(--aura-text-disabled)]">—</span>
+                    </div>
                   ) : (
-                    <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-y-contain mt-1 px-2 pb-3 pt-0 text-sm sm:gap-2 sm:px-4 sm:pb-3">
+                    <ul className="flex min-h-0 flex-1 flex-col divide-y divide-[var(--aura-border-soft)]/40 overflow-y-auto overscroll-y-contain">
                       {tasks.map((t) => renderTaskLine(t, catId))}
                     </ul>
                   )}
@@ -1148,38 +801,5 @@ export function TasksCategoriesCard() {
           </div>
         )}
       </div>
-
-      <Sheet open={sheetTask != null} onOpenChange={(o) => !o && setSheetTask(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2 pr-8">
-              <ColoredAuraIcon name={sheetTask && typeof sheetTask.icon === 'string' ? sheetTask.icon : null} tint="var(--primary)" size={22} />
-              <span className="line-clamp-2">{sheetTask ? String(sheetTask.title ?? sheetTask.id) : ''}</span>
-            </SheetTitle>
-            <SheetDescription className="text-xs">
-              {dateString} · {sheetTask ? String(sheetTask.task_type ?? '—') : '—'}
-            </SheetDescription>
-          </SheetHeader>
-          {sheetTask && progress ? (
-            <div className="text-muted-foreground space-y-3 px-1 text-sm">
-              <div>
-                <p className="text-foreground text-xs font-medium">Прогресс</p>
-                <Progress value={Math.min(100, Math.max(0, Number(progress.completion_percent) || 0))} className="mt-1 h-1.5" />
-                <p className="mt-1 tabular-nums">{Math.round(Number(progress.completion_percent) || 0)}%</p>
-              </div>
-              {progress.selected_list_item ? (
-                <p className="text-xs">
-                  <span className="text-foreground font-medium">Список: </span>
-                  {progress.selected_list_item}
-                </p>
-              ) : null}
-              <p className="font-mono text-xs break-all opacity-80">id {String(sheetTask.id)}</p>
-            </div>
-          ) : sheetTask ? (
-            <p className="text-muted-foreground text-sm">Нет данных прогресса.</p>
-          ) : null}
-        </SheetContent>
-      </Sheet>
-    </>
   );
 }

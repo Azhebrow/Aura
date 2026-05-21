@@ -15,7 +15,7 @@ export function StatsMetaIconBadge({ icon, tint, size = 14, className }: Props) 
   return (
     <div
       className={cn(
-        'border-border/60 bg-muted/40 inline-flex shrink-0 items-center justify-center rounded-lg border shadow-sm ring-1 ring-foreground/8 dark:bg-muted/25',
+        'aura-surface-control inline-flex shrink-0 items-center justify-center rounded-md border',
         size <= 12 ? 'p-0.5' : 'p-1',
         className
       )}

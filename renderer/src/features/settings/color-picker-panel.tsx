@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Pipette } from 'lucide-react';
+import { Copy, Pipette, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { CFG_COLOR_PRESETS, type CfgColorPreset, normalizeHexColor } from '@/features/settings/cfg-color-presets';
 import { cn } from '@/lib/utils';
 
@@ -18,7 +19,9 @@ type Props = {
 
 export function ColorPickerPanel({ value, onChange, onPresetPick, presets, allowCustom = true }: Props) {
   const [draft, setDraft] = useState(() => normalizeHexColor(value));
+  const [copied, setCopied] = useState(false);
   const palette = presets ?? CFG_COLOR_PRESETS.map((p) => ({ label: p.label, value: p.hex }));
+  const isSelected = (color: string) => draft.toLowerCase() === color.toLowerCase();
 
   useEffect(() => {
     setDraft(value || COLOR_PICKER_DEFAULT);
@@ -29,34 +32,50 @@ export function ColorPickerPanel({ value, onChange, onPresetPick, presets, allow
     onChange(next);
   };
 
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(draft).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
+      {/* Пресеты */}
       <div>
-        <Label className="text-muted-foreground mb-2 block text-xs font-semibold uppercase tracking-wider">
-          Пресеты
+        <Label className="text-muted-foreground mb-3 block text-xs font-semibold uppercase tracking-wider">
+          Популярные цвета
         </Label>
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {palette.map((p) => (
             <button
               key={p.value}
               type="button"
               title={p.label}
               className={cn(
-                'group flex flex-col items-center gap-1 rounded-lg border border-border/60 p-1.5 text-center',
-                'motion-safe:transition-[transform,box-shadow] motion-safe:duration-aura-fast motion-safe:ease-aura',
-                'hover:border-primary/40 hover:shadow-sm active:scale-[0.97]',
-                draft.toLowerCase() === p.value.toLowerCase() && 'border-primary ring-primary/25 ring-2'
+                'group relative flex flex-col items-center gap-2 rounded-xl p-2',
+                'motion-safe:transition-all motion-safe:duration-aura-fast motion-safe:ease-aura',
+                'hover:scale-105 active:scale-[0.95]',
+                isSelected(p.value) ? 'ring-2 ring-primary ring-offset-2' : 'hover:shadow-md'
               )}
               onClick={() => {
                 applyDraft(p.value);
                 onPresetPick?.(p.value);
               }}
             >
-              <span
-                className="size-8 rounded-md border border-foreground/12 shadow-inner ring-1 ring-foreground/8"
+              <div
+                className={cn(
+                  'h-12 w-full rounded-lg border shadow-sm',
+                  isSelected(p.value)
+                    ? 'border-primary/60 shadow-md'
+                    : 'border-border/40 hover:border-border/60'
+                )}
                 style={{ backgroundColor: p.value }}
               />
-              <span className="text-muted-foreground line-clamp-2 w-full text-xs font-medium leading-tight">
+              <span className={cn(
+                'text-xs font-medium leading-tight text-center line-clamp-2 w-full',
+                isSelected(p.value) ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
+              )}>
                 {p.label}
               </span>
             </button>
@@ -65,32 +84,66 @@ export function ColorPickerPanel({ value, onChange, onPresetPick, presets, allow
       </div>
 
       {allowCustom ? (
-        <div className="border-border/60 bg-muted/20 flex flex-col gap-3 rounded-xl border p-3">
-          <div className="flex items-center gap-2">
-            <Pipette className="text-muted-foreground size-4 shrink-0" aria-hidden />
-            <span className="text-xs font-semibold">Свой цвет</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              type="color"
-              aria-label="Выбор цвета"
-              className="border-input h-11 w-14 shrink-0 cursor-pointer rounded-lg border bg-background p-1 shadow-xs"
-              value={normalizeHexColor(draft)}
-              onChange={(e) => applyDraft(e.target.value)}
+        <div className="space-y-4">
+          {/* Превью текущего цвета */}
+          <div className="flex items-center gap-3 rounded-xl bg-muted/30 p-3">
+            <div
+              className="h-16 w-16 shrink-0 rounded-lg border border-border/60 shadow-sm"
+              style={{ backgroundColor: draft }}
             />
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <Label htmlFor="cfg-color-hex" className="text-xs font-medium">
-                HEX
-              </Label>
-              <Input
-                id="cfg-color-hex"
-                className="font-mono text-xs"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onBlur={() => applyDraft(normalizeHexColor(draft))}
-                placeholder="#6366f1"
-                spellCheck={false}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Текущий цвет</p>
+              <p className="font-mono text-sm font-semibold truncate">{draft.toUpperCase()}</p>
+              <p className="text-xs text-muted-foreground mt-1">Нажмите на цвет в сетке для быстрого выбора</p>
+            </div>
+          </div>
+
+          {/* Выбор цвета */}
+          <div className="border-border/60 bg-muted/20 rounded-xl border p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Pipette className="text-muted-foreground size-4 shrink-0" />
+              <span className="text-xs font-semibold">Свой цвет</span>
+            </div>
+
+            {/* Color picker и HEX */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="color"
+                aria-label="Выбор цвета"
+                className="border-input h-12 w-full sm:w-24 shrink-0 cursor-pointer rounded-lg border bg-background p-1 shadow-xs"
+                value={normalizeHexColor(draft)}
+                onChange={(e) => applyDraft(e.target.value)}
               />
+              <div className="flex-1 flex flex-col gap-2">
+                <Label htmlFor="cfg-color-hex" className="text-xs font-medium">
+                  HEX код
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cfg-color-hex"
+                    className="font-mono text-sm"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onBlur={() => applyDraft(normalizeHexColor(draft))}
+                    placeholder="#6366f1"
+                    spellCheck={false}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={copyToClipboard}
+                    className="shrink-0"
+                    title="Копировать в буфер"
+                  >
+                    {copied ? (
+                      <Check className="size-4" />
+                    ) : (
+                      <Copy className="size-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

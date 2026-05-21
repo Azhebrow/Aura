@@ -68,4 +68,26 @@ export interface AuraDatabase {
   getDailyPointsBetween: (startDate: string, endDate: string) => AuraRow[];
   /** Последнее cumulative_points строго до даты. */
   getLastCumulativePointsBefore: (date: string) => number;
+  /** Goals API is available in the full local DB and proxied by the mini-api bridge. */
+  getAllGoals?: () => AuraRow[];
+  getStagesByGoal?: (goalId: string) => AuraRow[];
+  getTasksByStage?: (stageId: string) => AuraRow[];
+  getGoalTaskProgress?: (taskId: string, date: string) => AuraRow | null | undefined;
+  getGoalTasksProgressByDate?: (date: string) => AuraRow[];
+  saveGoalTaskProgress?: (taskId: string, date: string, data: AuraRow) => void;
+  addGoal?: (data: AuraRow) => boolean;
+  updateGoal?: (id: string, data: AuraRow) => void;
+  setGoalCompletedAt?: (id: string, date: string | null) => boolean;
+  deleteGoal?: (id: string) => void;
+  moveGoal?: (id: string, direction: 'up' | 'down') => boolean;
+  addStage?: (data: AuraRow) => boolean;
+  updateStage?: (id: string, data: AuraRow) => void;
+  setStageCompletedAt?: (id: string, date: string | null) => boolean;
+  deleteStage?: (id: string) => void;
+  moveStage?: (id: string, direction: 'up' | 'down') => boolean;
+  addTask?: (data: AuraRow) => boolean;
+  updateTask?: (id: string, data: AuraRow) => void;
+  setTaskCompletedAt?: (id: string, date: string | null) => boolean;
+  deleteTask?: (id: string) => void;
+  moveTask?: (id: string, direction: 'up' | 'down') => boolean;
 }
