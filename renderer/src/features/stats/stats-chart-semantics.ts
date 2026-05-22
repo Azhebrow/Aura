@@ -1,7 +1,7 @@
 import { formatAmount } from '@/shared/lib/money';
-import { formatTimeFromHours } from '@/shared/stats/stats-table-format';
-import type { StatsFormattedTable } from '@/shared/stats/stats-table-format';
-import type { StatsAggregation, StatsGroupBy, StatsMeta, StatsMode, StatsTimeSummary } from '@/shared/stats/types';
+import { formatTimeFromHours } from '@/features/stats/stats-table-format';
+import type { StatsFormattedTable } from '@/features/stats/stats-table-format';
+import type { StatsAggregation, StatsGroupBy, StatsMeta, StatsMode, StatsTimeSummary } from '@/features/stats/types';
 import {
   getChartIconUrl,
   getChartNumericValue,

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import type { AuraDatabase } from '@/types/aura';
-import { aggregateData } from '@/shared/stats/stats-data-aggregator';
-import type { StatsAggregatedRow, StatsControlsState, StatsDayRow, StatsMeta } from '@/shared/stats/types';
-import type { StatsFormattedTable } from '@/shared/stats/stats-table-format';
-import { formatForTable } from '@/shared/stats/stats-table-format';
+import { aggregateData } from '@/features/stats/stats-data-aggregator';
+import type { StatsAggregatedRow, StatsControlsState, StatsDayRow, StatsMeta } from '@/features/stats/types';
+import type { StatsFormattedTable } from '@/features/stats/stats-table-format';
+import { formatForTable } from '@/features/stats/stats-table-format';
 import { buildStatsMeta } from './build-stats-meta';
 import { buildTimePeriodSummary, getRankDailyPointsData, getStatsData } from './stats-data-service';
 import { AURA_DATA_CHANGED } from '@/shared/lib/aura-data-events';
-import type { StatsTimeSummary } from '@/shared/stats/types';
+import type { StatsTimeSummary } from '@/features/stats/types';
 
 export type StatsPipelineResult = {
   dayRows: StatsDayRow[];

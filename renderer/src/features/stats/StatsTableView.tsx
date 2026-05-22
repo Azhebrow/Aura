@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
-import type { StatsFormattedRow, StatsFormattedTable } from '@/shared/stats/stats-table-format';
-import type { StatsMeta, StatsMode } from '@/shared/stats/types';
-import { AURA_STATIC_SEMANTIC, FINANCE_SEMANTIC, MOOD_SCALE } from '@/shared/design/aura-palette';
+import type { StatsFormattedRow, StatsFormattedTable } from '@/features/stats/stats-table-format';
+import type { StatsMeta, StatsMode } from '@/features/stats/types';
+import { AURA_STATIC_SEMANTIC, FINANCE_SEMANTIC, MOOD_SCALE } from '@/shared/config/aura-palette';
 import { IconWithBadge } from '@/components/ui/icon-with-badge';
 import { useDragScroll } from '@/shared/hooks/use-drag-scroll';
 import { cn } from '@/lib/utils';

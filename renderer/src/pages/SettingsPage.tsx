@@ -8,7 +8,7 @@ import { TimerBgSettingsCard } from '@/features/app-settings/AppSettingsTechnica
 import { NutritionTargetsSettingsCard } from '@/features/settings/NutritionTargetsSettingsCard';
 import { FinanceSettingsCard } from '@/features/settings/FinanceSettingsCard';
 import { SettingsReferenceBlock } from '@/features/settings/SettingsReferenceBlock';
-import { getSettingsReference } from '@/features/settings/settings-references';
+import { getSettingsReference } from '@/features/settings/references';
 import { getCfgSectionSpec } from '@/features/settings/cfg-section-specs';
 import { translateCfgSectionSpec } from '@/features/settings/cfg-section-translator';
 import type { CfgFieldDef, CfgSectionSpec } from '@/features/settings/cfg-section-types';

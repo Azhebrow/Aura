@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { coerceTaskColor } from '@/lib/css-color';
 import { playTimerTone } from '@/features/timer/timer-sounds';
-import { getIpcRenderer, sendTimerCompleted, sendTimerStateChanged, type TimerIpcState } from '@/shared/electron/ipc';
+import { getIpcRenderer, sendTimerCompleted, sendTimerStateChanged, type TimerIpcState } from '@/shared/bridge/ipc';
 import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import type { AuraDatabase } from '@/types/aura';
 

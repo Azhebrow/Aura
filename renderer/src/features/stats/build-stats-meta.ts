@@ -7,8 +7,8 @@ import {
   NUTRITION_SEMANTIC,
   RITUAL_SEMANTIC,
   moodColor,
-} from '@/shared/design/aura-palette';
-import type { StatsGroupBy, StatsMeta, StatsMode } from '@/shared/stats/types';
+} from '@/shared/config/aura-palette';
+import type { StatsGroupBy, StatsMeta, StatsMode } from '@/features/stats/types';
 import { loadTaskCategoryConfig, type TaskCategoryKey } from '@/shared/config/task-categories-settings';
 
 const NUTR_CAT: Record<string, { icon: string; color: string }> = {

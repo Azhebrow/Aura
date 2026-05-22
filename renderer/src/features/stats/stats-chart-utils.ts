@@ -1,7 +1,7 @@
 import { normalizeCssColorForPaint } from '@/lib/css-color';
 import { getAuraPublicIconUrlFromName } from '@/shared/lib/aura-icon-url';
-import type { StatsCellValue, StatsMode } from '@/shared/stats/types';
-import type { StatsFormattedRow } from '@/shared/stats/stats-table-format';
+import type { StatsCellValue, StatsMode } from '@/features/stats/types';
+import type { StatsFormattedRow } from '@/features/stats/stats-table-format';
 
 const RAW_ICON_MODULES = import.meta.glob('../../../public/icons/*.svg', {
   query: '?raw',

@@ -5,7 +5,7 @@ import { warmIconsManifest } from '@/features/settings/load-icons-manifest';
 import { ThemeProvider } from '@/features/theme/ThemeContext';
 import { ThemeSync } from '@/features/theme/ThemeSync';
 import { DesignTokensSync } from '@/features/theme/DesignTokensSync';
-import { LanguageProvider } from '@/features/language/LanguageContext';
+import { LanguageProvider } from '@/app/providers/LanguageContext';
 import { ChromeArrowNavigation } from '@/widgets/app-chrome/ChromeArrowNavigation';
 import '@/i18n/config';
 

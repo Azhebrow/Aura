@@ -13,7 +13,7 @@ import { LIST_CONTENT_CN, MEGA_PANEL_BODY_CN } from '@/shared/ui/mega-section-la
 import { ModeSwitchHeader } from '@/shared/ui/mode-switch-header';
 import { STORAGE_KEYS } from '@/shared/config/storage-keys';
 import { LoadingShell } from '@/shared/ui/data-states';
-import { RITUAL_SEMANTIC } from '@/shared/design/aura-palette';
+import { RITUAL_SEMANTIC } from '@/shared/config/aura-palette';
 import { type RitualKind, loadCfg, completedSet } from './rituals-utils';
 import { useAsyncData } from '@/shared/hooks/use-async-data';
 import { useFormMutation } from '@/shared/hooks/use-form-mutation';

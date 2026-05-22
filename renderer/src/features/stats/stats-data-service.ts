@@ -1,5 +1,5 @@
 import type { AuraDatabase, AuraRow } from '@/types/aura';
-import type { StatsDayRow, StatsGroupBy, StatsMode, StatsTimeSummary } from '@/shared/stats/types';
+import type { StatsDayRow, StatsGroupBy, StatsMode, StatsTimeSummary } from '@/features/stats/types';
 import { getCategoryTitle } from '@/shared/config/task-categories-settings';
 import { getCategoryProgresses } from '@/shared/bridge/get-category-progresses';
 import { readNutritionTargets } from '@/shared/lib/nutrition-aggregate';

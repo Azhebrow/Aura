@@ -1,4 +1,4 @@
-import type { StatsAggregation } from '@/shared/stats/types';
+import type { StatsAggregation } from '@/features/stats/types';
 import { UniversalRadioGroup, type UniversalRadioOption } from '@/components/ui/header-segmented-radio';
 
 const OPTIONS: { value: StatsAggregation; label: string; hint: string }[] = [

@@ -1,5 +1,5 @@
 import type { EChartsOption } from 'echarts';
-import { formatTimeFromHours } from '@/shared/stats/stats-table-format';
+import { formatTimeFromHours } from '@/features/stats/stats-table-format';
 import {
   escapeHtml,
   getChartDisplayValue,

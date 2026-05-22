@@ -1,5 +1,5 @@
 import type { AuraDatabase } from '@/types/aura';
-import { DEFAULT_TASK_CATEGORY_COLORS } from '@/shared/design/aura-palette';
+import { DEFAULT_TASK_CATEGORY_COLORS } from '@/shared/config/aura-palette';
 import { TASK_CATEGORY_DEFAULT_META } from '@/shared/config/domain-taxonomy';
 
 export type TaskCategoryKey = 'rituals' | 'time' | 'body' | 'deps';

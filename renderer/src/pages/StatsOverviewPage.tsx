@@ -2,7 +2,7 @@ import { useReducer, useState } from 'react';
 import { ChartColumn, SlidersHorizontal, Table2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
-import type { StatsControlsState } from '@/shared/stats/types';
+import type { StatsControlsState } from '@/features/stats/types';
 import { PageFrame } from '@/widgets/page-frame/PageFrame';
 import { StatsControlsPanel } from '@/features/stats/StatsControlsPanel';
 import { StatsChartView } from '@/features/stats/StatsChartView';

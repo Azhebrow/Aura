@@ -18,7 +18,7 @@ import {
 import type { CSSProperties } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { StatsControlsState, StatsMeta, StatsMode, StatsAggregation } from '@/shared/stats/types';
+import type { StatsControlsState, StatsMeta, StatsMode, StatsAggregation } from '@/features/stats/types';
 import { StatsMetaIconBadge } from './StatsMetaIconBadge';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';

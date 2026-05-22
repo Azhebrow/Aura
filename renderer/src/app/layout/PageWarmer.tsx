@@ -7,6 +7,7 @@ import { loadIconsManifest } from '@/features/settings/load-icons-manifest';
 import { RANK_TIERS, rankImageSrc } from '@/shared/config/ranks-model';
 import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
 import { applyAppearanceScales, readAppearanceScaleSettings } from '@/features/theme/appearance-scale';
+import { todayIsoDate } from '@/shared/lib/dates';
 import { setStartupReadiness, type StartupTask } from './startup-readiness';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 
@@ -49,10 +50,6 @@ const CATALOG_ICON_NAMES = [
   'clipboard-check',
   'check-line',
 ] as const;
-
-function todayYmd() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return Promise.race([
@@ -270,7 +267,7 @@ export function PageWarmer({ onDone }: { onDone: () => void }) {
     publish();
 
     const run = async () => {
-      const date = todayYmd();
+      const date = todayIsoDate();
 
       const dbPromise = runTask('db', async () => {
         await waitForAuraDatabase();

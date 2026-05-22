@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { calculatePresetNutrition, calculateProductNutrition } from '@/shared/lib/nutrition-calc';
 import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
+import { NUTRITION_GROUP_LABEL, NUTRITION_GROUP_ICON, NUTRITION_GROUPS } from '@/shared/config/nutrition-meta';
 import { Apple, UtensilsCrossed } from 'lucide-react';
 import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
 import type { AuraDatabase } from '@/types/aura';
@@ -37,18 +38,7 @@ type Props = {
   trigger?: ReactNode;
 };
 
-const NUTRITION_GROUP_ICON: Record<string, string> = {
-  proteins: 'beef',
-  fats: 'flame',
-  carbs: 'wheat',
-};
-
-const NUTRITION_GROUP_ORDER = ['proteins', 'fats', 'carbs'] as const;
-const NUTRITION_GROUP_LABEL: Record<string, string> = {
-  proteins: 'Белки',
-  fats: 'Жиры',
-  carbs: 'Углеводы',
-};
+const NUTRITION_GROUP_ORDER = NUTRITION_GROUPS;
 
 export function AddNutritionDialog({ db, dateString, onAdded, onSaved, editEntry, open, onOpenChange, trigger }: Props) {
   const { t } = useTranslation('common');

@@ -7,26 +7,14 @@ import { cn } from '@/lib/utils';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import type { TimerTaskSelection } from '@/features/timer/use-timer-session';
 import { playTimerTone } from '@/features/timer/timer-sounds';
+import { useAmbientAudio, formatAmbientTrackName } from '@/features/timer/use-ambient-audio';
 
 const BREAK_DURATION_SEC = 15 * 60;
 const BREAK_ALARM_REPEAT_MS = 2400;
 
 type BreakPhase = 'idle' | 'countdown' | 'alarm';
 type TimerDialMode = 'time' | 'ring' | 'quote';
-const AMBIENT_VOLUME_KEY = 'timer-ambient-volume';
-
-type AmbientTrack = {
-  id: string;
-  name: string;
-  icon?: string;
-  fileName: string;
-};
-
-type AmbientDefaults = {
-  timer: string;
-  stopwatch: string;
-  break: string;
-};
+import type { AmbientTrack, AmbientDefaults } from '@/features/timer/use-ambient-audio';
 
 type Props = {
   open: boolean;
@@ -52,109 +40,6 @@ function formatClock(seconds: number) {
   const mins = Math.floor(clamped / 60);
   const secs = clamped % 60;
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-function readStoredVolume() {
-  try {
-    const raw = localStorage.getItem(AMBIENT_VOLUME_KEY);
-    if (!raw) return 50;
-    const parsed = Number(raw);
-    if (!Number.isFinite(parsed)) return 50;
-    return Math.min(100, Math.max(0, Math.round(parsed * 100)));
-  } catch {
-    return 50;
-  }
-}
-
-function storeVolume(value: number) {
-  try {
-    localStorage.setItem(AMBIENT_VOLUME_KEY, String(value / 100));
-  } catch {
-    /* ignore */
-  }
-}
-
-const ambientBlobCache = new Map<string, string>();
-
-function resolveAmbientFileUrl(fileName: string): string | null {
-  if (!fileName) return null;
-  if (ambientBlobCache.has(fileName)) return ambientBlobCache.get(fileName)!;
-
-  const userDataPath = window.__auraUserDataPath;
-  const appPath = window.__auraAppPath;
-  const runtimeRequire =
-    typeof globalThis !== 'undefined' && typeof (globalThis as { require?: unknown }).require === 'function'
-      ? ((globalThis as { require: (id: string) => unknown }).require as (id: string) => unknown)
-      : typeof require === 'function'
-        ? require
-        : null;
-
-  if (runtimeRequire) {
-    try {
-      const fs = runtimeRequire('fs') as {
-        existsSync: (path: string) => boolean;
-        readFileSync: (path: string) => Buffer;
-      };
-      const pathMod = runtimeRequire('path') as { join: (...parts: string[]) => string };
-      const candidates: string[] = [];
-      if (appPath) candidates.push(pathMod.join(appPath, 'public', 'ambient-stock', fileName));
-      if (userDataPath) candidates.push(pathMod.join(userDataPath, 'ambient', fileName));
-      const existing = candidates.find((c) => fs.existsSync(c));
-      if (existing) {
-        const buf = fs.readFileSync(existing);
-        const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-        const ab = new ArrayBuffer(bytes.byteLength);
-        new Uint8Array(ab).set(bytes);
-        const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
-        const mime =
-          ext === 'mp3' ? 'audio/mpeg' :
-          ext === 'm4a' ? 'audio/mp4' :
-          ext === 'ogg' ? 'audio/ogg' :
-          ext === 'wav' ? 'audio/wav' :
-          ext === 'flac' ? 'audio/flac' :
-          ext === 'aac' ? 'audio/aac' :
-          'audio/mpeg';
-        const blob = new Blob([ab], { type: mime });
-        const url = URL.createObjectURL(blob);
-        ambientBlobCache.set(fileName, url);
-        return url;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-  return null;
-}
-
-function parseAmbientTracks(db: AuraDatabase): AmbientTrack[] {
-  return db
-    .getAll('cfg_ambient_music')
-    .map((row) => ({
-      id: String(row.id ?? ''),
-      name: String(row.name ?? row.title ?? row.id ?? 'Ambient'),
-      icon: typeof row.icon === 'string' && row.icon.trim() ? row.icon.trim() : undefined,
-      fileName: typeof row.file_name === 'string' ? row.file_name.trim() : '',
-    }))
-    .filter((row) => row.id && row.fileName)
-    .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-}
-
-function formatAmbientTrackName(name: string): string {
-  const base = name.replace(/\.(m4a|mp3|ogg|wav|flac|aac)$/i, '');
-  return base
-    .split(/[-_]+/g)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
-function parseAmbientDefaults(row: AuraRow | null): AmbientDefaults {
-  const pick = (v: unknown) => (v == null ? '' : String(v));
-  return {
-    timer: pick(row?.ambient_default_timer),
-    stopwatch: pick(row?.ambient_default_stopwatch),
-    break: pick(row?.ambient_default_break),
-  };
 }
 
 function BigRingDial({
@@ -263,24 +148,25 @@ export function TimerFullscreenDialog({
       db.saveAppSettings({ ...cur, id: String(cur.id ?? 'app_settings_1'), theme_mode: mode });
     } catch { /* ignore */ }
   }, [db, setTheme]);
-  const [ambientTracks, setAmbientTracks] = useState<AmbientTrack[]>([]);
-  const [ambientDefaults, setAmbientDefaults] = useState<AmbientDefaults>({ timer: '', stopwatch: '', break: '' });
-  const [ambientTrackId, setAmbientTrackId] = useState('');
-  const [ambientVolume, setAmbientVolume] = useState(() => readStoredVolume());
-  const [ambientExpanded, setAmbientExpanded] = useState(false);
+
   const [dialMode, setDialMode] = useState<TimerDialMode>('time');
   const [breakPhase, setBreakPhase] = useState<BreakPhase>('idle');
   const [breakRemainingSec, setBreakRemainingSec] = useState(BREAK_DURATION_SEC);
 
   const previousTrackBeforeBreakRef = useRef('');
   const shouldResumeTimerAfterBreakRef = useRef(false);
-  const userPickedAmbientRef = useRef(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioTrackRef = useRef('');
 
   const hasTask = Boolean(selectedTask);
   const canStart = hasTask && !dayLocked;
   const shouldPlayAmbient = open && ((breakPhase === 'countdown') || (breakPhase === 'idle' && isRunning));
+
+  const ambient = useAmbientAudio({ open, db, timerType, shouldPlay: shouldPlayAmbient });
+  const { trackId: ambientTrackId, setTrackId: setAmbientTrackId, volume: ambientVolume,
+    tracks: ambientTracks, defaults: ambientDefaults, expanded: ambientExpanded,
+    setExpanded: setAmbientExpanded, currentTrack: currentAmbientTrack,
+    userPickedRef: userPickedAmbientRef, dispose: disposeAmbientAudio, seekRandomly: seekAmbientRandomly,
+  } = ambient;
+
   const canCycleDial = timerType === 'timer' && targetDurationSec > 0 && (isRunning || elapsedTimeSec > 0);
   const canChangeTimerType = !isRunning && elapsedTimeSec <= 0 && breakPhase === 'idle' && !dayLocked;
   const ringPct = timerType === 'timer' && targetDurationSec > 0
@@ -292,11 +178,6 @@ export function TimerFullscreenDialog({
     [elapsedTimeSec, isRunning, ringPct]
   );
   const remainingTimeText = useMemo(() => formatRemainingText(remainingSec), [remainingSec]);
-
-  const currentAmbientTrack = useMemo(
-    () => ambientTracks.find((t) => t.id === ambientTrackId) ?? null,
-    [ambientTrackId, ambientTracks]
-  );
 
   type AmbientOption = { value: string; label: string; icon?: React.ReactNode };
   const ambientOptions = useMemo<AmbientOption[]>(
@@ -310,6 +191,7 @@ export function TimerFullscreenDialog({
     ],
     [ambientTracks]
   );
+
   useEffect(() => {
     if (!canCycleDial && dialMode !== 'time') setDialMode('time');
   }, [canCycleDial, dialMode]);
@@ -319,65 +201,15 @@ export function TimerFullscreenDialog({
     setDialMode((c) => c === 'time' ? 'ring' : c === 'ring' ? 'quote' : 'time');
   }, [canCycleDial]);
 
-  const disposeAmbientAudio = useCallback((resetPosition: boolean) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    try { audio.pause(); if (resetPosition) audio.currentTime = 0; audio.src = ''; } catch { /* ignore */ }
-    audioRef.current = null;
-    audioTrackRef.current = '';
-  }, []);
-
-  const seekAmbientRandomly = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const apply = () => {
-      const d = audio.duration;
-      if (!Number.isFinite(d) || d <= 1) return;
-      audio.currentTime = Math.random() * Math.max(0, d - 0.25);
-      if (shouldPlayAmbient) void audio.play().catch(() => {});
-    };
-    if (Number.isFinite(audio.duration) && audio.duration > 1) { apply(); return; }
-    audio.addEventListener('loadedmetadata', apply, { once: true });
-    try { audio.load(); } catch { /* ignore */ }
-  }, [shouldPlayAmbient]);
-
-  const handleCloseRequest = useCallback(() => {
-    if (lockClose) return;
-    if (breakPhase !== 'idle') {
-      const restore = previousTrackBeforeBreakRef.current;
-      setBreakPhase('idle');
-      setBreakRemainingSec(BREAK_DURATION_SEC);
-      setAmbientTrackId(restore || '');
-      previousTrackBeforeBreakRef.current = '';
-      shouldResumeTimerAfterBreakRef.current = false;
-    }
-    if (isRunning) onPause();
-    onOpenChange(false);
-  }, [breakPhase, isRunning, lockClose, onOpenChange, onPause]);
-
+  // Reset break state when dialog closes
   useEffect(() => {
     if (!open) {
       setBreakPhase('idle');
       setBreakRemainingSec(BREAK_DURATION_SEC);
-      setAmbientTrackId('');
-      setAmbientExpanded(false);
-      userPickedAmbientRef.current = false;
       previousTrackBeforeBreakRef.current = '';
       shouldResumeTimerAfterBreakRef.current = false;
-      disposeAmbientAudio(true);
-      return;
     }
-    if (!db) { setAmbientTracks([]); setAmbientDefaults({ timer: '', stopwatch: '', break: '' }); return; }
-    setAmbientTracks(parseAmbientTracks(db));
-    setAmbientDefaults(parseAmbientDefaults((db.getAppSettings() ?? null) as AuraRow | null));
-  }, [db, disposeAmbientAudio, open]);
-
-  useEffect(() => {
-    if (!open || breakPhase !== 'idle' || ambientTrackId) return;
-    if (userPickedAmbientRef.current) return;
-    const next = timerType === 'timer' ? ambientDefaults.timer : ambientDefaults.stopwatch;
-    if (next) setAmbientTrackId(next);
-  }, [ambientDefaults.stopwatch, ambientDefaults.timer, ambientTrackId, breakPhase, open, timerType]);
+  }, [open]);
 
   useEffect(() => {
     if (!open || breakPhase !== 'countdown') return;
@@ -395,33 +227,22 @@ export function TimerFullscreenDialog({
     if (!open || breakPhase !== 'alarm') return;
     const first = window.setTimeout(() => playTimerTone('break_alarm'), BREAK_ALARM_REPEAT_MS);
     const repeat = window.setInterval(() => playTimerTone('break_alarm'), BREAK_ALARM_REPEAT_MS * 2);
-    return () => {
-      window.clearTimeout(first);
-      window.clearInterval(repeat);
-    };
+    return () => { window.clearTimeout(first); window.clearInterval(repeat); };
   }, [open, breakPhase]);
 
-  useEffect(() => {
-    storeVolume(ambientVolume);
-    if (audioRef.current) audioRef.current.volume = ambientVolume / 100;
-  }, [ambientVolume]);
-
-  useEffect(() => {
-    if (!open) return;
-    if (!ambientTrackId || !currentAmbientTrack) { disposeAmbientAudio(false); return; }
-    const nextUrl = resolveAmbientFileUrl(currentAmbientTrack.fileName);
-    if (!nextUrl) { disposeAmbientAudio(false); return; }
-    if (!audioRef.current || audioTrackRef.current !== ambientTrackId || audioRef.current.src !== nextUrl) {
-      disposeAmbientAudio(true);
-      const a = new Audio(nextUrl);
-      a.loop = true; a.volume = ambientVolume / 100;
-      audioRef.current = a; audioTrackRef.current = ambientTrackId;
+  const handleCloseRequest = useCallback(() => {
+    if (lockClose) return;
+    if (breakPhase !== 'idle') {
+      const restore = previousTrackBeforeBreakRef.current;
+      setBreakPhase('idle');
+      setBreakRemainingSec(BREAK_DURATION_SEC);
+      setAmbientTrackId(restore || '');
+      previousTrackBeforeBreakRef.current = '';
+      shouldResumeTimerAfterBreakRef.current = false;
     }
-    if (!audioRef.current) return;
-    audioRef.current.volume = ambientVolume / 100;
-    if (shouldPlayAmbient) void audioRef.current.play().catch(() => {});
-    else audioRef.current.pause();
-  }, [ambientTrackId, ambientVolume, currentAmbientTrack, disposeAmbientAudio, open, shouldPlayAmbient]);
+    if (isRunning) onPause();
+    onOpenChange(false);
+  }, [breakPhase, isRunning, lockClose, onOpenChange, onPause, setAmbientTrackId]);
 
   const startBreak = useCallback(() => {
     previousTrackBeforeBreakRef.current = ambientTrackId;
@@ -431,19 +252,18 @@ export function TimerFullscreenDialog({
     setBreakPhase('countdown');
     if (ambientDefaults.break) { userPickedAmbientRef.current = false; setAmbientTrackId(ambientDefaults.break); }
     else setAmbientTrackId('');
-  }, [ambientDefaults.break, ambientTrackId, isRunning, onPause]);
+  }, [ambientDefaults.break, ambientTrackId, isRunning, onPause, setAmbientTrackId, userPickedAmbientRef]);
 
   const finishBreak = useCallback(
     (resumeTimer: boolean) => {
       setBreakPhase('idle');
       setBreakRemainingSec(BREAK_DURATION_SEC);
-      const restore = previousTrackBeforeBreakRef.current;
-      setAmbientTrackId(restore || '');
+      setAmbientTrackId(previousTrackBeforeBreakRef.current || '');
       if (resumeTimer && shouldResumeTimerAfterBreakRef.current && !isRunning && hasTask && !dayLocked) onStart();
       previousTrackBeforeBreakRef.current = '';
       shouldResumeTimerAfterBreakRef.current = false;
     },
-    [dayLocked, hasTask, isRunning, onStart]
+    [dayLocked, hasTask, isRunning, onStart, setAmbientTrackId]
   );
 
   const subtitle =
@@ -839,7 +659,7 @@ export function TimerFullscreenDialog({
                     min={0}
                     max={100}
                     value={ambientVolume}
-                    onChange={(e) => setAmbientVolume(Number(e.target.value))}
+                    onChange={(e) => ambient.setVolume(Number(e.target.value))}
                     className="h-1 w-14 shrink-0 cursor-pointer appearance-none rounded-full sm:w-20"
                     style={volumeTrackStyle}
                     aria-label="Громкость"

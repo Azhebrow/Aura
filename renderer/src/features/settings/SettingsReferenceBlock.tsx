@@ -13,8 +13,8 @@ import {
   Palette,
   Sun,
 } from 'lucide-react';
-import type { SettingsReference, TaskTypeGuide } from '@/features/settings/settings-references';
-import { SETTINGS_REFERENCES } from '@/features/settings/settings-references';
+import type { SettingsReference, TaskTypeGuide } from '@/features/settings/references';
+import { SETTINGS_REFERENCES } from '@/features/settings/references';
 import { cn } from '@/lib/utils';
 
 /* ─── type metadata ──────────────────────────────────────────────────────── */

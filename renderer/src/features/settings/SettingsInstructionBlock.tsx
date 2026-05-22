@@ -1,4 +1,4 @@
-import type { SettingsInstruction } from '@/features/settings/settings-instructions';
+import type { SettingsInstruction } from '@/features/settings/settings-instructions-simple';
 
 type Props = {
   instruction: SettingsInstruction;

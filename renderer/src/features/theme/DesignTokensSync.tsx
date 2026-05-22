@@ -3,7 +3,7 @@ import { waitForAuraDatabase } from '@/shared/bridge/wait-for-database';
 import {
   applyFinanceSemanticCssVars,
   applyTaskCategoryCssVarsFromSettings,
-} from '@/shared/design/aura-palette';
+} from '@/shared/config/aura-palette';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 
 /**

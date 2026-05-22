@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from 'react';
 import {
   Archive,
@@ -15,26 +14,15 @@ import {
   ChevronUp,
   Check,
   Eye,
-  Palette,
   Pencil,
   Plus,
   Target,
   Trash2,
-  XIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddListButton } from '@/components/ui/add-list-button';
 import { IconWithBadge } from '@/components/ui/icon-with-badge';
-import {
-  Dialog,
-  DialogClose,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { UniversalModalContent } from '@/components/ui/universal-modal';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
@@ -43,27 +31,22 @@ import { invalidateBootstrapCache } from '@/shared/bridge/mini-app-client';
 import { clearReadCache } from '@/shared/bridge/init-web-db-bridge';
 import { dispatchAuraDataChanged } from '@/shared/lib/aura-data-events';
 import { detectAuraDataSourceMode } from '@/shared/bridge/aura-data-source';
-import { ColorPickerPanel } from '@/features/settings/color-picker-panel';
-import { IconPickerPanel } from '@/features/settings/icon-picker-panel';
-import { warmIconsManifest } from '@/features/settings/load-icons-manifest';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
+import { GoalEditDialog } from './GoalEditDialog';
+import { GoalTaskDialog } from './GoalTaskDialog';
 import { cn } from '@/lib/utils';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import {
   LIST_SCROLL_CONTAINER_CN,
 } from '@/shared/ui/mega-section-layout';
 import { ModeSwitchHeader } from '@/shared/ui/mode-switch-header';
-import { ActAffixValueField, ActModalFooter } from '@/features/act/ActModal';
 import { LoadingShell } from '@/shared/ui/data-states';
 import { ANIM } from '@/shared/lib/animation-classes';
 import { todayIsoDate } from '@/shared/lib/dates';
 import {
   type GoalsMode,
-  type TaskType,
   type GoalsDbApi,
   RAW_BUTTON_FOCUS_CN,
-  CFG_DIALOG_INPUT_CN,
-  CFG_DIALOG_ICON_TRIGGER_CN,
   GOALS_RITUALS_ICON_BTN_CN,
   GOALS_RITUALS_TOOLBAR_ROW_CN,
   GOALS_GLOBAL_SCOPE_DATE,
@@ -78,411 +61,17 @@ import {
 
 const GOAL_TASK_ROW_CN = 'flex items-start gap-2.5 px-3 py-2.5 aura-tx-colors';
 
-function CfgLikeDialogRow({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="grid grid-cols-1 border-b border-[var(--aura-border-soft)] last:border-b-0 sm:grid-cols-[minmax(9rem,30%)_1fr] sm:divide-x sm:divide-[var(--aura-border-soft)]">
-      <div className="bg-[var(--aura-surface-panel)] flex items-center justify-center px-2 py-2 text-center sm:min-h-9 sm:px-3">
-        <Label htmlFor={htmlFor} className="text-foreground cursor-default text-xs font-semibold leading-snug break-words">
-          {label}
-        </Label>
-      </div>
-      <div className="flex min-w-0 w-full flex-col items-center justify-center px-2 py-2 sm:min-h-9 sm:px-3">{children}</div>
-    </div>
-  );
-}
 
-function GoalEditDialog({
-  open,
-  onOpenChange,
-  title,
-  initial,
-  supportsColor,
-  onSubmit,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  initial: { title: string; description: string; icon: string; color: string; completedAt?: string };
-  supportsColor: boolean;
-  onSubmit: (v: { title: string; description: string; icon: string; color: string; completedAt: string | null }) => void;
-}) {
-  const [name, setName] = useState(initial.title);
-  const [desc, setDesc] = useState(initial.description);
-  const [icon, setIcon] = useState(initial.icon);
-  const [color, setColor] = useState(initial.color);
-  const [completedAt, setCompletedAt] = useState(asIsoDate(initial.completedAt));
-  const [dialogSub, setDialogSub] = useState<'form' | 'color'>('form');
-  const [iconPickerOpen, setIconPickerOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setName(initial.title);
-    setDesc(initial.description);
-    setIcon(initial.icon);
-    setColor(initial.color);
-    setCompletedAt(asIsoDate(initial.completedAt));
-    setDialogSub('form');
-    setIconPickerOpen(false);
-  }, [open, initial]);
-
-  const handleMainOpenChange = (next: boolean) => {
-    if (!next) setIconPickerOpen(false);
-    onOpenChange(next);
-  };
-
-  return (
-    <>
-      <Dialog open={open} onOpenChange={handleMainOpenChange}>
-        <UniversalModalContent size="lg" showCloseButton={false}>
-          <DialogHeader className={cn('shrink-0 px-6 pt-5', dialogSub === 'color' && 'border-b border-border/80 pb-3')}>
-            {dialogSub === 'form' ? (
-              <div className="flex min-h-10 items-center gap-2.5">
-                <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <Target className="size-4" />
-                  <DialogTitle>{title}</DialogTitle>
-                </div>
-                <DialogClose asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-              className="aura-action-icon p-0"
-                  >
-                    <XIcon className="size-4" />
-                    <span className="sr-only">Close</span>
-                  </Button>
-                </DialogClose>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-2">
-                <Button type="button" size="sm" variant="ghost" className="px-2 text-xs" onClick={() => setDialogSub('form')}>
-                  ← Назад
-                </Button>
-                <DialogTitle className="text-sm">
-                  <span className="inline-flex items-center gap-2">
-                    <Palette className="size-4" />
-                    <span>Цвет</span>
-                  </span>
-                </DialogTitle>
-                <DialogClose asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="aura-action-icon p-0"
-                  >
-                    <XIcon className="size-4" />
-                    <span className="sr-only">Close</span>
-                  </Button>
-                </DialogClose>
-              </div>
-            )}
-          </DialogHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
-            {dialogSub === 'form' ? (
-              <div className="overflow-hidden rounded-lg border border-border">
-                <CfgLikeDialogRow label="Название" htmlFor="goal-edit-title">
-                  <Input id="goal-edit-title" value={name} onChange={(e) => setName(e.target.value)} placeholder="Название" className={CFG_DIALOG_INPUT_CN} />
-                </CfgLikeDialogRow>
-                <CfgLikeDialogRow label="Описание" htmlFor="goal-edit-description">
-                  <Textarea
-                    id="goal-edit-description"
-                    value={desc}
-                    onChange={(e) => setDesc(e.target.value)}
-                    placeholder="Описание"
-                    rows={4}
-                    className="border-input bg-background w-full min-w-0 resize-y rounded-md border px-3 py-2 text-center text-sm shadow-xs"
-                  />
-                </CfgLikeDialogRow>
-                <CfgLikeDialogRow label="Иконка">
-                  <button type="button" className={CFG_DIALOG_ICON_TRIGGER_CN} onMouseEnter={warmIconsManifest} onFocus={warmIconsManifest} onClick={() => setIconPickerOpen(true)}>
-                    <AuraThemedIcon name={icon || null} className="size-5 shrink-0" />
-                    <span className="text-muted-foreground min-w-0 truncate font-mono text-xs">{icon || '—'}</span>
-                  </button>
-                </CfgLikeDialogRow>
-                {supportsColor ? (
-                  <CfgLikeDialogRow label="Цвет">
-                    <button
-                      type="button"
-                      className={cn(
-                        'border-input h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-xs aura-tx-opacity hover:opacity-90',
-                        RAW_BUTTON_FOCUS_CN
-                      )}
-                      style={{ backgroundColor: color || '#64748b' }}
-                      onClick={() => setDialogSub('color')}
-                    />
-                  </CfgLikeDialogRow>
-                ) : null}
-                <CfgLikeDialogRow label="Дата завершения" htmlFor="goal-edit-completed-at">
-                  <div className="flex w-full items-center justify-center gap-2">
-                    <Input
-                      id="goal-edit-completed-at"
-                      type="date"
-                      className={CFG_DIALOG_INPUT_CN}
-                      value={completedAt}
-                      onChange={(e) => setCompletedAt(e.target.value)}
-                    />
-                    <Button type="button" size="sm" variant="ghost" className="h-9 shrink-0 px-2" onClick={() => setCompletedAt('')}>
-                      Сброс
-                    </Button>
-                  </div>
-                </CfgLikeDialogRow>
-              </div>
-            ) : (
-              <div className="min-w-0 w-full rounded-lg border border-border bg-background p-2">
-                <ColorPickerPanel
-                  value={color}
-                  onChange={setColor}
-                  onPresetPick={(value) => {
-                    setColor(value);
-                    setDialogSub('form');
-                  }}
-                />
-              </div>
-            )}
-          </div>
-          {dialogSub === 'form' ? (
-            <ActModalFooter
-              cancelLabel="Отмена"
-              submitLabel="Сохранить"
-              onCancel={() => handleMainOpenChange(false)}
-              onSubmit={() => {
-                onSubmit({
-                  title: name.trim(),
-                  description: desc.trim(),
-                  icon: icon.trim(),
-                  color: color.trim() || 'var(--primary)',
-                  completedAt: completedAt || null,
-                });
-                handleMainOpenChange(false);
-              }}
-            />
-          ) : null}
-        </UniversalModalContent>
-      </Dialog>
-      <Dialog open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
-        <UniversalModalContent size="picker" scroll="content" className="flex max-h-[min(92svh,48rem)] flex-col gap-0 p-0" showCloseButton={false}>
-          <DialogHeader className="shrink-0 border-b border-border/80 px-4 py-3 sm:px-5">
-            <div className="flex items-center justify-between gap-2">
-              <Button type="button" size="sm" variant="ghost" className="px-2 text-xs" onClick={() => setIconPickerOpen(false)}>
-                ← Назад
-              </Button>
-              <DialogTitle className="text-sm">
-                <span className="inline-flex items-center gap-2">
-                  <Pencil className="size-4" />
-                  <span>Иконка</span>
-                </span>
-              </DialogTitle>
-              <DialogClose asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="aura-action-icon p-0"
-                >
-                  <XIcon className="size-4" />
-                  <span className="sr-only">Close</span>
-                </Button>
-              </DialogClose>
-            </div>
-          </DialogHeader>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-5">
-            <IconPickerPanel
-              current={icon || undefined}
-              onPick={(v) => {
-                setIcon(v);
-                setIconPickerOpen(false);
-              }}
-            />
-          </div>
-        </UniversalModalContent>
-      </Dialog>
-    </>
-  );
-}
-
-function GoalTaskDialog({
-  open,
-  onOpenChange,
-  initial,
-  onSubmit,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  initial: { title: string; description: string; taskType: TaskType; targetValue: string; unit: string; icon: string };
-  onSubmit: (v: { title: string; description: string; taskType: TaskType; targetValue: number; unit: string; icon: string }) => void;
-}) {
-  const [name, setName] = useState(initial.title);
-  const [desc, setDesc] = useState(initial.description);
-  const [taskType, setTaskType] = useState<TaskType>(initial.taskType);
-  const [targetValue, setTargetValue] = useState(initial.targetValue);
-  const [unit, setUnit] = useState(initial.unit);
-  const [icon, setIcon] = useState(initial.icon);
-  const [iconPickerOpen, setIconPickerOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setName(initial.title);
-    setDesc(initial.description);
-    setTaskType(initial.taskType);
-    setTargetValue(initial.targetValue);
-    setUnit(initial.unit);
-    setIcon(initial.icon);
-    setIconPickerOpen(false);
-  }, [open, initial]);
-
-  const handleMainOpenChange = (next: boolean) => {
-    if (!next) setIconPickerOpen(false);
-    onOpenChange(next);
-  };
-
-  return (
-    <>
-      <Dialog open={open} onOpenChange={handleMainOpenChange}>
-        <UniversalModalContent size="lg" showCloseButton={false}>
-          <DialogHeader className="shrink-0 px-6 pt-5">
-            <div className="flex min-h-10 items-center gap-2.5">
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <Target className="size-4" />
-                <DialogTitle>Задача этапа</DialogTitle>
-              </div>
-              <DialogClose asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="aura-action-icon p-0"
-                >
-                  <XIcon className="size-4" />
-                  <span className="sr-only">Close</span>
-                </Button>
-              </DialogClose>
-            </div>
-          </DialogHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
-            <div className="overflow-hidden rounded-lg border border-border">
-              <CfgLikeDialogRow label="Название" htmlFor="goal-task-title">
-                <Input id="goal-task-title" value={name} onChange={(e) => setName(e.target.value)} placeholder="Название" className={CFG_DIALOG_INPUT_CN} />
-              </CfgLikeDialogRow>
-              <CfgLikeDialogRow label="Описание" htmlFor="goal-task-description">
-                <Textarea
-                  id="goal-task-description"
-                  value={desc}
-                  onChange={(e) => setDesc(e.target.value)}
-                  placeholder="Описание"
-                  rows={3}
-                  className="border-input bg-background w-full min-w-0 resize-y rounded-md border px-3 py-2 text-center text-sm shadow-xs"
-                />
-              </CfgLikeDialogRow>
-              <CfgLikeDialogRow label="Иконка">
-                <button type="button" className={CFG_DIALOG_ICON_TRIGGER_CN} onClick={() => setIconPickerOpen(true)}>
-                  <AuraThemedIcon name={icon || null} className="size-5 shrink-0" />
-                  <span className="text-muted-foreground min-w-0 truncate font-mono text-xs">{icon || '—'}</span>
-                </button>
-              </CfgLikeDialogRow>
-              <CfgLikeDialogRow label="Тип">
-                <div className="flex w-full min-w-0 max-w-full gap-2">
-                  <Button
-                    type="button"
-                    className="h-9 min-h-0 min-w-0 flex-1 basis-0 justify-center px-3"
-                    variant={taskType === 'checkbox' ? 'default' : 'outline'}
-                    onClick={() => setTaskType('checkbox')}
-                  >
-                    <span className="min-w-0 truncate">Чекбокс</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    className="h-9 min-h-0 min-w-0 flex-1 basis-0 justify-center px-3"
-                    variant={taskType === 'number' ? 'default' : 'outline'}
-                    onClick={() => setTaskType('number')}
-                  >
-                    <span className="min-w-0 truncate">Число</span>
-                  </Button>
-                </div>
-              </CfgLikeDialogRow>
-              {taskType === 'number' ? (
-                <CfgLikeDialogRow label="Цель / Ед.">
-                  <div className="grid w-full grid-cols-2 gap-2">
-                    <ActAffixValueField
-                      id="goal-task-target"
-                      ariaLabel="Цель"
-                      value={targetValue}
-                      onCommit={setTargetValue}
-                      placeholder="Цель"
-                      inputKind="number"
-                      suffix={unit.trim() || 'ед.'}
-                    />
-                    <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Ед." className={CFG_DIALOG_INPUT_CN} />
-                  </div>
-                </CfgLikeDialogRow>
-              ) : null}
-            </div>
-          </div>
-          <ActModalFooter
-            cancelLabel="Отмена"
-            submitLabel="Сохранить"
-            onCancel={() => handleMainOpenChange(false)}
-            onSubmit={() => {
-              onSubmit({
-                title: name.trim(),
-                description: desc.trim(),
-                taskType,
-                targetValue: Number(targetValue || 0),
-                unit: unit.trim(),
-                icon: icon.trim(),
-              });
-              handleMainOpenChange(false);
-            }}
-          />
-        </UniversalModalContent>
-      </Dialog>
-      <Dialog open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
-        <UniversalModalContent size="picker" scroll="content" className="flex max-h-[min(92svh,48rem)] flex-col gap-0 p-0" showCloseButton={false}>
-          <DialogHeader className="shrink-0 border-b border-border/80 px-4 py-3 sm:px-5">
-            <div className="flex items-center justify-between gap-2">
-              <Button type="button" size="sm" variant="ghost" className="px-2 text-xs" onClick={() => setIconPickerOpen(false)}>
-                ← Назад
-              </Button>
-              <DialogTitle className="text-sm">
-                <span className="inline-flex items-center gap-2">
-                  <Pencil className="size-4" />
-                  <span>Иконка</span>
-                </span>
-              </DialogTitle>
-              <DialogClose asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="aura-action-icon p-0"
-                >
-                  <XIcon className="size-4" />
-                  <span className="sr-only">Close</span>
-                </Button>
-              </DialogClose>
-            </div>
-          </DialogHeader>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-5">
-            <IconPickerPanel
-              current={icon || undefined}
-              onPick={(v) => {
-                setIcon(v);
-                setIconPickerOpen(false);
-              }}
-            />
-          </div>
-        </UniversalModalContent>
-      </Dialog>
-    </>
-  );
+function bootstrapToSortedMap(
+  raw: Record<string, AuraRow[]> | undefined,
+  sortKey: string,
+): Map<string, AuraRow[]> | null {
+  if (!raw || !Object.keys(raw).length) return null;
+  const out = new Map<string, AuraRow[]>();
+  for (const [key, rows] of Object.entries(raw)) {
+    out.set(key, [...rows].sort((a, b) => Number(a[sortKey] ?? 0) - Number(b[sortKey] ?? 0)));
+  }
+  return out;
 }
 
 export function GoalsManagementPanel() {
@@ -521,40 +110,26 @@ export function GoalsManagementPanel() {
   }, [dbx, ritualsBootstrap?.goals, waitForBootstrap, dataTick]);
 
   const stagesByGoal = useMemo(() => {
+    const fromBootstrap = bootstrapToSortedMap(ritualsBootstrap?.stagesByGoal, 'order_index');
+    if (fromBootstrap) return fromBootstrap;
     const out = new Map<string, AuraRow[]>();
-    if (!dbx || !dbx.getStagesByGoal) return out;
-    if (ritualsBootstrap?.stagesByGoal && Object.keys(ritualsBootstrap.stagesByGoal).length) {
-      for (const [goalId, rows] of Object.entries(ritualsBootstrap.stagesByGoal)) {
-        const sorted = [...rows].sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
-        out.set(goalId, sorted);
-      }
-      return out;
-    }
-    if (waitForBootstrap) return out;
+    if (waitForBootstrap || !dbx?.getStagesByGoal) return out;
     for (const g of goals) {
       const gid = String(g.id);
-      const stages = (dbx.getStagesByGoal(gid) ?? []).sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
-      out.set(gid, stages);
+      out.set(gid, (dbx.getStagesByGoal(gid) ?? []).sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0)));
     }
     return out;
   }, [dbx, goals, ritualsBootstrap?.stagesByGoal, waitForBootstrap, dataTick]);
 
   const tasksByStage = useMemo(() => {
+    const fromBootstrap = bootstrapToSortedMap(ritualsBootstrap?.tasksByStage, 'order_index');
+    if (fromBootstrap) return fromBootstrap;
     const out = new Map<string, AuraRow[]>();
-    if (!dbx || !dbx.getTasksByStage) return out;
-    if (ritualsBootstrap?.tasksByStage && Object.keys(ritualsBootstrap.tasksByStage).length) {
-      for (const [stageId, rows] of Object.entries(ritualsBootstrap.tasksByStage)) {
-        const sorted = [...rows].sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
-        out.set(stageId, sorted);
-      }
-      return out;
-    }
-    if (waitForBootstrap) return out;
+    if (waitForBootstrap || !dbx?.getTasksByStage) return out;
     for (const stages of stagesByGoal.values()) {
       for (const s of stages) {
         const sid = String(s.id);
-        const tasks = (dbx.getTasksByStage(sid) ?? []).sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0));
-        out.set(sid, tasks);
+        out.set(sid, (dbx.getTasksByStage(sid) ?? []).sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0)));
       }
     }
     return out;

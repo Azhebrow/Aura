@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ECharts, EChartsOption } from 'echarts';
-import type { StatsAggregation, StatsGroupBy, StatsMeta, StatsMode, StatsTimeSummary } from '@/shared/stats/types';
-import type { StatsFormattedTable } from '@/shared/stats/stats-table-format';
+import type { StatsAggregation, StatsGroupBy, StatsMeta, StatsMode, StatsTimeSummary } from '@/features/stats/types';
+import type { StatsFormattedTable } from '@/features/stats/stats-table-format';
 import { loadEChartsCore } from './echarts-runtime';
 import { buildPanelOption, readThemeColors } from './stats-chart-options';
 import { buildStatsChartScreenSpec } from './stats-chart-semantics';

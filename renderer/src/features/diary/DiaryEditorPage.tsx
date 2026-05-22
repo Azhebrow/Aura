@@ -1,19 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Bold,
-  BookText,
-  Check,
-  CircleOff,
-  Eraser,
-  Heading2,
-  Italic,
-  List,
-  ListOrdered,
-  Strikethrough,
-  Underline,
-  Lock,
-  UtensilsCrossed,
+  Bold, BookText, Check, CircleOff, Eraser, Heading2, Italic,
+  List, ListOrdered, Strikethrough, Underline, Lock, UtensilsCrossed,
 } from 'lucide-react';
 import { AddNutritionDialog } from '@/features/diary/AddNutritionDialog';
 import { NutritionDaySummaryBar } from '@/features/diary/NutritionDaySummaryBar';
@@ -24,13 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel,
+  SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -39,71 +23,37 @@ import { useSelectedDate } from '@/features/selected-date/selected-date-context'
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useDayLocked } from '@/shared/hooks/use-day-locked';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
-import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { getPageSectionsFromSettings } from '@/shared/lib/page-sections-visibility';
 import { readNutritionTargets, sumNutritionDay } from '@/shared/lib/nutrition-aggregate';
+import { NUTRITION_GROUP_ICON, NUTRITION_GROUP_LABEL_LC, type NutritionGroup } from '@/shared/config/nutrition-meta';
 import { cn } from '@/lib/utils';
 import { PageFrame } from '@/widgets/page-frame/PageFrame';
 import { Card, CardContent } from '@/components/ui/card';
 import type { AuraRow } from '@/types/aura';
 import {
-  MEGA_PAGEFRAME_CN,
-  MEGA_PAGEFRAME_CONTENT_CN,
-  MEGA_PANEL_BODY_CN,
-  MEGA_SHELL_CARD_CN,
-  MEGA_SHELL_CONTENT_CN,
+  MEGA_PAGEFRAME_CN, MEGA_PAGEFRAME_CONTENT_CN, MEGA_PANEL_BODY_CN,
+  MEGA_SHELL_CARD_CN, MEGA_SHELL_CONTENT_CN,
 } from '@/shared/ui/mega-section-layout';
 import { MegaPanelHeader } from '@/shared/ui/mega-panel-header';
 import { ModeSwitchHeader } from '@/shared/ui/mode-switch-header';
 import { MobilePageShell } from '@/shared/ui/mobile';
 import { ANIM } from '@/shared/lib/animation-classes';
+import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
+import { useDiaryEditor } from '@/features/diary/use-diary-editor';
+import { useDiaryData, normalizeDiaryDate, normalizeDiaryPresetText, shortenText } from '@/features/diary/use-diary-data';
 
 type RightTab = 'nutrition' | 'entries';
 const DIARY_NO_CATEGORY_VALUE = '__none__';
-const NUTRITION_GROUP_LABEL: Record<string, string> = {
-  proteins: 'белки',
-  fats: 'жиры',
-  carbs: 'углеводы',
-};
-const NUTRITION_GROUP_ICON: Record<string, string> = {
-  proteins: 'beef',
-  fats: 'flame',
-  carbs: 'wheat',
-};
 
 function diaryTextPreview(raw: unknown, max = 160, emptyLabel = 'Empty entry') {
   const plain = typeof raw === 'string' ? raw.replace(/<[^>]*>/g, ' ') : '';
   const s = plain.trim().replace(/\s+/g, ' ');
   if (!s) return emptyLabel;
-  if (s.length <= max) return s;
-  return `${s.slice(0, max).trimEnd()}…`;
+  return s.length <= max ? s : `${s.slice(0, max).trimEnd()}…`;
 }
 
 function toPlainText(raw: string) {
-  return raw.replace(/<[^>]*>/g, ' ').replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function decodeHtmlEntities(raw: string) {
-  const textarea = document.createElement('textarea');
-  textarea.innerHTML = raw;
-  return textarea.value;
-}
-
-function toEditorHtml(raw: string) {
-  const decoded = decodeHtmlEntities(raw);
-  const hasTags = /<\/?[a-z][\s\S]*>/i.test(decoded);
-  if (hasTags) return decoded;
-  return decoded
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\n/g, '<br>');
-}
-
-function normalizeDiaryDate(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null;
-  const m = /(\d{4}-\d{2}-\d{2})/.exec(raw);
-  return m ? m[1] : null;
+  return raw.replace(/<[^>]*>/g, ' ').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function nutritionCfgHint(product: AuraRow | null): string | null {
@@ -111,7 +61,7 @@ function nutritionCfgHint(product: AuraRow | null): string | null {
   const portionWeight = Math.round(Number(product.portion_weight) || 0);
   const calories100 = Math.round(Number(product.calories_per_100g) || 0);
   const groupRaw = typeof product.group === 'string' ? product.group : '';
-  const groupLabel = NUTRITION_GROUP_LABEL[groupRaw] ?? null;
+  const groupLabel = NUTRITION_GROUP_LABEL_LC[groupRaw as NutritionGroup] ?? null;
   const parts: string[] = [];
   if (portionWeight > 0) parts.push(`${portionWeight}г/порц`);
   if (groupLabel) parts.push(groupLabel);
@@ -120,149 +70,42 @@ function nutritionCfgHint(product: AuraRow | null): string | null {
   return `cfg: ${parts.join(' · ')}`;
 }
 
-function hashString(input: string): number {
-  let hash = 0;
-  for (let i = 0; i < input.length; i += 1) {
-    hash = (hash * 31 + input.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash);
-}
-
-function normalizeDiaryPresetText(raw: unknown): string {
-  if (typeof raw !== 'string') return '';
-  return raw.replace(/\s+/g, ' ').trim();
-}
-
-function shortenText(text: string, max = 42): string {
-  if (text.length <= max) return text;
-  return `${text.slice(0, max).trimEnd()}…`;
-}
-
 export function DiaryEditorPage() {
   const { t } = useTranslation('common');
   const { dateString, setDateString } = useSelectedDate();
   const { db } = useAuraDb();
   const dayLocked = useDayLocked(db, Boolean(db), dateString);
-  const visibility = useMemo(() => {
-    if (!db) return getPageSectionsFromSettings(null);
-    return getPageSectionsFromSettings(db.getAppSettings());
-  }, [db]);
+  const dataRefreshTick = useAuraDataRefresh({ types: ['diary', 'nutrition', 'cfg'] });
+  const visibility = useMemo(() => getPageSectionsFromSettings(db?.getAppSettings() ?? null), [db]);
 
   const [rightTab, setRightTab] = useState<RightTab>('nutrition');
   const [mobileSection, setMobileSection] = useState<'entry' | 'nutrition' | 'entries'>('entry');
   const [isDesktopViewport, setIsDesktopViewport] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
   );
-  const [text, setText] = useState('');
-  const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
-  const [moodId, setMoodId] = useState<string>('');
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [entryId, setEntryId] = useState<string | null>(null);
   const [entriesSearch, setEntriesSearch] = useState('');
   const [entriesCategoryFilters, setEntriesCategoryFilters] = useState<string[]>([]);
   const [nutritionTick, setNutritionTick] = useState(0);
   const [nutritionDialogOpen, setNutritionDialogOpen] = useState(false);
   const [editingNutritionEntry, setEditingNutritionEntry] = useState<AuraRow | null>(null);
-  const editorRef = useRef<HTMLDivElement | null>(null);
-  const latestTextRef = useRef(text);
-  const selectionRef = useRef<Range | null>(null);
-  const loadingRef = useRef(false);
-  const allowAutosave = useRef(false);
-  const dataRefreshTick = useAuraDataRefresh({ types: ['diary', 'nutrition', 'cfg'] });
 
-  useEffect(() => {
-    latestTextRef.current = text;
-  }, [text]);
+  const editor = useDiaryEditor({ db, dateString, dayLocked });
+  const {
+    text, spellcheckEnabled, setSpellcheckEnabled,
+    moodId, setMoodId, categoryId, setCategoryId,
+    isEntryEmpty, setEditorRef, applyEditorCommand,
+    editorRef, saveEditorSelection, persist,
+  } = editor;
 
-  const setEditorRef = useCallback((node: HTMLDivElement | null) => {
-    editorRef.current = node;
-    if (node && node.innerHTML !== latestTextRef.current) {
-      node.innerHTML = latestTextRef.current;
-    }
-  }, []);
-
-  const moods = useMemo(() => {
-    if (!db) return [] as AuraRow[];
-    return db.getAll('cfg_diary_moods').sort((a, b) => (Number(a.level) || 0) - (Number(b.level) || 0));
-  }, [db]);
-
-  const categories = useMemo(() => {
-    if (!db) return [] as AuraRow[];
-    return db
-      .getAll('cfg_diary_categories')
-      .filter((c) => c.id)
-      .sort((a, b) => (Number(a.level) || 0) - (Number(b.level) || 0) || String(a.title ?? '').localeCompare(String(b.title ?? ''), 'ru'));
-  }, [db]);
-
-  const entryPresets = useMemo(() => {
-    if (!db) return [] as AuraRow[];
-    return db
-      .getAll('cfg_diary_entry_presets')
-      .filter((row) => row.id != null)
-      .filter((row) => Number(row.active ?? 1) !== 0)
-      .sort((a, b) => (Number(a.level) || 0) - (Number(b.level) || 0));
-  }, [db, dataRefreshTick]);
-
-  const moodById = useMemo(() => {
-    const m = new Map<string, AuraRow>();
-    for (const mo of moods) {
-      if (mo.id != null) m.set(String(mo.id), mo);
-    }
-    return m;
-  }, [moods]);
-
-  const categoryById = useMemo(() => {
-    const m = new Map<string, AuraRow>();
-    for (const c of categories) {
-      if (c.id != null) m.set(String(c.id), c);
-    }
-    return m;
-  }, [categories]);
-
-  const allDiaryEntries = useMemo(() => {
-    if (!db) return [] as AuraRow[];
-    return db
-      .getAll('act_diary_entries')
-      .filter((entry) => normalizeDiaryDate(entry.date))
-      .sort((a, b) => {
-        const aDate = normalizeDiaryDate(a.date) ?? '';
-        const bDate = normalizeDiaryDate(b.date) ?? '';
-        return bDate.localeCompare(aDate) || String(b.id ?? '').localeCompare(String(a.id ?? ''), 'ru');
-      });
-  }, [db, dataRefreshTick]);
-
-  const selectedMonthEntries = useMemo(() => {
-    const monthKey = dateString.slice(0, 7);
-    return allDiaryEntries.filter((entry) => normalizeDiaryDate(entry.date)?.slice(0, 7) === monthKey);
-  }, [allDiaryEntries, dateString]);
-
-  const filteredDiaryEntries = useMemo(() => {
-    const query = entriesSearch.trim().toLowerCase();
-    const hasActiveFilters = query.length > 0 || entriesCategoryFilters.length > 0;
-    const source = hasActiveFilters ? allDiaryEntries : selectedMonthEntries;
-    return source.filter((entry) => {
-      const catId = entry.category_id ? String(entry.category_id) : '';
-      if (entriesCategoryFilters.length > 0 && !entriesCategoryFilters.includes(catId)) return false;
-      if (!query) return true;
-      const cat = catId ? categoryById.get(catId) : undefined;
-      const mood = entry.mood_id ? moodById.get(String(entry.mood_id)) : undefined;
-      const haystack = [
-        String(entry.date ?? ''),
-        diaryTextPreview(entry.text, 250, t('diary.empty_entry')),
-        cat ? String(cat.title ?? cat.id ?? '') : '',
-        mood ? String(mood.title ?? mood.id ?? '') : '',
-      ]
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [allDiaryEntries, categoryById, entriesCategoryFilters, entriesSearch, moodById, selectedMonthEntries]);
-
-  const activeEntryPreset = useMemo(() => {
-    if (entryPresets.length === 0) return null;
-    const seed = hashString(dateString);
-    return entryPresets[seed % entryPresets.length] ?? entryPresets[0] ?? null;
-  }, [dateString, entryPresets]);
+  const data = useDiaryData({
+    db, dateString, entriesSearch, entriesCategoryFilters,
+    dataRefreshTick, moodId, categoryId, emptyEntryLabel: t('diary.empty_entry'),
+  });
+  const {
+    moods, categories, moodById, categoryById,
+    filteredDiaryEntries, activeEntryPreset,
+    moodIdx, activeMood, activeCategory,
+  } = data;
 
   const entryPresetTitle = useMemo(() => {
     const rawTitle = normalizeDiaryPresetText(activeEntryPreset?.title);
@@ -276,131 +119,6 @@ export function DiaryEditorPage() {
     if (!prompt) return `${t('diary.entry')}…`;
     return prompt.endsWith('…') || prompt.endsWith('...') ? prompt : `${prompt}…`;
   }, [activeEntryPreset, t]);
-
-  const isEntryEmpty = toPlainText(text).length === 0;
-
-  const load = useCallback(() => {
-    if (!db) return;
-    loadingRef.current = true;
-    const editorFocused = document.activeElement === editorRef.current;
-    const row = db.getDiaryEntry(dateString) as AuraRow | undefined;
-    if (row) {
-      setEntryId(String(row.id));
-      // Не перезаписываем текст пока пользователь печатает — иначе курсор прыгает в начало
-      if (!editorFocused) {
-        setText(typeof row.text === 'string' ? toEditorHtml(row.text) : '');
-      }
-      setMoodId(row.mood_id ? String(row.mood_id) : '');
-      setCategoryId(row.category_id ? String(row.category_id) : '');
-    } else {
-      setEntryId(`diary_${dateString}`);
-      if (!editorFocused) {
-        setText('');
-      }
-      setMoodId('');
-      setCategoryId('');
-    }
-    queueMicrotask(() => {
-      loadingRef.current = false;
-    });
-  }, [categories, dateString, db, moods]);
-
-  useEffect(() => {
-    allowAutosave.current = false;
-    load();
-    const id = window.setTimeout(() => {
-      allowAutosave.current = true;
-    }, 500);
-    return () => window.clearTimeout(id);
-  }, [load, dateString, dataRefreshTick]);
-
-  const persist = useCallback((nextHtml?: string) => {
-    if (!db || loadingRef.current || !allowAutosave.current) return;
-    const sourceHtml = typeof nextHtml === 'string' ? nextHtml : text;
-    const plainText = toPlainText(sourceHtml);
-    const hasHtmlContent =
-      sourceHtml.replace(/<[^>]*>/g, '').trim().length > 0 || /<img|<ul|<ol|<li|<h\d|<blockquote/i.test(sourceHtml);
-    const trimmed = hasHtmlContent ? sourceHtml.trim() : plainText;
-    const hasText = trimmed.length > 0;
-    const hasMood = Boolean(moodId);
-    const hasCategory = Boolean(categoryId);
-    if (hasText || hasMood || hasCategory) {
-      const id = entryId ?? `diary_${dateString}`;
-      runAuraMutation('diary', () => {
-        db.saveDiaryEntry({
-          id,
-          date: dateString,
-          mood_id: moodId || null,
-          category_id: categoryId || null,
-          text: trimmed || null,
-        });
-      }, dateString);
-      const again = db.getDiaryEntry(dateString);
-      if (again) setEntryId(String(again.id));
-    } else if (db.getDiaryEntry(dateString)) {
-      runAuraMutation('diary', () => {
-        db.deleteDiaryEntry(dateString);
-      }, dateString);
-      setEntryId(`diary_${dateString}`);
-    }
-  }, [categoryId, dateString, db, entryId, moodId, text]);
-
-  const saveEditorSelection = useCallback(() => {
-    const el = editorRef.current;
-    const sel = window.getSelection();
-    if (!el || !sel || sel.rangeCount === 0) return;
-    const range = sel.getRangeAt(0);
-    if (!el.contains(range.commonAncestorContainer)) return;
-    selectionRef.current = range.cloneRange();
-  }, []);
-
-  const restoreEditorSelection = useCallback(() => {
-    const el = editorRef.current;
-    const sel = window.getSelection();
-    const range = selectionRef.current;
-    if (!el || !sel || !range) return;
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }, []);
-
-  const applyEditorCommand = useCallback(
-    (command: string, value?: string) => {
-      const el = editorRef.current;
-      if (!el) return;
-      el.focus();
-      restoreEditorSelection();
-      document.execCommand(command, false, value);
-      saveEditorSelection();
-      const nextHtml = el.innerHTML;
-      setText(nextHtml);
-      // Save right after format actions so style changes do not get lost.
-      window.setTimeout(() => persist(nextHtml), 0);
-    },
-    [persist, restoreEditorSelection, saveEditorSelection]
-  );
-
-  useEffect(() => {
-    const t = window.setTimeout(() => persist(), 450);
-    return () => window.clearTimeout(t);
-  }, [text, moodId, categoryId, dateString, persist]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const updateViewport = () => setIsDesktopViewport(window.innerWidth >= 1024);
-    updateViewport();
-    window.addEventListener('resize', updateViewport);
-    return () => window.removeEventListener('resize', updateViewport);
-  }, []);
-
-  useEffect(() => {
-    const el = editorRef.current;
-    if (!el) return;
-    if (el.innerHTML !== text) {
-      saveEditorSelection();
-      el.innerHTML = text;
-      restoreEditorSelection();
-    }
-  }, [text, saveEditorSelection, restoreEditorSelection]);
 
   const nutritionEntries = useMemo(() => {
     if (!db) return [];
@@ -425,13 +143,16 @@ export function DiaryEditorPage() {
     else if (!showNutrition && showEntries) setRightTab('entries');
   }, [showNutrition, showEntries]);
 
-  const moodIdx = useMemo(() => {
-    const i = moods.findIndex((m) => String(m.id) === moodId);
-    return i >= 0 ? i : 0;
-  }, [moods, moodId]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const updateViewport = () => setIsDesktopViewport(window.innerWidth >= 1024);
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
 
-  const activeMood = moods[moodIdx];
-  const activeCategory = categories.find((c) => String(c.id) === categoryId) ?? null;
+  // -- Unused vars suppression (entryPresetPrompt used in JSX below) --
+  void entryPresetPrompt;
 
   const entryColumn = (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -482,16 +203,16 @@ export function DiaryEditorPage() {
             <Label htmlFor="diary-category" className="sr-only">{t('diary.category')}</Label>
             <div className="flex min-w-0 flex-1 items-stretch">
               <div className="flex items-center border-r border-[var(--aura-border-soft)] px-3">
-                    {activeCategory ? (
-                      <AuraThemedIcon
-                        name={typeof activeCategory.icon === 'string' && activeCategory.icon.trim() ? activeCategory.icon : null}
-                        tint={typeof activeCategory.color === 'string' && activeCategory.color.trim() ? activeCategory.color : 'var(--foreground)'}
-                        size={15}
-                      />
-                    ) : (
-                      <CircleOff className="size-[15px] shrink-0 text-[var(--aura-text-muted)]" aria-hidden />
-                    )}
-                  </div>
+                {activeCategory ? (
+                  <AuraThemedIcon
+                    name={typeof activeCategory.icon === 'string' && activeCategory.icon.trim() ? activeCategory.icon : null}
+                    tint={typeof activeCategory.color === 'string' && activeCategory.color.trim() ? activeCategory.color : 'var(--foreground)'}
+                    size={15}
+                  />
+                ) : (
+                  <CircleOff className="size-[15px] shrink-0 text-[var(--aura-text-muted)]" aria-hidden />
+                )}
+              </div>
               <Select
                 value={categoryId || DIARY_NO_CATEGORY_VALUE}
                 onValueChange={(next) => setCategoryId(next === DIARY_NO_CATEGORY_VALUE ? '' : next)}
@@ -533,184 +254,115 @@ export function DiaryEditorPage() {
           </div>
           <div>
             <div className="flex items-center gap-0.5 overflow-x-auto px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('bold');
-                      }}
-                      title={t('formatting.bold')}
-                      aria-label={t('formatting.bold')}
-                    >
-                      <Bold className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('italic');
-                      }}
-                      title={t('formatting.italic')}
-                      aria-label={t('formatting.italic')}
-                    >
-                      <Italic className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('underline');
-                      }}
-                      title={t('formatting.underline')}
-                      aria-label={t('formatting.underline')}
-                    >
-                      <Underline className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('strikeThrough');
-                      }}
-                      title={t('formatting.strikethrough')}
-                      aria-label={t('formatting.strikethrough')}
-                    >
-                      <Strikethrough className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('formatBlock', 'H2');
-                      }}
-                      title={t('formatting.heading')}
-                      aria-label={t('formatting.heading')}
-                    >
-                      <Heading2 className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('insertUnorderedList');
-                      }}
-                      title={t('formatting.bullet_list')}
-                      aria-label={t('formatting.bullet_list')}
-                    >
-                      <List className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('insertOrderedList');
-                      }}
-                      title={t('formatting.numbered_list')}
-                      aria-label={t('formatting.numbered_list')}
-                    >
-                      <ListOrdered className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('formatBlock', 'BLOCKQUOTE');
-                      }}
-                      title={t('formatting.quote')}
-                      aria-label={t('formatting.quote')}
-                    >
-                      <BookText className="size-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        applyEditorCommand('removeFormat');
-                        applyEditorCommand('formatBlock', 'P');
-                      }}
-                      title={t('formatting.clear_format')}
-                      aria-label={t('formatting.clear_format')}
-                    >
-                      <Eraser className="size-3.5" />
-                    </Button>
-                    <div className="ml-auto flex shrink-0 items-center gap-1.5 pl-1.5">
-                      <span className="aura-meta inline-flex min-w-8 items-center justify-center gap-1">
-                        <span className="font-semibold leading-none">A</span>
-                        {spellcheckEnabled ? <Check className="size-3" aria-hidden /> : null}
-                      </span>
-                      <Switch
-                        id="diary-spellcheck"
-                        checked={spellcheckEnabled}
-                        onCheckedChange={setSpellcheckEnabled}
-                        aria-label={t('spellcheck.enabled')}
-                        title={t('spellcheck.title')}
-                        className="shrink-0"
-                      />
-                    </div>
-                  </div>
-                </div>
+              {([
+                ['bold', 'formatting.bold', Bold],
+                ['italic', 'formatting.italic', Italic],
+                ['underline', 'formatting.underline', Underline],
+                ['strikeThrough', 'formatting.strikethrough', Strikethrough],
+              ] as const).map(([cmd, key, Icon]) => (
+                <Button
+                  key={cmd}
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                  onMouseDown={(e) => { e.preventDefault(); applyEditorCommand(cmd); }}
+                  title={t(key)}
+                  aria-label={t(key)}
+                >
+                  <Icon className="size-3.5" />
+                </Button>
+              ))}
+              <Button
+                type="button" variant="ghost" size="icon-sm"
+                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('formatBlock', 'H2'); }}
+                title={t('formatting.heading')} aria-label={t('formatting.heading')}
+              >
+                <Heading2 className="size-3.5" />
+              </Button>
+              <Button
+                type="button" variant="ghost" size="icon-sm"
+                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('insertUnorderedList'); }}
+                title={t('formatting.bullet_list')} aria-label={t('formatting.bullet_list')}
+              >
+                <List className="size-3.5" />
+              </Button>
+              <Button
+                type="button" variant="ghost" size="icon-sm"
+                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('insertOrderedList'); }}
+                title={t('formatting.numbered_list')} aria-label={t('formatting.numbered_list')}
+              >
+                <ListOrdered className="size-3.5" />
+              </Button>
+              <Button
+                type="button" variant="ghost" size="icon-sm"
+                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('formatBlock', 'BLOCKQUOTE'); }}
+                title={t('formatting.quote')} aria-label={t('formatting.quote')}
+              >
+                <BookText className="size-3.5" />
+              </Button>
+              <Button
+                type="button" variant="ghost" size="icon-sm"
+                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('removeFormat'); applyEditorCommand('formatBlock', 'P'); }}
+                title={t('formatting.clear_format')} aria-label={t('formatting.clear_format')}
+              >
+                <Eraser className="size-3.5" />
+              </Button>
+              <div className="ml-auto flex shrink-0 items-center gap-1.5 pl-1.5">
+                <span className="aura-meta inline-flex min-w-8 items-center justify-center gap-1">
+                  <span className="font-semibold leading-none">A</span>
+                  {spellcheckEnabled ? <Check className="size-3" aria-hidden /> : null}
+                </span>
+                <Switch
+                  id="diary-spellcheck"
+                  checked={spellcheckEnabled}
+                  onCheckedChange={setSpellcheckEnabled}
+                  aria-label={t('spellcheck.enabled')}
+                  title={t('spellcheck.title')}
+                  className="shrink-0"
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
-            {isEntryEmpty && activeEntryPreset ? (
-              <div className="pointer-events-none absolute inset-0 overflow-hidden px-3 py-3 sm:px-4">
-                <p className="text-[var(--aura-text-disabled)] select-none text-base italic leading-relaxed">
-                  «{normalizeDiaryPresetText(activeEntryPreset.prompt)}»
+          {isEntryEmpty && activeEntryPreset ? (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden px-3 py-3 sm:px-4">
+              <p className="text-[var(--aura-text-disabled)] select-none text-base italic leading-relaxed">
+                «{normalizeDiaryPresetText(activeEntryPreset.prompt)}»
+              </p>
+              {activeEntryPreset.description ? (
+                <p className="text-[var(--aura-text-disabled)] mt-2.5 select-none text-xs font-medium tracking-wide opacity-70">
+                  — {String(activeEntryPreset.description)}
                 </p>
-                {activeEntryPreset.description ? (
-                  <p className="text-[var(--aura-text-disabled)] mt-2.5 select-none text-xs font-medium tracking-wide opacity-70">
-                    — {String(activeEntryPreset.description)}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-            <div
-              id="diary-text"
-              ref={setEditorRef}
-              contentEditable
-              suppressContentEditableWarning
-              data-placeholder={isEntryEmpty && !activeEntryPreset ? t('diary.entry') : ''}
-              className="text-foreground empty:before:text-[var(--aura-text-disabled)] empty:before:content-[attr(data-placeholder)] min-h-0 h-full flex-1 overflow-y-auto bg-transparent px-3 py-3 pb-7 text-base leading-relaxed outline-none sm:px-4 [&_h2]:my-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:leading-tight [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-[var(--aura-border-soft)] [&_blockquote]:pl-3 [&_blockquote]:text-[var(--aura-text-muted)] [&_blockquote]:italic"
-              spellCheck={spellcheckEnabled}
-              onInput={(e) => setText((e.currentTarget as HTMLDivElement).innerHTML)}
-              onBlur={() => {
-                saveEditorSelection();
-                const currentHtml = editorRef.current?.innerHTML;
-                persist(currentHtml);
-              }}
-              onMouseUp={saveEditorSelection}
-              onKeyUp={saveEditorSelection}
-            />
-            <span className="text-[var(--aura-text-subtle)] pointer-events-none absolute bottom-1.5 right-3 text-xs tabular-nums sm:right-4">
-              S {toPlainText(text).length}
-            </span>
-          </div>
+              ) : null}
+            </div>
+          ) : null}
+          <div
+            id="diary-text"
+            ref={setEditorRef}
+            contentEditable
+            suppressContentEditableWarning
+            data-placeholder={isEntryEmpty && !activeEntryPreset ? t('diary.entry') : ''}
+            className="text-foreground empty:before:text-[var(--aura-text-disabled)] empty:before:content-[attr(data-placeholder)] min-h-0 h-full flex-1 overflow-y-auto bg-transparent px-3 py-3 pb-7 text-base leading-relaxed outline-none sm:px-4 [&_h2]:my-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:leading-tight [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-[var(--aura-border-soft)] [&_blockquote]:pl-3 [&_blockquote]:text-[var(--aura-text-muted)] [&_blockquote]:italic"
+            spellCheck={spellcheckEnabled}
+            onInput={(e) => editor.setText((e.currentTarget as HTMLDivElement).innerHTML)}
+            onBlur={() => {
+              saveEditorSelection();
+              persist(editorRef.current?.innerHTML);
+            }}
+            onMouseUp={saveEditorSelection}
+            onKeyUp={saveEditorSelection}
+          />
+          <span className="text-[var(--aura-text-subtle)] pointer-events-none absolute bottom-1.5 right-3 text-xs tabular-nums sm:right-4">
+            S {toPlainText(text).length}
+          </span>
+        </div>
       </div>
     </section>
   );
@@ -764,7 +416,7 @@ export function DiaryEditorPage() {
                   const sourceRow = productRow ?? presetRow;
                   const icon =
                     productRow != null
-                      ? NUTRITION_GROUP_ICON[String(productRow.group ?? 'proteins')] ?? 'apple'
+                      ? NUTRITION_GROUP_ICON[String(productRow.group ?? 'proteins') as NutritionGroup] ?? 'apple'
                       : sourceRow && typeof sourceRow.icon === 'string'
                         ? sourceRow.icon
                         : null;
@@ -781,7 +433,6 @@ export function DiaryEditorPage() {
                   const amountLabel = cfgHint
                     ? `${p}Б ${f}Ж ${c}У ${kcal}ккал · ${cfgHint}`
                     : `${p}Б ${f}Ж ${c}У ${kcal}ккал`;
-
                   return (
                     <li key={String(e.id)}>
                       <ListItem
@@ -798,9 +449,7 @@ export function DiaryEditorPage() {
                         }}
                         onDelete={() => {
                           if (!db || dayLocked) return;
-                          runAuraMutation('nutrition', () => {
-                            db.deleteNutritionEntry(String(e.id));
-                          }, dateString);
+                          runAuraMutation('nutrition', () => { db.deleteNutritionEntry(String(e.id)); }, dateString);
                           setNutritionTick((n) => n + 1);
                         }}
                       />
@@ -836,7 +485,7 @@ export function DiaryEditorPage() {
           ) : null}
         </>
       ) : null}
-          {resolvedRightTab === 'entries' && showEntries ? (
+      {resolvedRightTab === 'entries' && showEntries ? (
         <>
           <div className="mb-2 shrink-0 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
             <div className="px-3 py-2">
@@ -889,11 +538,7 @@ export function DiaryEditorPage() {
             </div>
           </div>
           {filteredDiaryEntries.length === 0 ? (
-            <EmptyState
-              title={t('diary.entries_not_found')}
-              hint={t('diary.search_hint')}
-              compact
-            />
+            <EmptyState title={t('diary.entries_not_found')} hint={t('diary.search_hint')} compact />
           ) : (
             <div className="overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
               <ul className="divide-y divide-[var(--aura-border-soft)]">
@@ -950,7 +595,6 @@ export function DiaryEditorPage() {
     showNutrition ? { id: 'nutrition' as const, label: t('diary.nutrition'), Icon: UtensilsCrossed, content: rightColumn } : null,
     showEntries ? { id: 'entries' as const, label: t('diary.entries'), Icon: List, content: rightColumn } : null,
   ].filter(Boolean) as Array<{ id: 'entry' | 'nutrition' | 'entries'; label: string; Icon: typeof BookText; content: ReactNode }>;
-
 
   const layout = bothColumns ? (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
