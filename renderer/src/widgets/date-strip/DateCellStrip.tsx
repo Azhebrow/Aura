@@ -241,7 +241,10 @@ export function DateCellStrip() {
               >
                 <span
                   className={cn('block h-full rounded-full bg-primary/80', isSel && 'bg-primary-foreground/90')}
-                  style={{ width: `${Math.round(score)}%` }}
+                  style={{
+                    width: `${Math.round(score)}%`,
+                    transition: 'width var(--aura-motion-duration-task-fill) var(--aura-motion-ease)',
+                  }}
                 />
               </span>
             </button>

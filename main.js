@@ -258,14 +258,13 @@ function createWindow() {
     }
   }
 
-  // Горячие клавиши для обновления страницы (только Ctrl+R и F5)
+  // Горячая клавиша для обновления страницы (только F5)
   const reloadHandler = () => {
     if (isWindowValid()) {
       mainWindow.reload();
     }
   };
 
-  globalShortcut.register('CommandOrControl+R', reloadHandler);
   globalShortcut.register('F5', reloadHandler);
 
   // IPC обработчик для обновления горячей клавиши DevTools Tab
