@@ -9,13 +9,12 @@
     <!-- Шрифты: единый список в src/config/fontFamilies.js, подключение через src/fonts-head.js -->
     <script type="module" src="src/fonts-head.js"></script>
     <link rel="stylesheet" href="src/design-system/index.css">
-    <script>
-        (function() {
-            const validThemes = ['light', 'dim', 'dark'];
-            const savedTheme = localStorage.getItem('aura-theme');
-            const theme = validThemes.includes(savedTheme) ? savedTheme : 'dark';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
+    <script type="module">
+        // Theme initialization moved to module to comply with CSP
+        const validThemes = ['light', 'dim', 'dark'];
+        const savedTheme = localStorage.getItem('aura-theme');
+        const theme = validThemes.includes(savedTheme) ? savedTheme : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
     </script>
 </head>
 <body>
