@@ -90,7 +90,7 @@ function CategorySection({
           </div>
         </div>
         <div className="h-[3px] w-full" style={{ background: `color-mix(in oklab, ${accent} 12%, transparent)` }}>
-          <div className="h-full" style={{ width: `${animatedN}%`, backgroundColor: accent, transition: 'width var(--aura-motion-duration-task-fill) var(--aura-motion-ease)' }} />
+          <div className="h-full" style={{ width: `${animatedN}%`, backgroundColor: accent }} />
         </div>
       </div>
 
