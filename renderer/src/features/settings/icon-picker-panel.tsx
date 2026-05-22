@@ -416,7 +416,7 @@ export function IconPickerPanel({ current, onPick }: Props) {
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] sm:order-2">
             {/* Оверлей во время смены группы */}
             {isPending && (
-              <div className="pointer-events-none absolute inset-0 z-10 bg-[var(--aura-surface-panel)]/40 backdrop-blur-[1px] animate-in fade-in duration-100" />
+              <div className="pointer-events-none absolute inset-0 z-10 bg-[var(--aura-surface-panel)]/35 animate-in fade-in duration-100" />
             )}
             {filtered.length === 0 ? (
               <div className="text-muted-foreground flex h-full min-h-[11rem] items-center justify-center px-3 text-center text-sm">
