@@ -116,19 +116,19 @@ function createWindow() {
     mainWindow.focus();
   });
 
-  // CSP: для Vite dev-сервера не навешиваем жёсткий CSP (HMR / ws). Для file:// — прежняя политика.
-  if (!useViteDevServer) {
-    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-      callback({
-          responseHeaders: {
-            ...details.responseHeaders,
-            'Content-Security-Policy': [
-            "default-src 'self' file:; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data: file:; media-src 'self' blob: file:; connect-src 'self' file: http://127.0.0.1:8787;"
-          ]
-          }
-        });
+  // CSP: для Vite dev-сервера разрешаем больше (HMR / ws требуют).
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const cspHeader = useViteDevServer
+      ? "default-src 'self' http://127.0.0.1:* https://fonts.googleapis.com https://fonts.gstatic.com blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org http://127.0.0.1:* blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data: file: http://127.0.0.1:*; media-src 'self' blob: file:; connect-src 'self' file: http://127.0.0.1:* ws://127.0.0.1:*;"
+      : "default-src 'self' file:; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data: file:; media-src 'self' blob: file:; connect-src 'self' file: http://127.0.0.1:8787;";
+
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [cspHeader]
+      }
     });
-  }
+  });
 
   if (rendererTarget.kind === 'file') {
     mainWindow.loadFile(rendererTarget.file);
