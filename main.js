@@ -143,25 +143,13 @@ function createWindow() {
     mainWindow.focus();
   });
 
-  // CSP: для dev режима разрешаем больше (Vite HMR / ws требуют).
-  // Stricter CSP применяется только при сборке (production mode).
+  // CSP: Remove Vite's strict CSP in dev mode to allow executeJavaScript injection
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-    // Dev mode: разрешаем all local resources и unsafe-* для HMR
-    const cspHeader =
-      "default-src 'self' file: http://127.0.0.1:* https://fonts.googleapis.com https://fonts.gstatic.com blob:; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org http://127.0.0.1:* blob: file:; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-      "font-src 'self' https://fonts.gstatic.com; " +
-      "img-src 'self' blob: data: file: http://127.0.0.1:*; " +
-      "media-src 'self' blob: file:; " +
-      "connect-src 'self' file: http://127.0.0.1:* ws://127.0.0.1:*;";
+    const headers = { ...details.responseHeaders };
+    delete headers['content-security-policy'];
+    delete headers['Content-Security-Policy'];
 
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [cspHeader]
-      }
-    });
+    callback({ responseHeaders: headers });
   });
 
   if (rendererTarget.kind === 'file') {
