@@ -68,9 +68,19 @@ function createWindow() {
   // Для macOS используем стандартную шапку, для Windows - кастомную
   const isMac = process.platform === 'darwin';
   
+  // Calculate window size with margins
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  const windowWidth = Math.floor(screenWidth * 0.9);
+  const windowHeight = Math.floor(screenHeight * 0.9);
+  const x = Math.floor((screenWidth - windowWidth) / 2);
+  const y = Math.floor((screenHeight - windowHeight) / 2);
+
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    x,
+    y,
+    width: windowWidth,
+    height: windowHeight,
     minWidth: 350,
     minHeight: 800,
     icon: iconPath,
@@ -84,9 +94,6 @@ function createWindow() {
       contextIsolation: false
     }
   });
-
-  // Maximize window on startup
-  mainWindow.maximize();
 
   // Скрываем меню-бар
   mainWindow.setMenuBarVisibility(false);
