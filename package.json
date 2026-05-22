@@ -4,16 +4,12 @@
   "description": "Offline Electron application",
   "main": "main.js",
   "scripts": {
-    "postinstall": "cd server-mini-app && npm install && cd .. && npm run rebuild-native",
     "rebuild-native": "electron-rebuild -f -w better-sqlite3 || true",
-    "setup": "node scripts/setup.js",
-    "desktop": "node scripts/cleanup-ports.js && concurrently -k \"ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron server-mini-app/index.js\" \"node ./node_modules/vite/bin/vite.js --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && AURA_USE_VITE=1 ./node_modules/.bin/electron .\"",
+    "desktop": "concurrently -k \"node ./node_modules/vite/bin/vite.js --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && AURA_USE_VITE=1 ./node_modules/.bin/electron .\"",
     "build": "echo '🔨 Сборка renderer + Electron…' && vite build && electron-builder --dir",
     "build:mac": "echo '🍎 Создание установщика AURA для macOS...' && vite build && electron-builder --mac",
     "build:mac:arm64": "echo '🍎 ARM Создание установщика AURA для Apple Silicon...' && vite build && electron-builder --mac --arm64",
-    "build:mac:universal": "echo '🍎 Universal Создание универсального установщика для всех macOS...' && vite build && electron-builder --mac -p always",
-    "clear-db": "echo '🗑️  Очистка базы данных...' && node scripts/clear-db-standalone.js",
-    "web": "concurrently \"ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron server-mini-app/index.js\" \"node ./node_modules/vite/bin/vite.js --host 127.0.0.1\""
+    "build:mac:universal": "echo '🍎 Universal Создание универсального установщика для всех macOS...' && vite build && electron-builder --mac -p always"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.4",
@@ -42,11 +38,10 @@
     },
     "files": [
       "**/*",
-      "renderer-build/**/*",
       "!dist/**/*",
-      "!scripts/**/*",
-      "!.cursor/**/*",
+      "!node_modules/**/*",
       "!.git/**/*",
+      "!.cursor/**/*",
       "!.claude/**/*"
     ],
     "win": {
