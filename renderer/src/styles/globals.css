@@ -1112,18 +1112,31 @@ html[data-color-filter="bw"]       body { filter: saturate(0); }
    расслоение оставалось видимым.
    ─────────────────────────────────────────────────────────────────────────── */
 html[data-theme='light'][data-color-filter="serious"],
-html[data-theme='light'][data-color-filter="pastel"],
-html[data-theme='light'][data-color-filter="contrast"] {
-  --background:         oklch(0.84 0 0);   /* чётко серый — после фильтра остаётся тёмнее карточки */
-  --card:               oklch(0.99 0 0);   /* почти белый */
+html[data-theme='light'][data-color-filter="pastel"] {
+  --background:         oklch(0.91 0 0);
+  --card:               oklch(0.99 0 0);
   --popover:            oklch(0.99 0 0);
-  --secondary:          oklch(0.92 0 0);
-  --muted:              oklch(0.91 0 0);
-  --accent:             oklch(0.90 0 0);
-  --border:             oklch(0.58 0 0);   /* нейтральная граница, видна после любого фильтра */
-  --input:              oklch(0.58 0 0);
-  --aura-border-soft:   oklch(0 0 0 / 18%);
-  --aura-border-strong: oklch(0 0 0 / 30%);
+  --secondary:          oklch(0.944 0 0);
+  --muted:              oklch(0.935 0 0);
+  --accent:             oklch(0.926 0 0);
+  --border:             oklch(0.68 0 0);
+  --input:              oklch(0.68 0 0);
+  --aura-border-soft:   oklch(0 0 0 / 14%);
+  --aura-border-strong: oklch(0 0 0 / 24%);
+}
+
+/* contrast(1.2) выбеливает всё выше L=0.95 — нужен чуть более тёмный фон */
+html[data-theme='light'][data-color-filter="contrast"] {
+  --background:         oklch(0.87 0 0);
+  --card:               oklch(0.99 0 0);
+  --popover:            oklch(0.99 0 0);
+  --secondary:          oklch(0.934 0 0);
+  --muted:              oklch(0.924 0 0);
+  --accent:             oklch(0.914 0 0);
+  --border:             oklch(0.64 0 0);
+  --input:              oklch(0.64 0 0);
+  --aura-border-soft:   oklch(0 0 0 / 14%);
+  --aura-border-strong: oklch(0 0 0 / 24%);
 }
 
 /* Для ЧБ нейтрализуем цветные тинты в фонах (dim-тема с purple-тинтом) */
