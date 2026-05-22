@@ -90,9 +90,36 @@ function createWindow() {
   
   // Окно показывается только по клику на иконку в трее
 
-  // После загрузки страницы
+  // После загрузки страницы: инъекция БД для Electron режима
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('[Main] Renderer did-finish-load:', mainWindow.webContents.getURL());
+
+    // Inject database access via window.getDB
+    const userDataPath = app.getPath('userData');
+    mainWindow.webContents.executeJavaScript(`
+      if (typeof window !== 'undefined' && typeof process !== 'undefined' && process.versions && process.versions.electron) {
+        try {
+          const Database = require('better-sqlite3');
+          const path = require('path');
+
+          // Create/open database
+          const dbPath = path.join(${JSON.stringify(userDataPath)}, 'aura.db');
+          const db = new Database(dbPath);
+
+          // Expose as getDB function
+          window.getDB = () => db;
+          window.__auraUserDataPath = ${JSON.stringify(userDataPath)};
+
+          console.log('[Renderer] ✅ Database loaded from Electron process');
+          window.dispatchEvent(new CustomEvent('aura-db-ready'));
+        } catch (e) {
+          console.error('[Renderer] ❌ Database error:', e.message);
+          window.getDB = () => null;
+          window.dispatchEvent(new CustomEvent('aura-db-ready'));
+        }
+      }
+    `);
+
     updateDevToolsTabShortcut(false);
   });
 
