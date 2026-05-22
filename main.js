@@ -90,86 +90,10 @@ function createWindow() {
   
   // Окно показывается только по клику на иконку в трее
 
-  // После загрузки страницы: инъекция БД в renderer + настройка DevTools Tab
+  // После загрузки страницы
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('[Main] Renderer did-finish-load:', mainWindow.webContents.getURL());
-    const dbPath = path.join(__dirname, 'src', 'system', 'database', 'Database.js');
-    const dbPathModule = path.join(__dirname, 'src', 'system', 'database', 'DBPath.js');
-    const pointsServicePath = path.join(__dirname, 'src', 'system', 'services', 'PointsService.js');
-    const pointsManagerPath = path.join(__dirname, 'src', 'system', 'services', 'PointsManager.js');
-    const userDataPath = app.getPath('userData');
-    const appPath = __dirname;
-
-    mainWindow.webContents.executeJavaScript(`
-      if (typeof window !== 'undefined') {
-        try {
-          const path = require('path');
-          const dbPath = ${JSON.stringify(dbPath)};
-          const dbPathModule = ${JSON.stringify(dbPathModule)};
-          const pointsServicePath = ${JSON.stringify(pointsServicePath)};
-          const pointsManagerPath = ${JSON.stringify(pointsManagerPath)};
-          const userDataPath = ${JSON.stringify(userDataPath)};
-          const appPath = ${JSON.stringify(appPath)};
-          
-          const dbPathManager = require(dbPathModule);
-          dbPathManager.setUserDataPath(userDataPath);
-          
-          if (typeof process !== 'undefined') {
-            process.__auraUserDataPath = userDataPath;
-          }
-          
-          delete require.cache[require.resolve(dbPath)];
-          const getDB = require(dbPath);
-          window.getDB = typeof getDB === 'function' ? getDB : () => getDB;
-          
-          try {
-            delete require.cache[require.resolve(pointsServicePath)];
-            window.PointsService = require(pointsServicePath);
-            
-            delete require.cache[require.resolve(pointsManagerPath)];
-            window.PointsManager = require(pointsManagerPath);
-            
-            console.log('[Renderer] ✅ PointsService и PointsManager загружены');
-          } catch (e) {
-            console.warn('[Renderer] ⚠️ Ошибка загрузки PointsService/PointsManager:', e.message);
-          }
-          
-          window.__auraUserDataPath = userDataPath;
-          window.__auraAppPath = appPath;
-          
-          console.log('[Renderer] ✅ База данных загружена из main процесса');
-          console.log('[Renderer] 📍 Путь к данным:', userDataPath);
-          console.log('[Renderer] 📍 Путь к приложению:', appPath);
-          
-          if (typeof window.dispatchEvent !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('aura-db-ready'));
-          }
-        } catch (e) {
-          console.error('[Renderer] ❌ Ошибка загрузки БД:', e.message);
-          console.error('[Renderer] Stack:', e.stack);
-          window.getDB = () => {
-            console.error('[Renderer] База данных недоступна');
-            return null;
-          };
-        }
-      }
-    `);
-
     updateDevToolsTabShortcut(false);
-    setTimeout(() => {
-      try {
-        if (getDB) {
-          const db = getDB();
-          if (db) {
-            const settings = db.getAppSettings();
-            const devToolsTabEnabled = settings && (settings.devtools_tab_enabled === 1 || settings.devtools_tab_enabled === true);
-            updateDevToolsTabShortcut(devToolsTabEnabled);
-          }
-        }
-      } catch (e) {
-        console.warn('[Main] Ошибка загрузки настройки devtools_tab_enabled:', e);
-      }
-    }, 500);
   });
 
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
