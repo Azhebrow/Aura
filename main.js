@@ -69,8 +69,8 @@ function createWindow() {
   const isMac = process.platform === 'darwin';
   
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1400,
+    height: 900,
     minWidth: 350,
     minHeight: 800,
     icon: iconPath,
@@ -84,7 +84,10 @@ function createWindow() {
       contextIsolation: false
     }
   });
-  
+
+  // Maximize window on startup
+  mainWindow.maximize();
+
   // Скрываем меню-бар
   mainWindow.setMenuBarVisibility(false);
   
