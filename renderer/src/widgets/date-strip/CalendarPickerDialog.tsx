@@ -235,7 +235,7 @@ export function CalendarPickerDialog({ open, onOpenChange, mode = 'compact' }: P
                           style={{ height: `${fill}%`, backgroundColor: dd.color || 'var(--primary)' }}
                         />
                         <span className="relative z-[1] flex items-start justify-between">
-                          <span className="font-mono text-xs font-semibold tabular-nums">{d.getDate()}</span>
+                          <span className="text-xs font-semibold tabular-nums">{d.getDate()}</span>
                           <StatusIcon className="size-3.5 opacity-85" aria-hidden />
                         </span>
                         <span className="relative z-[1] mt-auto flex items-center gap-1 text-xs leading-tight">
@@ -318,7 +318,7 @@ export function CalendarPickerDialog({ open, onOpenChange, mode = 'compact' }: P
                   return (
                     <div key={row.type} className="bg-muted/30 flex items-center gap-2 rounded-md border border-border/50 px-2 py-1.5">
                       <Ic className="text-foreground/85 size-3.5 shrink-0" aria-hidden />
-                      <span className="min-w-0 truncate font-mono text-xs tabular-nums">{row.text}</span>
+                      <span className="min-w-0 truncate text-xs tabular-nums">{row.text}</span>
                     </div>
                   );
                 })}

@@ -19,7 +19,7 @@ export function DateStrip() {
       </Button>
       <time
         dateTime={dateString}
-        className="text-foreground min-w-[9.5rem] text-center font-mono text-sm font-medium tabular-nums"
+        className="text-foreground min-w-[9.5rem] text-center text-sm font-medium tabular-nums"
       >
         {dateString}
       </time>

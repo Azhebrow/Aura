@@ -62,7 +62,7 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
             <p className="text-nano font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">
               {t('macros.calories')}
             </p>
-            <p className="font-mono text-base font-semibold tabular-nums tracking-tight text-foreground">
+            <p className="text-base font-semibold tabular-nums tracking-tight text-foreground">
               {Math.round(totals.calories)}
               {kcalHas ? (
                 <span className="text-xs font-normal text-[var(--aura-text-subtle)]">
@@ -76,7 +76,7 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
           </div>
         </div>
         {kcalHas ? (
-          <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--aura-text-muted)]">{kcalPct}%</span>
+          <span className="shrink-0 text-xs tabular-nums text-[var(--aura-text-muted)]">{kcalPct}%</span>
         ) : null}
       </div>
 
@@ -106,7 +106,7 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
                   {label}
                 </span>
               </div>
-              <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
+              <p className="text-sm font-semibold tabular-nums text-foreground">
                 {Math.round(current)}
                 <span className="text-nano font-normal text-[var(--aura-text-subtle)]">
                   {hasT ? ` / ${Math.round(target)} г` : ' г'}

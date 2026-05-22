@@ -168,7 +168,7 @@ export function VowsSingleViewer({ vows }: { vows: AuraRow[] }) {
         right={
           <div className="flex items-center gap-2">
             {vows.length > 1 && (
-              <span className="text-muted-foreground font-mono text-xs tabular-nums">
+              <span className="text-muted-foreground text-xs tabular-nums">
                 {idx + 1}/{vows.length}
               </span>
             )}

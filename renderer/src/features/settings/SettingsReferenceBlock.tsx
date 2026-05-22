@@ -310,7 +310,7 @@ export function SettingsReferenceBlock({
                         <div className="mx-2 mb-1.5 mt-0.5 rounded-md bg-[var(--aura-surface-raised)] px-3 py-2.5">
                           <p className="leading-relaxed text-foreground/75 mb-2">{func.description}</p>
                           <p className="text-micro font-bold uppercase tracking-widest text-[var(--aura-text-muted)] mb-1">Пример</p>
-                          <p className="font-mono text-caption text-foreground/70 leading-relaxed">{func.example}</p>
+                          <p className="text-caption text-foreground/70 leading-relaxed">{func.example}</p>
                         </div>
                       </div>
                     </div>

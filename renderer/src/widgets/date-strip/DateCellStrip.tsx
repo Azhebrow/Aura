@@ -229,7 +229,7 @@ export function DateCellStrip() {
               <span className={cn('font-medium uppercase opacity-80', isSel && 'text-primary-foreground/90')}>
                 {dow}
               </span>
-              <span className="font-mono text-xs font-semibold tabular-nums sm:text-sm">
+              <span className="text-xs font-semibold tabular-nums sm:text-sm">
                 {isSel && isLocked ? <Lock className="mx-auto size-3.5 sm:size-4" aria-hidden /> : dayNum}
               </span>
               <span

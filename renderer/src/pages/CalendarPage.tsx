@@ -318,7 +318,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
                         <Lock className="size-3 shrink-0 text-[var(--aura-text-disabled)]" aria-hidden />
                       ) : (
                         <span className={cn(
-                          'font-mono text-xs font-semibold tabular-nums leading-none',
+                          'text-xs font-semibold tabular-nums leading-none',
                           isToday && 'text-primary',
                         )}>
                           {d.getDate()}
@@ -333,7 +333,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
                     <span className="relative z-[1] mt-auto flex flex-col items-start justify-end">
                       {inMonth && !future ? (
                         <span className={cn(
-                          'font-mono text-nano tabular-nums leading-snug',
+                          'text-nano tabular-nums leading-snug',
                           isSel ? 'text-primary/80 font-semibold' : locked ? 'text-[var(--aura-text-disabled)]' : 'text-[var(--aura-text-muted)]'
                         )}>
                           {dd.text || '—'}
@@ -374,7 +374,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
                 )}>
                   <Ic className={cn('size-3', isActive ? 'text-primary' : 'text-[var(--aura-text-subtle)]')} aria-hidden />
                 </span>
-                <span className="min-w-0 flex-1 truncate font-mono text-xs tabular-nums">{row.text}</span>
+                <span className="min-w-0 flex-1 truncate text-xs tabular-nums">{row.text}</span>
               </button>
             );
           })}

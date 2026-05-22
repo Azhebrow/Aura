@@ -121,7 +121,7 @@ export function StepGoals({
           <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
             {([['100%', '+100'], ['50%', '0'], ['0%', '-100']] as const).map(([pct, pts]) => (
               <div key={pct} className="rounded-lg border border-border/45 bg-background/35 px-2 py-1.5">
-                <p className="font-mono text-xs font-bold text-foreground">{pts}</p>
+                <p className="text-xs font-bold text-foreground">{pts}</p>
                 <p className="text-nano text-muted-foreground">{pct}</p>
               </div>
             ))}

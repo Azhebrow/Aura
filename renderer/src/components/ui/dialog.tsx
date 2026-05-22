@@ -51,16 +51,37 @@ const DialogContent = React.forwardRef<
     showCloseButton?: boolean
     enableEnterToConfirm?: boolean
   }
->(function DialogContent({ className, children, showCloseButton = true, enableEnterToConfirm = false, onKeyDownCapture, ...props }, ref) {
+>(function DialogContent({ className, children, showCloseButton = true, enableEnterToConfirm = true, onKeyDownCapture, ...props }, ref) {
   const handleKeyDownCapture = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!enableEnterToConfirm) return
     if (event.key !== "Enter" || event.defaultPrevented || event.nativeEvent.isComposing) return
     const target = event.target as HTMLElement | null
     if (!target) return
+
+    // Textarea / rich-text: let default newline through
     if (target.closest("textarea,[contenteditable='true']")) return
+
+    // If a Radix popover, select, combobox, or similar overlay is open — let it handle Enter
+    const root = event.currentTarget
+    const hasOpenOverlay = root.querySelector<HTMLElement>(
+      "[data-radix-popper-content-wrapper],[data-state='open'][role='listbox'],[data-state='open'][role='dialog'],[data-state='open'][data-radix-select-viewport],[cmdk-list]"
+    )
+    if (hasOpenOverlay) return
+
+    // Input (text, number, …): blur to confirm value; next Enter will reach the save path
+    const inputEl = target.closest<HTMLInputElement>(
+      "input:not([type='button']):not([type='submit']):not([type='checkbox']):not([type='radio']):not([type='file'])"
+    )
+    if (inputEl) {
+      event.preventDefault()
+      inputEl.blur()
+      return
+    }
+
+    // Button / link already focused: allow its default click / action (don't double-fire)
     if (target.closest("button,a,[role='button'],[data-enter-keep-default='true']")) return
 
-    const root = event.currentTarget
+    // Nothing interactive focused — find and click the confirm button
     const footer = root.querySelector<HTMLElement>("[data-modal-footer='true'], [data-slot='dialog-footer']")
     if (!footer) return
 

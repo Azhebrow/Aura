@@ -93,7 +93,7 @@ export function ColorPickerPanel({ value, onChange, onPresetPick, presets, allow
             />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-muted-foreground mb-1">Текущий цвет</p>
-              <p className="font-mono text-sm font-semibold truncate">{draft.toUpperCase()}</p>
+              <p className="text-sm font-semibold truncate">{draft.toUpperCase()}</p>
               <p className="text-xs text-muted-foreground mt-1">Нажмите на цвет в сетке для быстрого выбора</p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export function ColorPickerPanel({ value, onChange, onPresetPick, presets, allow
                 <div className="flex gap-2">
                   <Input
                     id="cfg-color-hex"
-                    className="font-mono text-sm"
+                    className="text-sm"
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onBlur={() => applyDraft(normalizeHexColor(draft))}

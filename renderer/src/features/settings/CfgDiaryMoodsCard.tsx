@@ -46,7 +46,7 @@ export function CfgDiaryMoodsCard() {
             >
               <AuraThemedIcon name={typeof r.icon === 'string' ? r.icon : null} className="size-7 shrink-0" />
               <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-foreground font-mono text-xs font-medium break-all">{String(r.id)}</span>
+                <span className="text-foreground text-xs font-medium break-all">{String(r.id)}</span>
                 <span className="text-muted-foreground text-xs">Уровень {String(r.level)}</span>
               </div>
             </div>

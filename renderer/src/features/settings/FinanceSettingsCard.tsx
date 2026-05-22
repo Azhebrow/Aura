@@ -92,7 +92,7 @@ export function FinanceSettingsCard() {
                 {CURRENCY_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value} className="text-xs">
                     <span className="flex items-center gap-2">
-                      <span className="w-5 text-center font-mono font-semibold text-[var(--primary)]">{o.symbol}</span>
+                      <span className="w-5 text-center font-semibold text-[var(--primary)]">{o.symbol}</span>
                       <span>{o.label}</span>
                       <span className="text-[var(--aura-text-muted)]">{o.code}</span>
                     </span>

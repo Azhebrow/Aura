@@ -298,7 +298,7 @@ export function SidebarDaySnapshot({ compact = false }: { compact?: boolean } = 
 
         {displayPct != null ? (
           <div className="text-right leading-none">
-            <p className={cn('font-mono font-semibold tabular-nums text-primary', isDense ? 'text-sm' : 'text-[15px]')}>{displayPct}%</p>
+            <p className={cn('font-semibold tabular-nums text-primary', isDense ? 'text-sm' : 'text-[15px]')}>{displayPct}%</p>
             <p className={cn('mt-1 text-[var(--aura-text-disabled)]', isDense ? 'text-nano' : 'text-caption')}>прогресс</p>
           </div>
         ) : null}

@@ -73,7 +73,7 @@ export function GoalTaskDialog({ open, onOpenChange, initial, onSubmit }: GoalTa
               <CfgLikeDialogRow label="Иконка">
                 <button type="button" className={CFG_DIALOG_ICON_TRIGGER_CN} onClick={() => setIconPickerOpen(true)}>
                   <AuraThemedIcon name={icon || null} className="size-5 shrink-0" />
-                  <span className="text-muted-foreground min-w-0 truncate font-mono text-xs">{icon || '—'}</span>
+                  <span className="text-muted-foreground min-w-0 truncate text-xs">{icon || '—'}</span>
                 </button>
               </CfgLikeDialogRow>
               <CfgLikeDialogRow label="Тип">

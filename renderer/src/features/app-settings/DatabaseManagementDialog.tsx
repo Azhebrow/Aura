@@ -503,7 +503,7 @@ export function DatabaseManagementDialog({
               <button
                 type="button"
                 onClick={openDatabaseFolder}
-                className="mt-1 block max-w-full truncate text-left font-mono text-xs text-foreground hover:underline disabled:pointer-events-none disabled:text-[var(--aura-text-disabled)]"
+                className="mt-1 block max-w-full truncate text-left text-xs text-foreground hover:underline disabled:pointer-events-none disabled:text-[var(--aura-text-disabled)]"
                 title={stats?.path || 'Путь не найден'}
                 disabled={!stats?.path}
               >
@@ -512,11 +512,11 @@ export function DatabaseManagementDialog({
             </section>
             <section className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
               <p className="text-caption font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">Размер</p>
-              <p className="mt-1 font-mono text-base font-semibold tabular-nums text-foreground">{stats?.fileSizeFormatted ?? '—'}</p>
+              <p className="mt-1 text-base font-semibold tabular-nums text-foreground">{stats?.fileSizeFormatted ?? '—'}</p>
             </section>
             <section className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
               <p className="text-caption font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">Записи</p>
-              <p className="mt-1 font-mono text-base font-semibold tabular-nums text-foreground">{(stats?.totalRecords ?? 0).toLocaleString('ru-RU')}</p>
+              <p className="mt-1 text-base font-semibold tabular-nums text-foreground">{(stats?.totalRecords ?? 0).toLocaleString('ru-RU')}</p>
             </section>
           </div>
 
@@ -553,9 +553,9 @@ export function DatabaseManagementDialog({
                                 <Icon className="size-3.5 shrink-0 text-[var(--aura-text-muted)]" />
                                 <span className="truncate">{meta?.label ?? table.name}</span>
                               </p>
-                              <p className="truncate font-mono text-caption text-[var(--aura-text-muted)]">{table.name}</p>
+                              <p className="truncate text-caption text-[var(--aura-text-muted)]">{table.name}</p>
                             </div>
-                            <span className="shrink-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-1.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
+                            <span className="shrink-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-1.5 py-0.5 text-xs tabular-nums text-foreground">
                               {table.rowCount.toLocaleString('ru-RU')}
                             </span>
                           </div>

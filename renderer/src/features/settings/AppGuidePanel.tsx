@@ -183,8 +183,8 @@ function RankRow({ n, name, pts, next, color }: typeof RANKS[number]) {
     <div className={cn('flex items-center gap-2 px-4 py-2.5 border-b border-border/10 last:border-0 min-w-0', isMax && 'bg-amber-500/5')}>
       <span className={cn('size-5 shrink-0 flex items-center justify-center rounded-md text-nano font-bold', c.bg, c.text)}>{n}</span>
       <span className={cn('text-xs font-semibold flex-1 min-w-0', isMax ? 'text-foreground' : 'text-foreground/80')}>{name}</span>
-      <span className="font-mono text-caption text-muted-foreground/60 shrink-0 text-right">{pts}</span>
-      <span className="font-mono text-caption text-muted-foreground/35 shrink-0 text-right hidden sm:block">
+      <span className="text-caption text-muted-foreground/60 shrink-0 text-right">{pts}</span>
+      <span className="text-caption text-muted-foreground/35 shrink-0 text-right hidden sm:block">
         {next === '—' ? <span className={cn('font-semibold', c.text)}>пик</span> : `→ ${next}`}
       </span>
     </div>
@@ -308,7 +308,7 @@ export function AppGuidePanel() {
               const c = COLOR_MAP[color];
               return (
                 <div key={pct} className={cn('rounded-lg border px-3 py-3 text-center', c.bg, c.border)}>
-                  <p className={cn('font-mono text-base font-bold', c.text)}>{pts}</p>
+                  <p className={cn('text-base font-bold', c.text)}>{pts}</p>
                   <p className="text-caption text-muted-foreground/60 mt-0.5">{pct} дня</p>
                 </div>
               );
@@ -331,7 +331,7 @@ export function AppGuidePanel() {
                     <p className={cn('text-xs font-bold', c.text)}>{label}</p>
                     <p className="text-caption text-muted-foreground/55">{sub}</p>
                   </div>
-                  <span className={cn('font-mono text-xs font-bold shrink-0', c.text)}>{range}</span>
+                  <span className={cn('text-xs font-bold shrink-0', c.text)}>{range}</span>
                 </div>
               );
             })}
@@ -439,7 +439,7 @@ export function AppGuidePanel() {
           const c = COLOR_MAP[color];
           return (
             <div key={n} className={cn('flex gap-3.5 rounded-xl border px-4 py-3.5', c.bg, c.border)}>
-              <span className={cn('font-mono text-base font-bold shrink-0 w-6 leading-none pt-0.5', c.text)}>{n}</span>
+              <span className={cn('text-base font-bold shrink-0 w-6 leading-none pt-0.5', c.text)}>{n}</span>
               <div>
                 <p className="text-xs font-semibold text-foreground mb-0.5">{title}</p>
                 <p className="text-xs leading-relaxed text-muted-foreground">{desc}</p>

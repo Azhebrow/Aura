@@ -521,7 +521,7 @@ export function CfgSectionCard({ spec }: Props) {
           rows={tall ? 8 : 4}
           className={cn(
             'border-[var(--aura-border-soft)] bg-transparent w-full min-w-0 resize-y rounded-md border px-3 py-2 text-sm shadow-none',
-            tall ? 'text-left font-mono text-xs leading-relaxed' : 'text-center'
+            tall ? 'text-left text-xs leading-relaxed' : 'text-center'
           )}
         />
       );

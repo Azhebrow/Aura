@@ -108,7 +108,7 @@ export function GoalEditDialog({ open, onOpenChange, title, initial, supportsCol
                 <CfgLikeDialogRow label="Иконка">
                   <button type="button" className={CFG_DIALOG_ICON_TRIGGER_CN} onMouseEnter={warmIconsManifest} onFocus={warmIconsManifest} onClick={() => setIconPickerOpen(true)}>
                     <AuraThemedIcon name={icon || null} className="size-5 shrink-0" />
-                    <span className="text-muted-foreground min-w-0 truncate font-mono text-xs">{icon || '—'}</span>
+                    <span className="text-muted-foreground min-w-0 truncate text-xs">{icon || '—'}</span>
                   </button>
                 </CfgLikeDialogRow>
                 {supportsColor ? (

@@ -50,7 +50,9 @@ export function ColoredAuraIcon({ name, tint, className, size = 20 }: Props) {
   const paint = useMemo(() => normalizeCssColorForPaint(tint ?? undefined), [tint]);
 
   if (!fileBase) {
-    return <Circle className={cn('text-muted-foreground shrink-0', className)} style={{ width: pxToRem(size), height: pxToRem(size) }} strokeWidth={1.5} />;
+    // Fallback circle: use tint color if provided, otherwise muted
+    const circleStyle = paint ? { color: paint, ...({ width: pxToRem(size), height: pxToRem(size) } as CSSProperties) } : { width: pxToRem(size), height: pxToRem(size) };
+    return <Circle className={cn(paint ? '' : 'text-muted-foreground', 'shrink-0', className)} style={circleStyle} strokeWidth={1.5} />;
   }
 
   if (!paint) {

@@ -241,8 +241,8 @@
   --aura-hover-bg:         color-mix(in oklch, var(--muted) 50%, transparent);
   --aura-active-bg:        color-mix(in oklch, var(--muted) 80%, transparent);
   --aura-disabled-opacity: 0.45;
-  --aura-border-soft: color-mix(in oklab, var(--foreground) 12%, transparent);
-  --aura-border-strong: color-mix(in oklab, var(--foreground) 20%, transparent);
+  --aura-border-soft: color-mix(in oklab, var(--foreground) 16%, transparent);
+  --aura-border-strong: color-mix(in oklab, var(--foreground) 28%, transparent);
   --aura-surface-shell: var(--background);
   --aura-surface-panel: color-mix(in oklab, var(--card) 82%, var(--background));
   /* control = elevated above card/popover; item = same as card */
@@ -331,7 +331,7 @@ html[data-theme='light'] {
   --sidebar-primary-foreground: oklch(0.97 0 0);
   --sidebar-accent: oklch(0.255 0.01 214);
   --sidebar-accent-foreground: oklch(0.97 0 0);
-  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-border: oklch(1 0 0 / 13%);
   --sidebar-ring: oklch(0.439 0 0);
   --surface: oklch(0.19 0 0);
   --surface-foreground: oklch(0.62 0 0);
@@ -353,8 +353,8 @@ html[data-theme='light'] {
   --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.45), 0 1px 2px oklch(0 0 0 / 0.28);
   --shadow-md: 0 2px 8px oklch(0 0 0 / 0.52), 0 1px 3px oklch(0 0 0 / 0.32);
   --shadow-lg: 0 4px 16px oklch(0 0 0 / 0.6), 0 2px 6px oklch(0 0 0 / 0.38);
-  --aura-border-soft: oklch(1 0 0 / 10%);
-  --aura-border-strong: oklch(1 0 0 / 18%);
+  --aura-border-soft: oklch(1 0 0 / 15%);
+  --aura-border-strong: oklch(1 0 0 / 26%);
   --aura-surface-control: oklch(0.245 0 0);
   --aura-surface-item: var(--card);
   --aura-surface-raised: oklch(0.27 0 0);
@@ -401,8 +401,8 @@ html[data-theme='light'] {
   --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.22);
   --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.32), 0 1px 2px oklch(0 0 0 / 0.18);
   --shadow-md: 0 2px 8px oklch(0 0 0 / 0.38), 0 1px 3px oklch(0 0 0 / 0.22);
-  --aura-border-soft: color-mix(in oklab, var(--foreground) 10%, transparent);
-  --aura-border-strong: color-mix(in oklab, var(--foreground) 18%, transparent);
+  --aura-border-soft: color-mix(in oklab, var(--foreground) 14%, transparent);
+  --aura-border-strong: color-mix(in oklab, var(--foreground) 24%, transparent);
   --aura-surface-control: oklch(0.335 0.012 262);
   --aura-surface-item: var(--card);
   --aura-surface-raised: oklch(0.365 0.012 262);
@@ -756,7 +756,7 @@ html.dark[data-icon-theme='minimal'] .aura-icon-plate {
 }
 
 .aura-icon-plate img {
-  filter: drop-shadow(0 0 0.35px oklch(0.2 0 0 / 0.35));
+  filter: drop-shadow(0 0 0.5px oklch(0.2 0 0 / 0.45)) drop-shadow(0 0 1px oklch(0.2 0 0 / 0.18));
 }
 
 .dark .aura-icon-plate img {
@@ -768,11 +768,16 @@ html.dark[data-icon-theme='minimal'] .aura-icon-plate {
    ════════════════════════════════════════════════ */
 
 .aura-colored-icon {
-  filter: drop-shadow(0 0 0.35px oklch(0.2 0 0 / 0.24));
+  filter: drop-shadow(0 0 0.5px oklch(0.2 0 0 / 0.32)) drop-shadow(0 0 1px oklch(0.2 0 0 / 0.12));
   transition:
     filter var(--aura-motion-duration-base) var(--aura-motion-ease),
     opacity var(--aura-motion-duration-base) var(--aura-motion-ease),
     transform var(--aura-motion-duration-base) var(--aura-motion-ease);
+}
+
+/* Light theme — иконки более выразительные */
+html:not(.dark) .aura-colored-icon {
+  filter: drop-shadow(0 0 0.65px oklch(0.2 0 0 / 0.42)) drop-shadow(0 0 1.2px oklch(0.2 0 0 / 0.16));
 }
 
 html[data-icon-theme='minimal'] .aura-colored-icon {
@@ -794,10 +799,22 @@ html[data-icon-theme='gradient'] .aura-colored-icon {
     drop-shadow(0 0 0.35px oklch(0.2 0 0 / 0.2));
 }
 
+/* Light theme gradient icons — боевой контраст */
+html:not(.dark)[data-icon-theme='gradient'] .aura-colored-icon {
+  filter:
+    drop-shadow(0 0 1.6px color-mix(in oklab, var(--aura-icon-paint) 48%, transparent))
+    drop-shadow(0 0 0.5px oklch(0.2 0 0 / 0.28));
+}
+
 html.dark[data-icon-theme='gradient'] .aura-colored-icon {
   filter:
     drop-shadow(0 0 2px color-mix(in oklab, var(--aura-icon-paint) 48%, transparent))
     drop-shadow(0 0 0.45px oklch(1 0 0 / 0.2));
+}
+
+/* ─── Light theme SVG icons (Lucide, category icons) — боевой вес ───────── */
+html:not(.dark) svg:not([data-slot='scrollbar']) {
+  filter: drop-shadow(0 0 0.4px oklch(0.2 0 0 / 0.3));
 }
 
 /* ════════════════════════════════════════════════
@@ -1119,10 +1136,10 @@ html[data-theme='light'][data-color-filter="pastel"] {
   --secondary:          oklch(0.944 0 0);
   --muted:              oklch(0.935 0 0);
   --accent:             oklch(0.926 0 0);
-  --border:             oklch(0.68 0 0);
-  --input:              oklch(0.68 0 0);
-  --aura-border-soft:   oklch(0 0 0 / 14%);
-  --aura-border-strong: oklch(0 0 0 / 24%);
+  --border:             oklch(0.63 0 0);
+  --input:              oklch(0.63 0 0);
+  --aura-border-soft:   oklch(0 0 0 / 20%);
+  --aura-border-strong: oklch(0 0 0 / 34%);
 }
 
 /* contrast(1.2) выбеливает всё выше L=0.95 — нужен чуть более тёмный фон */
@@ -1133,10 +1150,76 @@ html[data-theme='light'][data-color-filter="contrast"] {
   --secondary:          oklch(0.934 0 0);
   --muted:              oklch(0.924 0 0);
   --accent:             oklch(0.914 0 0);
-  --border:             oklch(0.64 0 0);
-  --input:              oklch(0.64 0 0);
-  --aura-border-soft:   oklch(0 0 0 / 14%);
-  --aura-border-strong: oklch(0 0 0 / 24%);
+  --border:             oklch(0.60 0 0);
+  --input:              oklch(0.60 0 0);
+  --aura-border-soft:   oklch(0 0 0 / 22%);
+  --aura-border-strong: oklch(0 0 0 / 36%);
+}
+
+/* Light theme warm/cool — лёгкий буст для фильтров с hue-rotate */
+html[data-theme='light'][data-color-filter="warm"],
+html[data-theme='light'][data-color-filter="cool"] {
+  --border: oklch(0.66 0.016 262);
+  --input:  oklch(0.66 0.016 262);
+  --aura-border-soft:   oklch(0 0 0 / 18%);
+  --aura-border-strong: oklch(0 0 0 / 30%);
+}
+
+/* ─── Тёмная тема: компенсация фильтров ──────────────────────────────────────
+   body-фильтр сжимает пиксели → поднимаем opacity у переменных на html,
+   которые не проходят через body filter. ─────────────────────────────────── */
+/* pastel — contrast(0.91) сильнее всего сжимает контраст границ */
+html.dark[data-color-filter="pastel"] {
+  --border:             oklch(1 0 0 / 20%);
+  --input:              oklch(1 0 0 / 20%);
+  --aura-border-soft:   oklch(1 0 0 / 22%);
+  --aura-border-strong: oklch(1 0 0 / 36%);
+}
+
+html.dark[data-color-filter="serious"] {
+  --border:             oklch(1 0 0 / 18%);
+  --input:              oklch(1 0 0 / 18%);
+  --aura-border-soft:   oklch(1 0 0 / 20%);
+  --aura-border-strong: oklch(1 0 0 / 34%);
+}
+
+html.dark[data-color-filter="warm"],
+html.dark[data-color-filter="cool"] {
+  --border:             oklch(1 0 0 / 17%);
+  --input:              oklch(1 0 0 / 17%);
+  --aura-border-soft:   oklch(1 0 0 / 19%);
+  --aura-border-strong: oklch(1 0 0 / 32%);
+}
+
+/* contrast(1.2) в тёмной — поднимает белые пиксели, границы видны сами,
+   но sidebar-border и aura-border-soft нужно немного подтянуть */
+html.dark[data-color-filter="contrast"] {
+  --border:             oklch(1 0 0 / 16%);
+  --input:              oklch(1 0 0 / 16%);
+  --aura-border-soft:   oklch(1 0 0 / 18%);
+  --aura-border-strong: oklch(1 0 0 / 30%);
+}
+
+/* ─── Dim-тема: те же поправки ───────────────────────────────────────────── */
+html.dark[data-theme='dim'][data-color-filter="pastel"] {
+  --aura-border-soft:   color-mix(in oklab, var(--foreground) 20%, transparent);
+  --aura-border-strong: color-mix(in oklab, var(--foreground) 34%, transparent);
+}
+
+html.dark[data-theme='dim'][data-color-filter="serious"] {
+  --aura-border-soft:   color-mix(in oklab, var(--foreground) 18%, transparent);
+  --aura-border-strong: color-mix(in oklab, var(--foreground) 30%, transparent);
+}
+
+html.dark[data-theme='dim'][data-color-filter="warm"],
+html.dark[data-theme='dim'][data-color-filter="cool"] {
+  --aura-border-soft:   color-mix(in oklab, var(--foreground) 17%, transparent);
+  --aura-border-strong: color-mix(in oklab, var(--foreground) 28%, transparent);
+}
+
+html.dark[data-theme='dim'][data-color-filter="contrast"] {
+  --aura-border-soft:   color-mix(in oklab, var(--foreground) 18%, transparent);
+  --aura-border-strong: color-mix(in oklab, var(--foreground) 30%, transparent);
 }
 
 /* Для ЧБ нейтрализуем цветные тинты в фонах (dim-тема с purple-тинтом) */
