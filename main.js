@@ -9,16 +9,8 @@ try {
   /* ignore */
 }
 
-// Инициализация базы данных
-let getDB;
-try {
-  const dbPath = path.join(__dirname, 'src', 'system', 'database', 'Database.js');
-  getDB = require(dbPath);
-  console.log('[Main] База данных загружена');
-} catch (e) {
-  console.warn('[Main] База данных недоступна:', e.message);
-  getDB = () => null;
-}
+// Database access moved to renderer process via web API
+let getDB = () => null;
 
 let mainWindow;
 let tray = null;
