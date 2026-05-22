@@ -1073,11 +1073,32 @@ html.dark[data-icon-theme='gradient'] .aura-colored-icon {
    Surface-переменные нейтрализуются до chroma=0 только для режимов,
    которые сильно меняют насыщенность — тогда saturate() на них не влияет.
    ─────────────────────────────────────────────────────────────────────────── */
-html[data-color-filter="serious"]  body { filter: saturate(0.55); }
-html[data-color-filter="warm"]     body { filter: hue-rotate(-18deg) saturate(1.08); }
-html[data-color-filter="cool"]     body { filter: hue-rotate(22deg) saturate(0.88); }
-html[data-color-filter="pastel"]   body { filter: saturate(0.65) brightness(1.1); }
-html[data-color-filter="contrast"] body { filter: contrast(1.25) saturate(1.25); }
+/* serious — загадочный, как в фэнтэзи: кинематографичный цветокор,
+   чуть холоднее в тенях, немного снижена насыщенность без «выцветания»,
+   контраст слегка выше — не реклама, а художественное кино / книжная обложка */
+html[data-color-filter="serious"]  body {
+  filter: contrast(1.08) saturate(0.78) sepia(0.10) hue-rotate(10deg) brightness(0.97);
+}
+
+/* warm — тёплый сдвиг, чуть живее */
+html[data-color-filter="warm"]     body {
+  filter: hue-rotate(-15deg) saturate(1.12) brightness(1.01) sepia(0.06);
+}
+
+/* cool — холодный, сдержанный */
+html[data-color-filter="cool"]     body {
+  filter: hue-rotate(20deg) saturate(0.9) brightness(0.99) contrast(1.03);
+}
+
+/* pastel — мягкий, меловой: контраст немного снижен, яркость тихая */
+html[data-color-filter="pastel"]   body {
+  filter: saturate(0.58) brightness(1.05) contrast(0.91);
+}
+
+/* contrast — кинематографичный контраст без перенасыщения */
+html[data-color-filter="contrast"] body {
+  filter: contrast(1.2) saturate(1.08) brightness(0.96);
+}
 html[data-color-filter="bw"]       body { filter: saturate(0); }
 
 /* Для ЧБ нейтрализуем цветные тинты в фонах (dim-тема с purple-тинтом) */

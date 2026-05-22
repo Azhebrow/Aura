@@ -87,7 +87,7 @@ function StatRow({ icon: Icon, label, value, muted, compact }: RowProps) {
       </div>
       <p
         className={cn(
-          'max-w-[7.25rem] truncate whitespace-nowrap text-right font-mono font-semibold tabular-nums text-foreground',
+          'max-w-[7.25rem] truncate whitespace-nowrap text-right font-semibold tabular-nums text-foreground',
           compact ? 'text-caption' : 'text-xs',
           muted && 'text-muted-foreground font-medium'
         )}

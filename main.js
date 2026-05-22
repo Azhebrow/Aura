@@ -258,14 +258,24 @@ function createWindow() {
     }
   }
 
-  // Горячая клавиша для обновления страницы (только F5)
-  const reloadHandler = () => {
-    if (isWindowValid()) {
-      mainWindow.reload();
+  // Перехват клавиатуры: блокируем Alt+R (и Ctrl+R / Cmd+R) во избежание
+  // случайной перезагрузки. F5 оставляем только для сфокусированного окна
+  // (через before-input-event, а не globalShortcut — иначе работало бы
+  // даже когда окно не активно).
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+    const key = input.key.toLowerCase();
+    // Блокируем Alt+R полностью
+    if (input.alt && key === 'r') {
+      event.preventDefault();
+      return;
     }
-  };
-
-  globalShortcut.register('F5', reloadHandler);
+    // F5 — перезагрузка только при фокусе на окне
+    if (key === 'f5' && !input.alt && !input.control && !input.meta) {
+      if (isWindowValid()) mainWindow.reload();
+      event.preventDefault();
+    }
+  });
 
   // IPC обработчик для обновления горячей клавиши DevTools Tab
   ipcMain.on('devtools-tab-setting-changed', (event, enabled) => {
