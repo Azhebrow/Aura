@@ -4,8 +4,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-function easeOutCubic(t: number): number {
-  return 1 - (1 - t) ** 3;
+/**
+ * easeInOutCubic — нулевая начальная и конечная скорость.
+ * Устраняет «рывок» в начале: первый кадр (~16ms/400ms) проходит ~0.003%
+ * диапазона вместо ~11.5% у easeOutCubic. CSS-эквивалент: cubic-bezier(0.4,0,0.2,1).
+ */
+function ease(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
 /**
@@ -41,7 +46,7 @@ export function useAnimatedValue(target: number, durationMs = 400): number {
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
-      const v = from + (target - from) * easeOutCubic(t);
+      const v = from + (target - from) * ease(t);
       setDisplayed(t >= 1 ? target : v);
       if (t < 1) rafRef.current = requestAnimationFrame(tick);
     };
@@ -91,7 +96,7 @@ export function useAnimatedValues(
 
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
-      const eased = easeOutCubic(t);
+      const eased = ease(t);
       const next = targets.map((tgt, i) => {
         const f = from[i] ?? tgt;
         return t >= 1 ? tgt : f + (tgt - f) * eased;
