@@ -1101,6 +1101,31 @@ html[data-color-filter="contrast"] body {
 }
 html[data-color-filter="bw"]       body { filter: saturate(0); }
 
+/* ─── Светлая тема: нейтрализация слияния поверхностей ──────────────────────
+   В светлой теме фон (L=0.952) и карточка (L=0.995) отличаются всего на 0.043.
+   Фильтры разрушают это:
+   — pastel  contrast(0.91) сжимает разницу → оба тянутся к серединке
+   — contrast contrast(1.2)  оба значения >0.95 улетают в чистый белый
+   — serious  sepia+hue-rotate сдвигает оба в одну сторону
+   Решение: задаём поверхности с chroma=0 (hue-rotate не даст посторонних
+   оттенков) и достаточной разницей в яркости, чтобы после любого фильтра
+   расслоение оставалось видимым.
+   ─────────────────────────────────────────────────────────────────────────── */
+html[data-theme='light'][data-color-filter="serious"],
+html[data-theme='light'][data-color-filter="pastel"],
+html[data-theme='light'][data-color-filter="contrast"] {
+  --background:         oklch(0.84 0 0);   /* чётко серый — после фильтра остаётся тёмнее карточки */
+  --card:               oklch(0.99 0 0);   /* почти белый */
+  --popover:            oklch(0.99 0 0);
+  --secondary:          oklch(0.92 0 0);
+  --muted:              oklch(0.91 0 0);
+  --accent:             oklch(0.90 0 0);
+  --border:             oklch(0.58 0 0);   /* нейтральная граница, видна после любого фильтра */
+  --input:              oklch(0.58 0 0);
+  --aura-border-soft:   oklch(0 0 0 / 18%);
+  --aura-border-strong: oklch(0 0 0 / 30%);
+}
+
 /* Для ЧБ нейтрализуем цветные тинты в фонах (dim-тема с purple-тинтом) */
 html[data-color-filter="bw"].dark[data-theme="dim"] {
   --background:           oklch(0.22 0 0);
