@@ -277,6 +277,7 @@ export async function fetchBootstrap(
           }
         }
         const data = {
+          date,
           categoryProgresses: {},
           appSettings: callDbMethod(dbAny, 'getAppSettings', [], null),
           cfgTasks,

@@ -145,6 +145,11 @@ export function buildHomeDaySnapshot(
   date: string,
   bootstrap?: HomeDayBootstrap | null
 ): HomeDaySnapshot {
+  // Only trust volatile (date-specific) data from bootstrap when the dates match.
+  // If bootstrap is from a different day (stale after day switch), using its
+  // volatile fields would cause a brief flash of wrong progress values.
+  const bootstrapDateFresh = bootstrap?.date === date;
+
   const cfgTasks = safeRows(bootstrap?.cfgTasks);
   const tasks = cfgTasks.length ? cfgTasks : safeRows(db.getAll('cfg_tasks'));
   const morningCfg = safeRows(bootstrap?.cfgRitualsMorning).length
@@ -153,23 +158,23 @@ export function buildHomeDaySnapshot(
   const eveningCfg = safeRows(bootstrap?.cfgRitualsEvening).length
     ? safeRows(bootstrap?.cfgRitualsEvening)
     : safeRows(db.getAll('cfg_rituals_evening'));
-  const morningRows = Array.isArray(bootstrap?.ritualsMorningRows)
+  const morningRows = bootstrapDateFresh && Array.isArray(bootstrap?.ritualsMorningRows)
     ? safeRows(bootstrap?.ritualsMorningRows)
     : safeRows(db.getRitualsMorning(date));
-  const eveningRows = Array.isArray(bootstrap?.ritualsEveningRows)
+  const eveningRows = bootstrapDateFresh && Array.isArray(bootstrap?.ritualsEveningRows)
     ? safeRows(bootstrap?.ritualsEveningRows)
     : safeRows(db.getRitualsEvening(date));
 
   const taskProgressById: Record<string, AuraTaskProgress | null> = {};
   const timerTotalsByTaskId: Record<string, number> = {};
-  const bootstrapProgress = bootstrap?.taskProgressById && typeof bootstrap.taskProgressById === 'object'
+  const bootstrapProgress = bootstrapDateFresh && bootstrap?.taskProgressById && typeof bootstrap.taskProgressById === 'object'
     ? bootstrap.taskProgressById
     : {};
-  const bootstrapTimers = bootstrap?.timerTotalsByTaskId && typeof bootstrap.timerTotalsByTaskId === 'object'
+  const bootstrapTimers = bootstrapDateFresh && bootstrap?.timerTotalsByTaskId && typeof bootstrap.timerTotalsByTaskId === 'object'
     ? bootstrap.timerTotalsByTaskId
     : {};
 
-  const nutritionEntries = Array.isArray(bootstrap?.nutritionEntries)
+  const nutritionEntries = bootstrapDateFresh && Array.isArray(bootstrap?.nutritionEntries)
     ? safeRows(bootstrap?.nutritionEntries)
     : safeRows(db.getNutritionEntries(date));
   const appSettings = (bootstrap?.appSettings ?? db.getAppSettings()) as AuraRow | null;
@@ -179,7 +184,7 @@ export function buildHomeDaySnapshot(
   const nutritionPct = nutritionTarget > 0
     ? clampPct((nutritionTotals.calories / nutritionTarget) * 100)
     : nutritionTotals.calories > 0 ? 100 : 0;
-  const ritualCountsByType = bootstrap?.ritualCountsByType && typeof bootstrap.ritualCountsByType === 'object'
+  const ritualCountsByType = bootstrapDateFresh && bootstrap?.ritualCountsByType && typeof bootstrap.ritualCountsByType === 'object'
     ? bootstrap.ritualCountsByType
     : buildRitualCounts(morningCfg, eveningCfg, morningRows, eveningRows);
 

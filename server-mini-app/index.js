@@ -162,6 +162,7 @@ function bootstrapHome(db, date) {
     }
   }
   return {
+    date,
     categoryProgresses: {},
     appSettings: db.getAppSettings?.() ?? null,
     cfgTasks,
