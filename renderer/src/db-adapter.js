@@ -220,6 +220,69 @@ function createDatabaseAdapter(db) {
       }
     },
 
+    // Timer sessions
+    getTimerSessions(date) {
+      try {
+        return db.prepare('SELECT * FROM timer_sessions WHERE date = ? ORDER BY id DESC').all(date) || [];
+      } catch {
+        return [];
+      }
+    },
+
+    addTimerSession(session) {
+      try {
+        const keys = Object.keys(session);
+        const placeholders = keys.map(() => '?').join(',');
+        db.prepare(`INSERT INTO timer_sessions (${keys.join(',')}) VALUES (${placeholders})`).run(...Object.values(session));
+      } catch {
+        // silent
+      }
+    },
+
+    updateTimerSession(sessionId, data) {
+      try {
+        const keys = Object.keys(data);
+        const updates = keys.map(k => `${k} = ?`).join(',');
+        db.prepare(`UPDATE timer_sessions SET ${updates} WHERE id = ?`).run(...Object.values(data), sessionId);
+      } catch {
+        // silent
+      }
+    },
+
+    deleteTimerSession(sessionId) {
+      try {
+        db.prepare('DELETE FROM timer_sessions WHERE id = ?').run(sessionId);
+      } catch {
+        // silent
+      }
+    },
+
+    getTaskTimerTotal(taskId, date) {
+      try {
+        const result = db.prepare('SELECT SUM(duration) as total FROM timer_sessions WHERE task_id = ? AND date = ?').get(taskId, date);
+        return result?.total || 0;
+      } catch {
+        return 0;
+      }
+    },
+
+    // Task methods
+    getTaskProgress(taskId, date) {
+      try {
+        return db.prepare('SELECT * FROM task_progress WHERE task_id = ? AND date = ? LIMIT 1').get(taskId, date);
+      } catch {
+        return null;
+      }
+    },
+
+    saveTaskProgress(taskId, date, data) {
+      try {
+        db.prepare(`INSERT OR REPLACE INTO task_progress (task_id, date, ${Object.keys(data).join(',')}) VALUES (?, ?, ${Object.keys(data).map(() => '?').join(',')})`).run(taskId, date, ...Object.values(data));
+      } catch {
+        // silent
+      }
+    },
+
     // Stub methods to prevent errors
     getDailyPlans() { return []; },
     addDailyPlan() {},
@@ -227,6 +290,11 @@ function createDatabaseAdapter(db) {
     getRitualEveningStatus() { return null; },
     saveRitualMorning() {},
     saveRitualEvening() {},
+    getCategoryProgresses() { return {}; },
+    getGoalTasksProgressByDate() { return []; },
+    getAllGoals() { return []; },
+    getStagesByGoal() { return []; },
+    getTasksByStage() { return []; },
   };
 }
 
