@@ -97,13 +97,13 @@ function TaskRowFrame({ icon, accent, title, pct, satisfied, disabled, control, 
     <li className={cn('relative grid grid-rows-2 overflow-hidden [@container(min-width:720px)]:flex [@container(min-width:720px)]:flex-row [@container(min-width:720px)]:items-stretch', ROW_H, disabled && 'pointer-events-none opacity-45')}>
       {/* Progress fill — lg only */}
       <div className="pointer-events-none absolute inset-y-0 left-0 hidden [@container(min-width:720px)]:block"
-        style={{ width: `${uiPct}%`, backgroundColor: accent, opacity: satisfied ? 0.16 : uiPct > 0 ? 0.12 : 0.05 }} aria-hidden />
+        style={{ width: `${uiPct}%`, backgroundColor: accent, opacity: satisfied ? 0.16 : uiPct > 0 ? 0.12 : 0.05, transition: 'width var(--aura-motion-duration-task-fill) var(--aura-motion-ease), opacity var(--aura-motion-duration-base) var(--aura-motion-ease)' }} aria-hidden />
 
       {/* Icon + label row */}
       <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden px-2 text-center cursor-default [@container(min-width:720px)]:h-auto [@container(min-width:720px)]:justify-start [@container(min-width:720px)]:gap-2 [@container(min-width:720px)]:px-3 [@container(min-width:720px)]:text-left">
         {/* Mobile fill */}
         <span className="pointer-events-none absolute inset-y-0 left-0 [@container(min-width:720px)]:hidden"
-          style={{ width: `${uiPct}%`, backgroundColor: accent, opacity: satisfied ? 0.16 : uiPct > 0 ? 0.12 : 0.05 }} aria-hidden />
+          style={{ width: `${uiPct}%`, backgroundColor: accent, opacity: satisfied ? 0.16 : uiPct > 0 ? 0.12 : 0.05, transition: 'width var(--aura-motion-duration-task-fill) var(--aura-motion-ease), opacity var(--aura-motion-duration-base) var(--aura-motion-ease)' }} aria-hidden />
         <ColoredAuraIcon name={icon} size={14} tint={satisfied ? accent : uiPct > 0 ? accent : 'var(--aura-text-muted)'} className="relative z-10 shrink-0" />
         <span className={cn('relative z-10 min-w-0 max-w-[7rem] truncate text-sm leading-none [@container(min-width:720px)]:max-w-none', satisfied ? 'text-foreground font-medium' : 'text-foreground')}>
           {title}

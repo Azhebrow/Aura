@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Activity, Ban, Clock, Sparkles, type LucideIcon } from 'lucide-react';
+import { useAnimatedValues } from '@/shared/hooks/use-animated-value';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useHomeDaySnapshot } from '@/shared/hooks/use-home-day-snapshot';
@@ -42,7 +43,9 @@ export function CategoryProgressCard({ cardClassName, contentClassName }: Catego
     return CATEGORIES.map((cat) => snapshot.categoryProgresses[cat] ?? 0);
   }, [snapshot]);
 
-  const displayData = todayData;
+  // Плавная анимация значений при смене дня или обновлении данных
+  const animatedData = useAnimatedValues(todayData ?? [0, 0, 0, 0]);
+  const displayData = todayData ? animatedData : todayData;
 
   const points = useMemo(() => {
     if (!displayData) return [];
