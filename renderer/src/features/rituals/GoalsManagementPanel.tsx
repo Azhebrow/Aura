@@ -426,7 +426,7 @@ export function GoalsManagementPanel() {
                         }}
                       >
                         {typeof currentGoal.icon === 'string' && currentGoal.icon ? (
-                          <AuraThemedIcon name={currentGoal.icon} className="size-4" />
+                          <AuraThemedIcon name={currentGoal.icon} className="size-4" tint={currentGoalHeroTint} />
                         ) : (
                           <Target className="size-4" strokeWidth={1.75} />
                         )}
@@ -446,6 +446,11 @@ export function GoalsManagementPanel() {
                         <p className="truncate text-sm font-semibold leading-tight text-foreground">
                           {String(currentGoal.title ?? currentGoal.id)}
                         </p>
+                        {currentGoal.description ? (
+                          <p className="mt-1 text-xs leading-relaxed text-[var(--aura-text-subtle)]">
+                            {String(currentGoal.description)}
+                          </p>
+                        ) : null}
                       </div>
                       <Button
                         type="button"
@@ -619,9 +624,16 @@ export function GoalsManagementPanel() {
                                 stageOrderRoman(i)
                               )}
                             </div>
-                            <span className={cn('min-w-0 flex-1 truncate text-sm font-semibold', stageClasses.title)}>
-                              {String(s.title ?? s.id)}
-                            </span>
+                            <div className={cn('min-w-0 flex-1')}>
+                              <span className={cn('truncate text-sm font-semibold block', stageClasses.title)}>
+                                {String(s.title ?? s.id)}
+                              </span>
+                              {s.description ? (
+                                <p className={cn('mt-0.5 text-xs leading-relaxed', stageClasses.title)}>
+                                  {String(s.description)}
+                                </p>
+                              ) : null}
+                            </div>
                             <span className={cn('shrink-0 text-xs tabular-nums', stageClasses.meta)}>
                               {stageP.total === 0
                                 ? ''
@@ -715,8 +727,11 @@ export function GoalsManagementPanel() {
                                                 )}>
                                                   {String(t.title ?? t.id)}
                                                 </span>
-                                                {t.description && !isTaskDone ? (
-                                                  <span className="text-[var(--aura-text-subtle)] mt-0.5 block whitespace-pre-wrap text-xs leading-relaxed">
+                                                {t.description ? (
+                                                  <span className={cn(
+                                                    'mt-0.5 block whitespace-pre-wrap text-xs leading-relaxed',
+                                                    Number(raw?.completed) === 1 ? 'text-[var(--aura-text-disabled)] line-through' : 'text-[var(--aura-text-subtle)]'
+                                                  )}>
                                                     {String(t.description)}
                                                   </span>
                                                 ) : null}
@@ -772,8 +787,11 @@ export function GoalsManagementPanel() {
                                                 </div>
                                               ) : null}
                                             </div>
-                                            {t.description && !isTaskDone ? (
-                                              <p className="text-[var(--aura-text-subtle)] whitespace-pre-wrap text-xs leading-relaxed">
+                                            {t.description ? (
+                                              <p className={cn(
+                                                'whitespace-pre-wrap text-xs leading-relaxed',
+                                                Number(raw?.completed) === 1 ? 'text-[var(--aura-text-disabled)] line-through' : 'text-[var(--aura-text-subtle)]'
+                                              )}>
                                                 {String(t.description)}
                                               </p>
                                             ) : null}
