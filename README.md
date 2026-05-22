@@ -1,7 +1,7 @@
 <h1 align="center">AURA</h1>
 
 <p align="center">
-  Offline-first desktop dashboard for daily planning, focus, rituals, diary, nutrition, finance, stats, and ranks.
+  Персональная операционная система жизни — офлайн, на вашем компьютере, без облаков.
 </p>
 
 <p align="center">
@@ -13,34 +13,59 @@
 
 ---
 
-## What Is AURA?
+## Концепция
 
-AURA is a personal productivity app built as a local Electron desktop application.
+Большинство приложений для продуктивности решают одну задачу и делают это хорошо. AURA идёт дальше — это единая среда, в которой живёт весь ваш день: от утренних ритуалов до финансовых записей, от фокус-сессий до дневника настроения.
 
-It brings the pieces of a daily operating system into one place: tasks, rituals, focus sessions, diary entries, nutrition, finance, statistics, and a rank/points system. The app is designed around local-first data: your personal information lives in a local SQLite database, not in a cloud service.
+Идея проста: **один экран, одна база, полный контроль**. Никакой синхронизации с облаком, никаких подписок, никаких утечек личных данных. Все данные хранятся локально в SQLite-базе на вашем компьютере.
 
-## Highlights
+AURA — это не планировщик и не трекер привычек. Это **личный дашборд**, который отражает, как проходит ваша жизнь: насколько вы двигаетесь, что едите, сколько тратите, как себя чувствуете, над чем работаете. Система очков и рангов добавляет игровой слой — каждое выполненное дело приносит баллы, баллы формируют ваш ранг.
 
-- Daily dashboard with plans, tasks, rituals, progress, nutrition, finances, and points.
-- Focus timer with task selection, sessions, fullscreen mode, and ambient audio presets.
-- Diary with mood, categories, rich text, entries, and nutrition logging.
-- Configurable task categories, rituals, goals, accounts, products, presets, and page visibility.
-- Statistics for progress, points, time, nutrition, finance, mood, calendar history, and ranks.
-- Local SQLite storage with Electron desktop runtime.
+---
 
-## Tech Stack
+## Возможности
 
-| Layer | Tools |
-| --- | --- |
-| Desktop | Electron |
-| UI | React, TypeScript, Vite |
-| Styling | Tailwind CSS |
-| Storage | SQLite, better-sqlite3 |
-| Charts | ECharts |
-| Icons | Lucide, local icon masks |
+### Главный экран
+Дневной дашборд — сердце приложения. Здесь собрано всё: утренние и вечерние ритуалы, задачи по категориям (время, тело, обещания), питание с расчётом КБЖУ, финансовые записи и сводка очков за день. Каждый блок настраивается и может быть скрыт, если не нужен.
+
+### Таймер и фокус
+Полноэкранный фокус-таймер с выбором задачи, записью сессий и поддержкой фоновой музыки. Задачи делятся на три вкладки: рабочие, досуг-наполнение и досуг-побег. Для каждого типа — свой акцентный цвет и контекст. Сессии сохраняются и учитываются в статистике.
+
+### Ритуалы
+Настраиваемые утренние и вечерние ритуалы — чекбоксы, числовые цели, таймер, списки. Поддерживаются обещания (vows) — особый тип ритуала с жёсткой ответственностью.
+
+### Дневник
+Ежедневные записи с настроением, категориями и свободным текстом. Встроенный трекер питания с расчётом белков, жиров, углеводов и калорий на основе заданных продуктов и пресетов блюд. Пресеты — это блюда с составом ингредиентов, которые можно добавить за одно нажатие.
+
+### Финансы
+Учёт доходов и расходов по счетам. Разделение трат на обязательные и импульсивные. Настраиваемые категории и счета, видимые на главном экране.
+
+### Статистика
+Сводные графики по очкам, времени, питанию, финансам, настроению и задачам. Календарная история. Инсайты по неделям и месяцам.
+
+### Ранги
+Система очков: каждое выполненное действие добавляет баллы. Накопленные баллы определяют ваш ранг. Лестница рангов, история очков, прогресс до следующего уровня.
+
+### Настройки
+Полная конфигурация всего: продукты питания, пресеты блюд, типы задач, ритуалы, категории, счета, музыкальные пресеты, цвета, видимость секций. Встроенный онбординг с выбором акцентов и первичными пресетами.
+
+---
+
+## Технологии
+
+| Слой | Инструменты |
+|---|---|
+| Десктоп | Electron 25 |
+| Интерфейс | React 19, TypeScript 5, Vite |
+| Стилизация | Tailwind CSS, CSS-переменные |
+| База данных | SQLite, better-sqlite3 |
+| Графики | Apache ECharts |
+| Иконки | Lucide React, маски SVG |
 | i18n | i18next |
 
-## Quick Start
+---
+
+## Быстрый старт
 
 ```bash
 git clone git@github.com:Azhebrow/Aura.git
@@ -49,57 +74,64 @@ npm install
 npm run desktop
 ```
 
-The `postinstall` script also installs `server-mini-app` dependencies and rebuilds native Electron modules.
+Скрипт `postinstall` автоматически устанавливает зависимости `server-mini-app` и пересобирает нативные модули Electron.
 
-## Scripts
+---
 
-| Command | Description |
-| --- | --- |
-| `npm run desktop` | Start the local API, Vite renderer, and Electron app. |
-| `npm run web` | Start the local API and Vite renderer without launching Electron. |
-| `npm run build` | Build renderer and unpacked Electron app. |
-| `npm run build:mac` | Build a macOS installer. |
-| `npm run build:mac:arm64` | Build for Apple Silicon. |
-| `npm run build:mac:universal` | Build a universal macOS package. |
-| `npm run clear-db` | Clear the local app database. |
-| `npm run rebuild-native` | Rebuild native Electron dependencies. |
+## Скрипты
 
-## Project Structure
+| Команда | Описание |
+|---|---|
+| `npm run desktop` | Запустить локальный API, Vite и Electron |
+| `npm run web` | Запустить только API и Vite (без Electron) |
+| `npm run build` | Собрать renderer и распакованное Electron-приложение |
+| `npm run build:mac` | Собрать macOS-инсталлятор |
+| `npm run build:mac:arm64` | Сборка для Apple Silicon |
+| `npm run build:mac:universal` | Универсальная сборка для macOS |
+| `npm run clear-db` | Очистить локальную базу данных |
+| `npm run rebuild-native` | Пересобрать нативные зависимости Electron |
+
+---
+
+## Структура проекта
 
 ```text
-Aura
-├── main.js                 # Electron main process
-├── preload.js              # Electron preload bridge
-├── renderer/               # React / Vite renderer app
+Aura/
+├── main.js                     # Electron main process
+├── preload.js                  # Electron preload bridge
+├── renderer/                   # React / Vite renderer
 │   └── src/
-│       ├── app/            # App shell and startup
-│       ├── components/     # Shared UI primitives
-│       ├── features/       # Product features
-│       ├── pages/          # Top-level app pages
-│       ├── shared/         # Hooks, config, bridges, utilities
-│       └── widgets/        # Larger UI blocks
-├── server-mini-app/        # Local mini app / API server
-├── src/system/             # Database and service layer
-├── scripts/                # Utility scripts
-├── public/                 # Static assets and icons
-└── docs/                   # Build notes
+│       ├── app/                # Оболочка приложения, роутинг, тема
+│       ├── components/ui/      # Базовые UI-примитивы (Button, Dialog, Select …)
+│       ├── features/           # Фичи по доменам
+│       │   ├── act/            # Главный экран — задачи и ритуалы
+│       │   ├── diary/          # Дневник и питание
+│       │   ├── finance/        # Финансы
+│       │   ├── onboarding/     # Онбординг-визард
+│       │   ├── ranks/          # Ранги и история очков
+│       │   ├── settings/       # Настройки и CFG-диалоги
+│       │   ├── stats/          # Статистика и графики
+│       │   └── timer/          # Фокус-таймер
+│       ├── pages/              # Страницы верхнего уровня
+│       ├── shared/             # Хуки, конфиги, утилиты, мосты к БД
+│       └── widgets/            # Крупные UI-блоки (PageFrame, Sidebar …)
+├── server-mini-app/            # Локальный API-сервер
+├── src/system/                 # Слой базы данных и сервисов
+├── scripts/                    # Вспомогательные скрипты
+├── public/                     # Статические ресурсы и иконки
+└── docs/                       # Заметки по сборке
 ```
 
-## Local Data
+---
 
-AURA is local-first. Runtime user data is stored in a local SQLite database through the app's database layer.
+## Данные и приватность
 
-Do not commit personal runtime data. Generated folders, build outputs, local tool settings, logs, dependency folders, and runtime files are ignored through `.gitignore`.
+AURA работает только локально. Все данные хранятся в SQLite-базе на вашем компьютере — ничего не отправляется в сеть. Никаких аккаунтов, никаких серверов, никакой аналитики.
 
-## Build Output
+Не коммитьте личные данные из рантайма. Папки сборки, база данных, логи и зависимости исключены через `.gitignore`.
 
-Build artifacts are generated into:
+---
 
-- `dist/`
-- `renderer-build/`
+## Статус
 
-Both are ignored by Git and can be recreated at any time.
-
-## Status
-
-This repository contains the current working version of a personal desktop app. It is public for visibility and backup, but the project is still actively evolving.
+Приложение активно развивается и используется как личный инструмент. Репозиторий публичный — для резервного копирования и открытости.
