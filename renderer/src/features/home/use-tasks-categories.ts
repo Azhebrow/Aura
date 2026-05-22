@@ -34,9 +34,34 @@ export function useTasksCategories(dateString: string) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const numberSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  // Reset drafts + optimistic on date change
+  // Reset drafts on date change
   useEffect(() => { setNumberDrafts({}); }, [dateString]);
-  useEffect(() => { setOptimisticProgressById({}); }, [daySnapshot?.taskProgressById, dateString]);
+  // Reset optimistic on date change
+  useEffect(() => { setOptimisticProgressById({}); }, [dateString]);
+
+  // Drop optimistic entries only once the snapshot has confirmed the same value.
+  // Using taskProgressById reference as trigger instead of daySnapshot (stable after snapshot rebuild).
+  // Guard: return same reference if already empty — avoids extra re-renders on every snapshot refresh.
+  useEffect(() => {
+    const snapshotProgress = daySnapshot?.taskProgressById;
+    if (!snapshotProgress) return;
+    setOptimisticProgressById((prev) => {
+      if (Object.keys(prev).length === 0) return prev; // fast path: nothing to clear
+      const next: Record<string, AuraTaskProgress> = {};
+      let anyDropped = false;
+      for (const [id, optimistic] of Object.entries(prev)) {
+        const snap = snapshotProgress[id];
+        // Keep the optimistic entry until the snapshot reflects the same completion state.
+        // This prevents a brief flash back to the old state if the snapshot briefly lags.
+        if (snap != null && Number(snap.completed) === Number(optimistic.completed)) {
+          anyDropped = true; // snapshot confirmed — drop this entry
+        } else {
+          next[id] = optimistic;
+        }
+      }
+      return anyDropped ? next : prev;
+    });
+  }, [daySnapshot?.taskProgressById]);
   useEffect(() => {
     const timers = numberSaveTimers.current;
     return () => { Object.values(timers).forEach(clearTimeout); };

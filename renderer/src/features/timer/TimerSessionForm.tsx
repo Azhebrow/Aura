@@ -74,7 +74,6 @@ export function TimerSessionForm({
   onSave,
   onCancel,
   pickerTasks,
-  groupAccentByKey,
   getTaskColor,
 }: Props) {
   const { t } = useTranslation('common');
