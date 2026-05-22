@@ -101,13 +101,15 @@ function createWindow() {
         try {
           const Database = require('better-sqlite3');
           const path = require('path');
+          const { createDatabaseAdapter } = require('./renderer/src/db-adapter.js');
 
           // Create/open database
           const dbPath = path.join(${JSON.stringify(userDataPath)}, 'aura.db');
           const db = new Database(dbPath);
+          const adapter = createDatabaseAdapter(db);
 
           // Expose as getDB function
-          window.getDB = () => db;
+          window.getDB = () => adapter;
           window.__auraUserDataPath = ${JSON.stringify(userDataPath)};
 
           console.log('[Renderer] ✅ Database loaded from Electron process');
