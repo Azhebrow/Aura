@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Coffee, Moon, MoonStar, Pause, Play, Shuffle, Square, Sun, Timer, Volume1, VolumeX, Watch, X } from 'lucide-react';
+import { ChevronDown, Coffee, Moon, MoonStar, Pause, Play, Shuffle, Square, Sun, Timer, Volume1, VolumeX, Watch, X } from 'lucide-react';
+import { VinylRecord } from '@/features/timer/VinylRecord';
 import { useAuraTheme } from '@/features/theme/ThemeContext';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
@@ -118,6 +119,143 @@ function getStoicProgressMessage(pct: number, isRunning: boolean, hasElapsed: bo
   if (pct > 5) return 'Ты набираешь ход';
   if (hasElapsed && !isRunning) return 'Пауза тоже часть движения';
   return 'Ты только начал';
+}
+
+type VinylAmbientPanelProps = {
+  accent: string;
+  currentAmbientTrack: import('@/features/timer/use-ambient-audio').AmbientTrack | null;
+  ambientTrackId: string;
+  ambientVolume: number;
+  ambientExpanded: boolean;
+  ambientOptions: { value: string; label: string; icon?: React.ReactNode }[];
+  volumeTrackStyle: React.CSSProperties;
+  isPlaying: boolean;
+  onSeekRandom: () => void;
+  onVolumeChange: (v: number) => void;
+  onSelectTrack: (id: string) => void;
+  onToggleExpand: () => void;
+};
+
+function VinylAmbientPanel({
+  accent, currentAmbientTrack, ambientTrackId, ambientVolume,
+  ambientExpanded, ambientOptions, volumeTrackStyle, isPlaying,
+  onSeekRandom, onVolumeChange, onSelectTrack, onToggleExpand,
+}: VinylAmbientPanelProps) {
+  const trackName = currentAmbientTrack ? formatAmbientTrackName(currentAmbientTrack.name) : null;
+
+  return (
+    <div className="flex w-full max-w-md flex-col items-center gap-2">
+      <div
+        className="grid w-full grid-cols-[5.75rem_minmax(0,1fr)] gap-3 rounded-3xl border bg-[var(--aura-surface-panel)]/88 p-3 shadow-lg shadow-black/5 backdrop-blur-md"
+        style={{
+          borderColor: `color-mix(in oklab, ${accent} 18%, var(--border))`,
+          boxShadow: `0 18px 48px -32px color-mix(in oklab, ${accent} 45%, transparent)`,
+        }}
+      >
+        <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-[var(--aura-surface-control)]">
+          <VinylRecord
+            coverImage={currentAmbientTrack?.coverImage}
+            accent={accent}
+            isPlaying={isPlaying}
+            size={74}
+            className="drop-shadow-sm"
+          />
+          <div
+            className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset"
+            style={{ boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${accent} 20%, transparent)` }}
+            aria-hidden
+          />
+        </div>
+
+        <div className="flex min-w-0 flex-col justify-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="flex min-w-0 items-center gap-2 rounded-xl px-1 py-0.5 text-left transition hover:bg-[var(--aura-action-hover-bg)]"
+            aria-label={ambientExpanded ? 'Скрыть треки' : 'Выбрать трек'}
+          >
+            <span
+              className="flex size-7 shrink-0 items-center justify-center rounded-lg"
+              style={{ backgroundColor: `color-mix(in oklab, ${accent} 14%, transparent)`, color: accent }}
+            >
+              {currentAmbientTrack ? (
+                <AuraThemedIcon name={currentAmbientTrack.icon ?? null} size={13} tint={accent} />
+              ) : (
+                <MoonStar className="size-3.5 shrink-0" />
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-base font-semibold leading-tight text-foreground">
+                {trackName ?? 'Без музыки'}
+              </p>
+              <p className="mt-0.5 text-xs leading-none text-[var(--aura-text-disabled)]">Фоновая музыка</p>
+            </div>
+            <ChevronDown
+              className={cn('size-4 shrink-0 text-[var(--aura-text-disabled)] transition-transform duration-200', ambientExpanded && 'rotate-180')}
+            />
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onSeekRandom}
+              disabled={!currentAmbientTrack}
+              className="flex size-8 shrink-0 items-center justify-center rounded-xl text-[var(--aura-text-muted)] transition hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+              aria-label="Случайный момент"
+            >
+              <Shuffle className="size-4" />
+            </button>
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-2.5 py-1.5">
+              {ambientVolume <= 0 ? (
+                <VolumeX className="size-4 shrink-0 text-[var(--aura-text-disabled)]" />
+              ) : (
+                <Volume1 className="size-4 shrink-0" style={{ color: accent }} />
+              )}
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={ambientVolume}
+                onChange={(e) => onVolumeChange(Number(e.target.value))}
+                className="h-1.5 flex-1 min-w-0 cursor-pointer appearance-none rounded-full"
+                style={volumeTrackStyle}
+                aria-label="Громкость"
+              />
+              <span className="w-8 shrink-0 text-right text-xs tabular-nums text-[var(--aura-text-disabled)]">
+                {ambientVolume}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Track list dropdown */}
+      {ambientExpanded && (
+        <div className="max-h-44 w-full overflow-y-auto rounded-2xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-1 shadow-sm">
+          {ambientOptions.map((opt) => {
+            const selected = ambientTrackId === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onSelectTrack(opt.value)}
+                className={cn(
+                  'flex h-9 w-full min-w-0 items-center gap-2 rounded-lg px-2.5 text-left text-sm transition',
+                  selected
+                    ? 'text-foreground'
+                    : 'text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
+                )}
+                style={selected ? { backgroundColor: `color-mix(in oklab, ${accent} 16%, transparent)` } : undefined}
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center">{opt.icon}</span>
+                <span className="min-w-0 flex-1 truncate">{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function TimerFullscreenDialog({
@@ -365,7 +503,7 @@ export function TimerFullscreenDialog({
         </div>
 
         {/* ── Main layout ─────────────────────────────────────────────── */}
-        <div className="relative flex h-full flex-col items-center justify-between px-6 pb-7 pt-5">
+        <div className="relative flex h-full flex-col items-center gap-6 overflow-y-auto overscroll-y-contain px-6 pb-6 pt-5">
 
           {/* ── TOP: status + task chip ─────────────────────────────── */}
           <div className="flex w-full max-w-xl flex-col items-center gap-2.5 pt-2">
@@ -453,7 +591,7 @@ export function TimerFullscreenDialog({
           {/* ── CENTER: dial display ────────────────────────────────── */}
           <button
             type="button"
-            className="group flex flex-col items-center gap-5 outline-none select-none"
+            className="group flex min-h-0 flex-1 flex-col items-center justify-center gap-4 outline-none select-none"
             onClick={cycleDialMode}
             disabled={!canCycleDial}
             onPointerDown={(e) => e.preventDefault()}
@@ -512,7 +650,7 @@ export function TimerFullscreenDialog({
           </button>
 
           {/* ── BOTTOM: Actions + Ambient ────────────────────────────── */}
-          <div className="flex w-full flex-col items-center gap-5">
+          <div className="flex w-full shrink-0 flex-col items-center gap-4">
 
             {/* Action buttons */}
             {breakPhase !== 'idle' ? (
@@ -606,99 +744,21 @@ export function TimerFullscreenDialog({
               </div>
             )}
 
-            {/* ── Ambient control ────────────────────────────────────── */}
-            <div className="flex w-full max-w-md flex-col gap-2">
-              <div
-                className="flex w-full items-center gap-2 rounded-xl border bg-[var(--aura-surface-panel)] p-2 shadow-xs"
-                style={{ borderColor: `color-mix(in oklab, ${accent} 14%, var(--border))` }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setAmbientExpanded((v) => !v)}
-                  className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-[var(--aura-action-hover-bg)]"
-                  aria-label={ambientExpanded ? 'Скрыть список треков' : 'Открыть список треков'}
-                >
-                  <span
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: `color-mix(in oklab, ${accent} 14%, transparent)`, color: accent }}
-                  >
-                    {currentAmbientTrack ? (
-                      <AuraThemedIcon name={currentAmbientTrack.icon ?? null} size={14} tint={accent} />
-                    ) : (
-                      <MoonStar className="size-3.5 shrink-0" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium leading-tight text-foreground">
-                      {currentAmbientTrack ? formatAmbientTrackName(currentAmbientTrack.name) : 'Без музыки'}
-                    </p>
-                    <p className="mt-0.5 text-nano leading-none text-[var(--aura-text-disabled)]">
-                      Фоновая музыка
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={seekAmbientRandomly}
-                  disabled={!currentAmbientTrack}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--aura-text-muted)] transition hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
-                  aria-label="Случайный момент"
-                >
-                  <Shuffle className="size-3.5" />
-                </button>
-
-                <div className="flex h-8 shrink-0 items-center gap-2 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-2">
-                  {ambientVolume <= 0 ? (
-                    <VolumeX className="size-3.5 shrink-0 text-[var(--aura-text-disabled)]" />
-                  ) : (
-                    <Volume1 className="size-3.5 shrink-0" style={{ color: accent }} />
-                  )}
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={ambientVolume}
-                    onChange={(e) => ambient.setVolume(Number(e.target.value))}
-                    className="h-1 w-14 shrink-0 cursor-pointer appearance-none rounded-full sm:w-20"
-                    style={volumeTrackStyle}
-                    aria-label="Громкость"
-                  />
-                  <span className="w-7 shrink-0 text-right text-nano tabular-nums text-[var(--aura-text-disabled)]">
-                    {ambientVolume}%
-                  </span>
-                </div>
-              </div>
-
-              {ambientExpanded && (
-                <div className="max-h-44 overflow-y-auto rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-1 shadow-sm">
-                  {ambientOptions.map((opt) => {
-                    const selected = ambientTrackId === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => {
-                          userPickedAmbientRef.current = true;
-                          setAmbientTrackId(opt.value);
-                          setAmbientExpanded(false);
-                        }}
-                        className={cn(
-                          'flex h-9 w-full min-w-0 items-center gap-2 rounded-lg px-2.5 text-left text-sm transition',
-                          selected
-                            ? 'text-foreground'
-                            : 'text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
-                        )}
-                        style={selected ? { backgroundColor: `color-mix(in oklab, ${accent} 16%, transparent)` } : undefined}
-                      >
-                        <span className="flex size-5 shrink-0 items-center justify-center">{opt.icon}</span>
-                        <span className="min-w-0 flex-1 truncate">{opt.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            {/* ── Vinyl ambient panel ─────────────────────────────────── */}
+            <VinylAmbientPanel
+              accent={accent}
+              currentAmbientTrack={currentAmbientTrack}
+              ambientTrackId={ambientTrackId}
+              ambientVolume={ambientVolume}
+              ambientExpanded={ambientExpanded}
+              ambientOptions={ambientOptions}
+              volumeTrackStyle={volumeTrackStyle}
+              isPlaying={shouldPlayAmbient && !!currentAmbientTrack}
+              onSeekRandom={seekAmbientRandomly}
+              onVolumeChange={(v) => ambient.setVolume(v)}
+              onSelectTrack={(id) => { userPickedAmbientRef.current = true; setAmbientTrackId(id); setAmbientExpanded(false); }}
+              onToggleExpand={() => setAmbientExpanded((v) => !v)}
+            />
 
           </div>
         </div>
