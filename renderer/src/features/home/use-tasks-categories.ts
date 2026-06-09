@@ -5,6 +5,7 @@ import { useDayLocked } from '@/shared/hooks/use-day-locked';
 import { getHomeTaskDisplaySettings } from '@/shared/config/home-task-display';
 import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
 import { TASK_CATEGORY_DEFAULT_META, TASK_CATEGORY_IDS, type TaskCategoryId } from '@/shared/config/domain-taxonomy';
+import { buildCategoryProgresses } from '@/shared/lib/home-day-snapshot';
 import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import type { AuraRow, AuraTaskProgress } from '@/types/aura';
 
@@ -51,9 +52,14 @@ export function useTasksCategories(dateString: string) {
       let anyDropped = false;
       for (const [id, optimistic] of Object.entries(prev)) {
         const snap = snapshotProgress[id];
-        // Keep the optimistic entry until the snapshot reflects the same completion state.
-        // This prevents a brief flash back to the old state if the snapshot briefly lags.
-        if (snap != null && Number(snap.completed) === Number(optimistic.completed)) {
+        // Keep the optimistic entry until the snapshot reflects the same completion state
+        // AND the same completion_percent. This prevents a brief flash back to the old
+        // state (e.g., fill bar jumping to 0) if the snapshot briefly lags behind.
+        if (
+          snap != null &&
+          Number(snap.completed) === Number(optimistic.completed) &&
+          Number(snap.completion_percent) === Number(optimistic.completion_percent)
+        ) {
           anyDropped = true; // snapshot confirmed — drop this entry
         } else {
           next[id] = optimistic;
@@ -109,10 +115,6 @@ export function useTasksCategories(dateString: string) {
     ) as Record<CategoryId, AuraRow[]>;
   }, [allCfgTasks, db]);
 
-  const values = useMemo(
-    () => (daySnapshot ? daySnapshot.categoryProgresses : {}) as Record<string, number>,
-    [daySnapshot],
-  );
 
   const taskProgressById = useMemo(() => {
     const map = new Map<string, AuraTaskProgress | null>();
@@ -133,11 +135,27 @@ export function useTasksCategories(dateString: string) {
     return map;
   }, [db, dateString, daySnapshot?.taskProgressById, tasksByCat]);
 
+  // Merge snapshot + optimistic inline. An optimistic entry is only used if the
+  // snapshot hasn't yet confirmed the same completion state. This avoids the
+  // two-render flash that previously occurred when:
+  //   render A: snapshot refreshes, optimistic still present
+  //   render B: useEffect clears confirmed optimistic
+  // Now confirmation is computed synchronously in the same render as the snapshot
+  // update, so there is only ONE render and no intermediate visual state.
   const effectiveTaskProgressById = useMemo(() => {
     const merged = new Map(taskProgressById);
-    for (const [id, value] of Object.entries(optimisticProgressById)) merged.set(id, value);
+    const snapshotProgress = daySnapshot?.taskProgressById;
+    for (const [id, optimistic] of Object.entries(optimisticProgressById)) {
+      const snap = snapshotProgress?.[id];
+      const confirmed =
+        snap != null &&
+        Number(snap.completed) === Number(optimistic.completed) &&
+        Number(snap.completion_percent) === Number(optimistic.completion_percent);
+      if (!confirmed) merged.set(id, optimistic);
+      // If confirmed: taskProgressById already has the snap value — no override needed
+    }
     return merged;
-  }, [taskProgressById, optimisticProgressById]);
+  }, [taskProgressById, optimisticProgressById, daySnapshot?.taskProgressById]);
 
   const timerTotalsByTaskId = useMemo(() => {
     const map = new Map<string, number>();
@@ -167,6 +185,19 @@ export function useTasksCategories(dateString: string) {
     return out;
   }, [daySnapshot?.ritualCountsByType]);
 
+  // Проценты категорий пересчитываются из effectiveTaskProgressById (включает
+  // оптимистик-апдейты) — исключает мерцание хедеров при обновлении снапшота.
+  const values = useMemo(() => {
+    if (!allCfgTasks.length) return (daySnapshot?.categoryProgresses ?? {}) as Record<string, number>;
+    const progressRecord: Record<string, AuraTaskProgress | null> = {};
+    for (const [id, progress] of effectiveTaskProgressById) progressRecord[id] = progress;
+    const timerRecord: Record<string, number> = {};
+    for (const [id, total] of timerTotalsByTaskId) timerRecord[id] = total;
+    const ritualRecord: Record<string, { completed: number; total: number }> = {};
+    for (const [type, counts] of ritualCountsByType) ritualRecord[type] = counts;
+    return buildCategoryProgresses(allCfgTasks, progressRecord, timerRecord, ritualRecord, nutritionProgressPct) as Record<string, number>;
+  }, [allCfgTasks, effectiveTaskProgressById, timerTotalsByTaskId, ritualCountsByType, nutritionProgressPct, daySnapshot?.categoryProgresses]);
+
   const persist = (taskId: string, data: Record<string, unknown>) => {
     setSaveError(null);
     if (!db) return;
@@ -179,6 +210,16 @@ export function useTasksCategories(dateString: string) {
         const next: AuraTaskProgress = { ...prev[taskId] ?? fallback, ...data };
         if (data.completed !== undefined)
           next.completion_percent = Number(next.completed) === 1 ? 100 : 0;
+        // For number tasks: compute completion_percent optimistically so the fill
+        // bar and icon update immediately without waiting for the bootstrap refresh.
+        if (data.current_value !== undefined && data.completed === undefined) {
+          const task = allCfgTasks.find((t) => String(t.id) === taskId);
+          const target = Number(task?.cfg_target_value) || Number(task?.cfg_target_number) || 0;
+          if (target > 0) {
+            next.completion_percent = Math.min(100, Math.round((Number(data.current_value) / target) * 100));
+            next.completed = next.completion_percent >= 100 ? 1 : 0;
+          }
+        }
         return { ...prev, [taskId]: next };
       });
       runAuraMutation('task-progress', () => db.saveTaskProgress(taskId, dateString, data), dateString);

@@ -9,6 +9,11 @@ Thumbs.db
 # Node
 node_modules/
 
+# Базы данных (локальные)
+*.db
+*.db-shm
+*.db-wal
+
 # Логи и временные файлы
 *.log
 .npm

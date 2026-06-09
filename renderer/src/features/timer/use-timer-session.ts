@@ -123,7 +123,8 @@ export function useTimerSession(db: AuraDatabase | null, dateString: string, day
       const next = { ...prev };
       if (typeof s.isRunning === 'boolean') next.isRunning = s.isRunning;
       if (typeof s.elapsedTime === 'number') next.elapsedTime = s.elapsedTime;
-      if (typeof s.targetDuration === 'number') next.targetDuration = s.targetDuration;
+      // Защита от targetDuration = 0 из main (бывает после рестарта Electron)
+      if (typeof s.targetDuration === 'number' && s.targetDuration > 0) next.targetDuration = s.targetDuration;
       if (s.timerType === 'timer' || s.timerType === 'stopwatch') next.timerType = s.timerType;
       if (s.selectedTask && typeof s.selectedTask === 'object') {
         const t = s.selectedTask as { id?: string; title?: string };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useShell } from '@/app/navigation/shell-context';
 import { ActivePageView } from '@/pages/view-registry';
 import { CalendarPage } from '@/pages/CalendarPage';
@@ -6,9 +6,21 @@ import { Dialog, DialogTitle } from '@/components/ui/dialog';
 import { UniversalModalContent } from '@/components/ui/universal-modal';
 import type { PageId } from '@/shared/config/nav-model';
 
+/** Подавляет цветовые переходы (aura-tx-colors и др.) на 600 мс при каждой
+ *  смене страницы, чтобы данные, загружаемые после монтирования, не «моргали». */
+function usePageColorFlashGuard(pageId: PageId) {
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-no-color-flash', '');
+    const id = setTimeout(() => root.removeAttribute('data-no-color-flash'), 600);
+    return () => { clearTimeout(id); root.removeAttribute('data-no-color-flash'); };
+  }, [pageId]);
+}
+
 export function AppMainArea() {
   const { activePageId, toggleCalendar } = useShell();
   const [prevPageId, setPrevPageId] = useState<PageId>('home');
+  usePageColorFlashGuard(activePageId);
 
   const scrollAreaClass =
     'flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-none bg-background p-0 aura-tx-colors sm:p-4 md:p-3';

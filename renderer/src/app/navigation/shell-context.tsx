@@ -14,7 +14,6 @@ import {
 } from '@/shared/config/nav-model';
 import { loadNavOrderFromDb } from '@/shared/bridge/load-nav-order';
 import { parseNavOrderFromSettings } from '@/shared/lib/nav-order';
-import { LoadingScreen } from '@/app/layout/LoadingScreen';
 
 const RESTORE_PAGE_KEY = 'aura-restore-page';
 
@@ -162,9 +161,11 @@ export function ShellProvider({ children }: { children: ReactNode }) {
     <ShellContext.Provider value={value}>
       {children}
       {reloadPending ? (
-        <div className="fixed inset-0 z-[9999]">
-          <LoadingScreen staticProgress={0} />
-        </div>
+        <div
+          className="fixed inset-0 z-[9999] bg-background"
+          style={{ animation: 'aura-reload-fade 180ms ease forwards' }}
+          aria-hidden
+        />
       ) : null}
     </ShellContext.Provider>
   );

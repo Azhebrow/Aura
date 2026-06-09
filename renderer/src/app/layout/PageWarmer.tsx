@@ -9,54 +9,46 @@ import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings
 import { applyAppearanceScales, readAppearanceScaleSettings } from '@/features/theme/appearance-scale';
 import { todayIsoDate } from '@/shared/lib/dates';
 import { setStartupReadiness, type StartupTask } from './startup-readiness';
+import {
+  startupLoggerInit,
+  startupLoggerTaskStart,
+  startupLoggerTaskDone,
+  startupLoggerTaskError,
+  startupLoggerPhaseReveal,
+  startupLoggerPhaseBackground,
+  startupLoggerFinalize,
+} from './startup-logger';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 
+// ─── Timeouts ─────────────────────────────────────────────────────────────────
+const DB_TIMEOUT_MS            = 12_000;
+const FONT_TIMEOUT_MS          = 4_000;
+const MANIFEST_TIMEOUT_MS      = 13_000;
+const BOOTSTRAP_TIMEOUT_MS     = 9_000;
+const NAV_TIMEOUT_MS           = 8_000;
 
-const STARTUP_TASK_TIMEOUT_MS = 12_000;
-const BOOTSTRAP_TIMEOUT_MS = 9_000;
-const FONT_TIMEOUT_MS = 4_000;
+// Background phase — пользователь уже видит интерфейс
+const ICONS_ASSETS_TIMEOUT_MS  = 13_000;
+const RANKS_TIMEOUT_MS         = 12_000;
+const MODALS_TIMEOUT_MS        = 16_000;
+const TIMER_WARMUP_TIMEOUT_MS  = 17_000;
 
+// ─── Icon preloads ────────────────────────────────────────────────────────────
 const CATALOG_ICON_NAMES = [
-  'brain',
-  'activity',
-  'calendar',
-  'apple',
-  'moon',
-  'sunrise',
-  'target',
-  'timer',
-  'list-todo',
-  'chart-column',
-  'piggy-bank',
-  'receipt-text',
-  'house',
-  'flame',
-  'book-open',
-  'settings',
-  'trophy',
-  'chart-scatter',
-  'chart-line',
-  'heart',
-  'beef',
-  'droplet',
-  'wheat',
-  'ghost',
-  'sparkles',
-  'calendar-days',
-  'receipt',
-  'wallet',
-  'credit-card',
-  'clipboard-list',
-  'clipboard-check',
-  'check-line',
+  'brain', 'activity', 'calendar', 'apple', 'moon', 'sunrise', 'target',
+  'timer', 'list-todo', 'chart-column', 'piggy-bank', 'receipt-text', 'house',
+  'flame', 'book-open', 'settings', 'trophy', 'chart-scatter', 'chart-line',
+  'heart', 'beef', 'droplet', 'wheat', 'ghost', 'sparkles', 'calendar-days',
+  'receipt', 'wallet', 'credit-card', 'clipboard-list', 'clipboard-check', 'check-line',
 ] as const;
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return Promise.race([
     promise,
-    new Promise<T>((_, reject) => {
-      window.setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
-    }),
+    new Promise<T>((_, reject) =>
+      window.setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs)
+    ),
   ]);
 }
 
@@ -64,11 +56,7 @@ function preloadImage(src: string) {
   return new Promise<HTMLImageElement>((resolve) => {
     const img = new Image();
     const done = async () => {
-      try {
-        await img.decode?.();
-      } catch {
-        /* decode can reject for SVG/cached edge cases; onload is enough fallback */
-      }
+      try { await img.decode?.(); } catch { /* SVG/cached edge case */ }
       resolve(img);
     };
     img.onload = () => void done();
@@ -81,13 +69,39 @@ function preloadImage(src: string) {
 }
 
 function preloadCuratedIcons(available: Set<string>) {
-  const urls = CATALOG_ICON_NAMES.flatMap((name) => (available.has(name) ? [`/icons/${encodeURIComponent(name)}.svg`] : []));
+  const urls = CATALOG_ICON_NAMES.flatMap((name) =>
+    available.has(name) ? [`/icons/${encodeURIComponent(name)}.svg`] : []
+  );
   return Promise.allSettled(urls.map((src) => preloadImage(src)));
 }
 
-async function preloadRankArt() {
-  const entries = await Promise.all(
-    RANK_TIERS.map(async (tier) => {
+function preloadIconNames(names: string[], available: Set<string>) {
+  const urls = [...new Set(names)]
+    .filter((name) => available.has(name))
+    .map((name) => `/icons/${encodeURIComponent(name)}.svg`);
+  return Promise.allSettled(urls.map((src) => preloadImage(src)));
+}
+
+async function preloadRankArt(db: AuraDatabase) {
+  // Only preload the user's current rank + neighbours (max 3 images).
+  // All 14 tiers at once took ~6s and competed with the main thread.
+  const { getCurrentRank } = await import('@/shared/config/ranks-model');
+  let points = 0;
+  try {
+    points = (db.getLastCumulativePointsBefore?.('9999-12-31') as number | undefined) ?? 0;
+  } catch { /* ignore */ }
+
+  const currentTier = getCurrentRank(points);
+  const currentIdx = RANK_TIERS.findIndex((t) => t.id === currentTier.id);
+  const indicesToLoad = [
+    Math.max(0, currentIdx - 1),
+    currentIdx,
+    Math.min(RANK_TIERS.length - 1, currentIdx + 1),
+  ];
+  const uniqueTiers = [...new Set(indicesToLoad)].map((i) => RANK_TIERS[i]);
+
+  const entries = await Promise.allSettled(
+    uniqueTiers.map(async (tier) => {
       const src = rankImageSrc(tier.imageNumber);
       const image = await preloadImage(src);
       return [src, image] as const;
@@ -95,14 +109,15 @@ async function preloadRankArt() {
   );
   window.__auraRankImageCache = {
     ...(window.__auraRankImageCache ?? {}),
-    ...Object.fromEntries(entries),
+    ...Object.fromEntries(
+      entries.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
+    ),
   };
 }
 
 function warmDatabaseDialogData(db: AuraDatabase) {
   const runtimeDb = db as AuraDatabase & {
     getInfo?: () => { tables?: Array<{ name: string; rowCount: number }>; path?: string; error?: string };
-    dbPath?: string;
     db?: {
       pragma?: (query: string) => unknown;
       prepare?: (query: string) => {
@@ -111,156 +126,223 @@ function warmDatabaseDialogData(db: AuraDatabase) {
       };
     };
   };
-
   const info = runtimeDb.getInfo?.();
   if (info?.tables?.length) return;
-
-  const tableRows = runtimeDb.db?.prepare?.("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")?.all?.() ?? [];
+  const tableRows =
+    runtimeDb.db?.prepare?.("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")?.all?.() ?? [];
   for (const row of tableRows) {
     if (!row.name) continue;
     try {
       runtimeDb.db?.prepare?.(`SELECT COUNT(*) as count FROM ${row.name}`)?.get?.();
-    } catch {
-      /* best-effort warmup only */
-    }
+    } catch { /* best-effort */ }
   }
 }
 
 async function warmHeavyModalSurfaces(db: AuraDatabase) {
   await Promise.allSettled([
-    import('@/features/timer/TimerFullscreenDialog'),
     import('@/widgets/date-strip/CalendarPickerDialog'),
     import('@/features/app-settings/DatabaseManagementDialog'),
     import('@/features/settings/icon-picker-panel'),
     import('@/components/ui/universal-modal'),
     import('@/components/ui/dialog'),
   ]);
-
   warmDatabaseDialogData(db);
 }
 
-function buildStartupTasks(): StartupTask[] {
+function warmTimerAnimationPrimitives() {
+  if (typeof document === 'undefined') return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    const node = document.createElement('div');
+    node.className = 'aura-vinyl-spin';
+    node.style.cssText = 'position:fixed;left:-20px;top:-20px;width:1px;height:1px;opacity:0;pointer-events:none;transform:translateZ(0)';
+    document.body.appendChild(node);
+    node.getBoundingClientRect();
+    window.requestAnimationFrame(() => { node.remove(); resolve(); });
+  });
+}
+
+async function warmTimerSurfaces(db: AuraDatabase, date: string, availableIcons: Set<string>) {
+  // Phase A: core data modules only — fast, no UI parsing
+  const [snapshotModule, timerUtils, timerGroups, ambientAudio] = await Promise.all([
+    import('@/shared/lib/timer-day-snapshot'),
+    import('@/features/timer/timer-utils'),
+    import('@/features/timer/timer-session-groups'),
+    import('@/features/timer/use-ambient-audio'),
+  ]);
+
+  // Warm data caches
+  const snapshot = snapshotModule.buildTimerDaySnapshot(db, date);
+  const pickerTasks = timerUtils.loadPickerTasks(db);
+  const groupByTaskId = timerGroups.buildTimerTaskGroupById(db);
+  timerUtils.sameSessions(snapshot.sessions, snapshot.sessions);
+  for (const session of snapshot.sessions.slice(0, 12)) {
+    timerGroups.getSessionGroup(session, groupByTaskId);
+  }
+  for (const task of Object.values(snapshot.byGroup).flat().slice(0, 24)) {
+    snapshotModule.timerTaskDailyProgressPct(task);
+    timerUtils.timerTaskDailyProgressPct(task);
+  }
+
+  const taskIcons = pickerTasks.flatMap((task) => (task.icon ? [task.icon] : []));
+  const tracks = ambientAudio.parseAmbientTracks(db);
+  const defaults = ambientAudio.parseAmbientDefaults((db.getAppSettings?.() ?? null) as AuraRow | null);
+  const defaultTrackIds = new Set([defaults.timer, defaults.stopwatch, defaults.break].filter(Boolean));
+  const orderedTracks = [
+    ...tracks.filter((t) => defaultTrackIds.has(t.id)),
+    ...tracks.filter((t) => !defaultTrackIds.has(t.id)),
+  ];
+  const ambientIcons = orderedTracks.flatMap((t) => (t.icon ? [t.icon] : []));
+
+  // Phase B: icon preloads + cover images (fast, parallel, no audio)
+  await Promise.allSettled([
+    preloadIconNames(
+      [...taskIcons, ...ambientIcons, 'pause', 'play', 'square', 'coffee', 'shuffle', 'volume-2'],
+      availableIcons
+    ),
+    Promise.allSettled(
+      orderedTracks.flatMap((t) => (t.coverImage ? [preloadImage(t.coverImage)] : []))
+    ),
+    warmTimerAnimationPrimitives(),
+    // Phase C: heavy UI chunks deferred to idle — load lazily, don't block background phase
+    new Promise<void>((resolve) => {
+      const schedule = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : (fn: () => void) => setTimeout(fn, 300);
+      schedule(() => {
+        void Promise.allSettled([
+          import('@/features/timer/TimerStatusPage'),
+          import('@/features/timer/TimerSessionHero'),
+          import('@/features/timer/TimerSessionForm'),
+          import('@/features/timer/timer-sounds'),
+          import('@/features/timer/use-timer-session'),
+          import('@/features/timer/use-timer-tasks'),
+          import('@/components/ui/progress'),
+          import('@/components/ui/slider'),
+        ]);
+        resolve(); // resolve immediately — don't wait for idle imports to complete
+      });
+    }),
+  ]);
+}
+
+// ─── Task definitions ─────────────────────────────────────────────────────────
+
+/**
+ * CRITICAL задачи — блокируют экран загрузки.
+ * Пользователь не видит интерфейс пока они не завершены.
+ */
+function buildCriticalTasks(): StartupTask[] {
   return [
-    {
-      id: 'db',
-      label: 'База данных',
-      detail: 'Ждём локальный bridge и готовность `window.getDB`.',
-      status: 'pending',
-    },
-    {
-      id: 'fonts',
-      label: 'Шрифты и тема',
-      detail: 'Подключаем шрифтовую таблицу и дожидаемся `document.fonts`.',
-      status: 'pending',
-    },
-    {
-      id: 'icons-manifest',
-      label: 'Каталог иконок',
-      detail: 'Загружаем манифест SVG-иконок.',
-      status: 'pending',
-    },
-    {
-      id: 'icons-assets',
-      label: 'Иконки интерфейса',
-      detail: 'Прогреваем самые частые public-иконки.',
-      status: 'pending',
-    },
-    {
-      id: 'ranks-art',
-      label: 'Ранги и арт',
-      detail: 'Кэшируем изображения рангов.',
-      status: 'pending',
-    },
-    {
-      id: 'heavy-modals',
-      label: 'Модальные окна',
-      detail: 'Прогреваем fullscreen-таймер, календарь, базу данных и пикер иконок.',
-      status: 'pending',
-    },
-    {
-      id: 'nav-order',
-      label: 'Списки и навигация',
-      detail: 'Читаем порядок вкладок и базовые списки.',
-      status: 'pending',
-    },
-    {
-      id: 'bootstrap-home',
-      label: 'Домашняя страница',
-      detail: 'Прогреваем домашнюю bootstrap-сводку.',
-      status: 'pending',
-    },
-    {
-      id: 'bootstrap-sidebar',
-      label: 'Сайдбар',
-      detail: 'Собираем сводку для боковой панели.',
-      status: 'pending',
-    },
-    {
-      id: 'bootstrap-date-strip',
-      label: 'Date strip',
-      detail: 'Прогреваем календарную полоску на ближайшие дни.',
-      status: 'pending',
-    },
+    { id: 'db',               label: 'База данных',      detail: 'Ждём Electron bridge и window.getDB',      status: 'pending' },
+    { id: 'fonts',            label: 'Шрифты',           detail: 'document.fonts.ready + Google Fonts',      status: 'pending' },
+    { id: 'icons-manifest',   label: 'Каталог иконок',   detail: 'JSON-манифест SVG-иконок',                 status: 'pending' },
+    { id: 'nav-order',        label: 'Навигация',        detail: 'Порядок вкладок из БД',                    status: 'pending' },
+    { id: 'bootstrap-home',   label: 'Главная',          detail: 'Bootstrap-сводка домашней страницы',       status: 'pending' },
+    { id: 'bootstrap-sidebar',label: 'Сайдбар',          detail: 'Bootstrap-сводка боковой панели',          status: 'pending' },
+    { id: 'bootstrap-strip',  label: 'Полоска дат',      detail: 'Ближайшие 7 дней',                         status: 'pending' },
   ];
 }
 
+/**
+ * BACKGROUND задачи — запускаются ПОСЛЕ reveal, пользователь уже в интерфейсе.
+ * Нужны для плавной работы, но не блокируют старт.
+ */
+function buildBackgroundTasks(): StartupTask[] {
+  return [
+    { id: 'icons-assets',  label: 'Иконки UI',       detail: 'Preload 32 SVG в браузерный кеш',          status: 'pending' },
+    { id: 'ranks-art',     label: 'Арт рангов',       detail: 'Кеш изображений всех уровней рангов',      status: 'pending' },
+    { id: 'heavy-modals',  label: 'Тяжёлые модалки',  detail: 'CalendarPicker, DBDialog, IconPicker',     status: 'pending' },
+    { id: 'timer-warmup',  label: 'Таймер',           detail: 'Fullscreen, Vinyl, звуки, 15 модулей',     status: 'pending' },
+  ];
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export function PageWarmer({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     let alive = true;
-    let tasks = buildStartupTasks();
+    let criticalTasks = buildCriticalTasks();
+    let backgroundTasks = buildBackgroundTasks();
     let cfgReady = false;
     let actReadyByScreen: Partial<Record<'home' | 'rituals' | 'sidebar' | 'date-strip', boolean>> = {};
     let manifestIcons = new Set<string>();
 
+    startupLoggerInit();
+
+    const allTasks = () => [...criticalTasks, ...backgroundTasks];
+
     const publish = () => {
       if (!alive) return;
-      const doneCount = tasks.filter((task) => task.status === 'done' || task.status === 'error').length;
-      const total = Math.max(1, tasks.length);
-      const activeTask = tasks.find((task) => task.status === 'running') ?? null;
+      const tasks = allTasks();
+      const doneCount = tasks.filter((t) => t.status === 'done' || t.status === 'error').length;
+      const criticalDone = criticalTasks.every((t) => t.status === 'done' || t.status === 'error');
+      const activeTask = criticalTasks.find((t) => t.status === 'running')
+        ?? backgroundTasks.find((t) => t.status === 'running')
+        ?? null;
+
+      // Progress counts only critical tasks for the loading screen bar
+      const critTotal = Math.max(1, criticalTasks.length);
+      const critDone = criticalTasks.filter((t) => t.status === 'done' || t.status === 'error').length;
+
       setStartupReadiness({
         cfgReady,
         actReadyByScreen,
-        startupReady: doneCount === total,
-        phase: doneCount === total ? 'ready' : 'booting',
-        progress: Math.min(100, Math.round((doneCount / total) * 100)),
+        startupReady: doneCount === tasks.length,
+        phase: criticalDone ? 'ready' : 'booting',
+        progress: Math.min(100, Math.round((critDone / critTotal) * 100)),
         activeTaskId: activeTask?.id ?? null,
         activeTaskLabel: activeTask?.label ?? null,
         tasks,
       });
     };
 
-    const setTaskStatus = (id: string, status: StartupTask['status'], patch: Partial<StartupTask> = {}) => {
-      tasks = tasks.map((task) => (task.id === id ? { ...task, status, ...patch } : task));
-      publish();
-    };
+    const setTaskStatus = (
+      list: StartupTask[],
+      id: string,
+      status: StartupTask['status'],
+      patch: Partial<StartupTask> = {}
+    ): StartupTask[] =>
+      list.map((t) => (t.id === id ? { ...t, status, ...patch } : t));
 
-    const runTask = async (id: string, runner: () => Promise<void>, timeoutMs = STARTUP_TASK_TIMEOUT_MS) => {
-      const current = tasks.find((task) => task.id === id);
-      setTaskStatus(id, 'running', {
-        detail: current?.detail,
-        error: undefined,
-      });
+    const runTask = async (
+      id: string,
+      runner: () => Promise<void>,
+      timeoutMs: number,
+      isCritical: boolean
+    ) => {
+      const label = (isCritical ? criticalTasks : backgroundTasks).find((t) => t.id === id)?.label ?? id;
+
+      if (isCritical) {
+        criticalTasks = setTaskStatus(criticalTasks, id, 'running');
+      } else {
+        backgroundTasks = setTaskStatus(backgroundTasks, id, 'running');
+      }
+      publish();
+      startupLoggerTaskStart(id, label);
+
       try {
-        await withTimeout(runner(), timeoutMs, current?.label ?? id);
-        setTaskStatus(id, 'done');
+        await withTimeout(runner(), timeoutMs, label);
+        if (isCritical) {
+          criticalTasks = setTaskStatus(criticalTasks, id, 'done');
+        } else {
+          backgroundTasks = setTaskStatus(backgroundTasks, id, 'done');
+        }
+        publish();
+        startupLoggerTaskDone(id);
       } catch (error) {
-        setTaskStatus(id, 'error', {
-          error: error instanceof Error ? error.message : 'Startup task failed',
-        });
+        const errMsg = error instanceof Error ? error.message : 'Startup task failed';
+        if (isCritical) {
+          criticalTasks = setTaskStatus(criticalTasks, id, 'error', { error: errMsg });
+        } else {
+          backgroundTasks = setTaskStatus(backgroundTasks, id, 'error', { error: errMsg });
+        }
+        publish();
+        startupLoggerTaskError(id, errMsg);
       }
     };
 
     const markCfgReady = async () => {
       await waitForAuraDatabase();
-      const getDB = window.getDB;
-      if (typeof getDB !== 'function') throw new Error('window.getDB is not available');
-      const db = getDB();
-      if (!db) throw new Error('Database is not ready');
-      try {
-        loadTaskCategoryConfig(db as never);
-      } catch {
-        /* ignore */
-      }
+      const db = window.getDB?.();
+      if (!db) throw new Error('window.getDB unavailable');
+      try { loadTaskCategoryConfig(db as never); } catch { /* ignore */ }
       cfgReady = true;
     };
 
@@ -269,85 +351,68 @@ export function PageWarmer({ onDone }: { onDone: () => void }) {
     const run = async () => {
       const date = todayIsoDate();
 
-      const dbPromise = runTask('db', async () => {
-        await waitForAuraDatabase();
-      });
+      // ── PHASE 1: Critical tasks (parallel where possible) ──────────────────
+
+      const dbPromise = runTask('db', () => waitForAuraDatabase(), DB_TIMEOUT_MS, true);
+
       const fontPromise = runTask('fonts', async () => {
         ensureAuraFontsStylesheet();
-        if (typeof document === 'undefined' || !document.fonts?.ready) return;
-        await withTimeout(document.fonts.ready, FONT_TIMEOUT_MS, 'Fonts');
-      }, FONT_TIMEOUT_MS + 500);
+        if (typeof document !== 'undefined' && document.fonts?.ready) {
+          await withTimeout(document.fonts.ready, FONT_TIMEOUT_MS, 'Fonts');
+        }
+      }, FONT_TIMEOUT_MS + 500, true);
+
       const manifestPromise = runTask('icons-manifest', async () => {
-        const manifest = await withTimeout(loadIconsManifest(), STARTUP_TASK_TIMEOUT_MS, 'Icon catalog');
+        const manifest = await withTimeout(loadIconsManifest(), MANIFEST_TIMEOUT_MS, 'Icon manifest');
         manifestIcons = new Set(manifest.icons);
-      }, STARTUP_TASK_TIMEOUT_MS + 1000);
-      const iconsAssetsPromise = runTask('icons-assets', async () => {
-        if (manifestIcons.size === 0) {
-          await manifestPromise;
-        }
-        await preloadCuratedIcons(manifestIcons);
-      }, STARTUP_TASK_TIMEOUT_MS + 1000);
-      const ranksPromise = runTask('ranks-art', async () => {
-        await preloadRankArt();
-      });
+      }, MANIFEST_TIMEOUT_MS + 1000, true);
 
+      // Wait for DB before bootstrap + nav
       await dbPromise;
+
+      if (!alive) return;
+
       const db = window.getDB?.();
-      if (!db) throw new Error('Database is not ready after startup task');
+      if (!db) throw new Error('Database not ready after startup task');
 
-      const modalsPromise = runTask('heavy-modals', async () => {
-        if (manifestIcons.size === 0) {
-          await manifestPromise;
-        }
-        await warmHeavyModalSurfaces(db);
-      }, STARTUP_TASK_TIMEOUT_MS + 4000);
-
-      // Apply appearance scale immediately after DB is ready so the loading
-      // screen uses the correct rem size — prevents the visual grow on reveal.
+      // Apply appearance scales immediately so the loading screen correct size
       try {
-        if (db) {
-          const settings = (db.getAppSettings?.() ?? {}) as AuraRow;
-          const { appScale, textScale } = readAppearanceScaleSettings(settings);
-          applyAppearanceScales(appScale, textScale);
-        }
+        const settings = (db.getAppSettings?.() ?? {}) as AuraRow;
+        const { appScale, textScale } = readAppearanceScaleSettings(settings);
+        applyAppearanceScales(appScale, textScale);
       } catch { /* non-critical */ }
 
-      const navPromise = runTask('nav-order', async () => {
-        await loadNavOrderFromDb();
-      });
+      const navPromise = runTask('nav-order', () => loadNavOrderFromDb().then(() => {}), NAV_TIMEOUT_MS, true);
       const cfgReadyPromise = markCfgReady();
 
       const bootstrapHomePromise = runTask('bootstrap-home', async () => {
         const payload = await withTimeout(
           prefetchBootstrap('home', { date }, { cacheMs: 8_000 }),
-          BOOTSTRAP_TIMEOUT_MS,
-          'Home bootstrap'
+          BOOTSTRAP_TIMEOUT_MS, 'Home bootstrap'
         );
         if (payload) actReadyByScreen = { ...actReadyByScreen, home: true };
-      }, BOOTSTRAP_TIMEOUT_MS + 500);
+      }, BOOTSTRAP_TIMEOUT_MS + 500, true);
+
       const bootstrapSidebarPromise = runTask('bootstrap-sidebar', async () => {
         const payload = await withTimeout(
           prefetchBootstrap('sidebar', { date }, { cacheMs: 8_000 }),
-          BOOTSTRAP_TIMEOUT_MS,
-          'Sidebar bootstrap'
+          BOOTSTRAP_TIMEOUT_MS, 'Sidebar bootstrap'
         );
         if (payload) actReadyByScreen = { ...actReadyByScreen, sidebar: true };
-      }, BOOTSTRAP_TIMEOUT_MS + 500);
-      const bootstrapStripPromise = runTask('bootstrap-date-strip', async () => {
+      }, BOOTSTRAP_TIMEOUT_MS + 500, true);
+
+      const bootstrapStripPromise = runTask('bootstrap-strip', async () => {
         const payload = await withTimeout(
           prefetchBootstrap('date-strip', { date, rangeDays: 7 }, { cacheMs: 8_000 }),
-          BOOTSTRAP_TIMEOUT_MS,
-          'Date strip bootstrap'
+          BOOTSTRAP_TIMEOUT_MS, 'Date strip bootstrap'
         );
         if (payload) actReadyByScreen = { ...actReadyByScreen, 'date-strip': true };
-      }, BOOTSTRAP_TIMEOUT_MS + 500);
+      }, BOOTSTRAP_TIMEOUT_MS + 500, true);
 
+      // Wait for all critical tasks
       await Promise.allSettled([
         fontPromise,
         manifestPromise,
-        iconsAssetsPromise,
-        ranksPromise,
-        modalsPromise,
         navPromise,
         cfgReadyPromise,
         bootstrapHomePromise,
@@ -357,57 +422,89 @@ export function PageWarmer({ onDone }: { onDone: () => void }) {
 
       if (!alive) return;
 
+      // Force all screens ready after critical phase
       cfgReady = true;
-      actReadyByScreen = {
-        home: true,
-        rituals: true,
-        sidebar: true,
-        'date-strip': true,
-      };
+      actReadyByScreen = { home: true, rituals: true, sidebar: true, 'date-strip': true };
 
-      tasks = tasks.map((task) =>
-        task.status === 'done' || task.status === 'error'
-          ? task
-          : { ...task, status: 'done' as const }
+      // Mark any stuck critical tasks as done
+      criticalTasks = criticalTasks.map((t) =>
+        t.status === 'done' || t.status === 'error' ? t : { ...t, status: 'done' as const }
+      );
+
+      publish();
+      startupLoggerPhaseReveal();
+
+      // Reveal the UI
+      window.dispatchEvent(new CustomEvent('aura-startup-done'));
+      onDone();
+
+      // ── PHASE 2: Background warmup (non-blocking) ──────────────────────────
+      if (!alive) return;
+
+      startupLoggerPhaseBackground();
+
+      // Wait for manifest if not done yet
+      if (manifestIcons.size === 0) {
+        await manifestPromise.catch(() => {});
+      }
+
+      await Promise.allSettled([
+        runTask('icons-assets', () => preloadCuratedIcons(manifestIcons).then(() => {}), ICONS_ASSETS_TIMEOUT_MS, false),
+        runTask('ranks-art', () => preloadRankArt(db), RANKS_TIMEOUT_MS, false),
+        runTask('heavy-modals', () => warmHeavyModalSurfaces(db), MODALS_TIMEOUT_MS, false),
+        runTask('timer-warmup', () => warmTimerSurfaces(db, date, manifestIcons), TIMER_WARMUP_TIMEOUT_MS, false),
+      ]);
+
+      if (!alive) return;
+
+      // Final state
+      backgroundTasks = backgroundTasks.map((t) =>
+        t.status === 'done' || t.status === 'error' ? t : { ...t, status: 'done' as const }
       );
       setStartupReadiness({
-        cfgReady,
-        actReadyByScreen,
+        cfgReady: true,
+        actReadyByScreen: { home: true, rituals: true, sidebar: true, 'date-strip': true },
         startupReady: true,
         phase: 'ready',
         progress: 100,
         activeTaskId: null,
         activeTaskLabel: null,
-        tasks,
+        tasks: allTasks(),
       });
-      window.dispatchEvent(new CustomEvent('aura-startup-done'));
-      onDone();
+
+      startupLoggerFinalize();
     };
 
     void run().catch((error) => {
       if (!alive) return;
-      tasks = tasks.map((task) =>
-        task.status === 'running'
-          ? { ...task, status: 'error', error: error instanceof Error ? error.message : 'Startup failed' }
-          : task
+      const errMsg = error instanceof Error ? error.message : 'Critical startup failure';
+      console.error('[AURA] Critical startup error:', errMsg);
+
+      criticalTasks = criticalTasks.map((t) =>
+        t.status === 'running' ? { ...t, status: 'error' as const, error: errMsg } : t
       );
+
       setStartupReadiness({
-        cfgReady,
-        actReadyByScreen,
+        cfgReady: true,
+        actReadyByScreen: { home: true, rituals: true, sidebar: true, 'date-strip': true },
         startupReady: true,
         phase: 'ready',
         progress: 100,
         activeTaskId: null,
         activeTaskLabel: null,
-        tasks,
+        tasks: allTasks(),
       });
+
+      startupLoggerPhaseReveal();
+      startupLoggerFinalize();
       window.dispatchEvent(new CustomEvent('aura-startup-done'));
       onDone();
     });
 
     return () => {
       alive = false;
-      tasks = [];
+      criticalTasks = [];
+      backgroundTasks = [];
     };
   }, [onDone]);
 

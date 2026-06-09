@@ -13,6 +13,7 @@ import {
   ChevronRight,
   ChevronUp,
   Check,
+  Clock,
   Eye,
   Pencil,
   Plus,
@@ -34,6 +35,7 @@ import { detectAuraDataSourceMode } from '@/shared/bridge/aura-data-source';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import { GoalEditDialog } from './GoalEditDialog';
 import { GoalTaskDialog } from './GoalTaskDialog';
+import { loadPickerTasks, type PickerTask } from '@/features/timer/timer-utils';
 import { cn } from '@/lib/utils';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import {
@@ -55,6 +57,8 @@ import {
   formatRuDate,
   stageOrderRoman,
   calcTaskProgress,
+  calcTimelineStagePercents,
+  formatHoursMinutes,
   getStageVisualState,
   getStageStateClasses,
 } from './rituals-utils';
@@ -99,6 +103,11 @@ export function GoalsManagementPanel() {
   const waitForBootstrap = detectAuraDataSourceMode() === 'web-mini-api' && ritualsBootstrap == null;
 
   const canManage = Boolean(dbx?.getAllGoals && dbx?.getStagesByGoal && dbx?.getTasksByStage);
+
+  const [pickerTasks, setPickerTasks] = useState<PickerTask[]>([]);
+  useEffect(() => {
+    if (db) setPickerTasks(loadPickerTasks(db));
+  }, [db]);
 
   const goals = useMemo(() => {
     if (!dbx || !dbx.getAllGoals) return [] as AuraRow[];
@@ -158,11 +167,49 @@ export function GoalsManagementPanel() {
     return out;
   }, [dbx, ritualsBootstrap?.goalProgressRows, waitForBootstrap, dataTick]);
 
+  // Accumulated timer seconds per timeline goal (goalId → seconds since start_date)
+  const timelineAccumSeconds = useMemo(() => {
+    const out = new Map<string, number>();
+    if (!dbx?.getTaskTimerTotalSince) return out;
+    for (const g of goals) {
+      if (String(g.goal_type ?? 'standard') !== 'timeline') continue;
+      const taskId = String(g.linked_task_id ?? '');
+      const startDate = String(g.timeline_start_date ?? '');
+      if (!taskId || !startDate) { out.set(String(g.id), 0); continue; }
+      out.set(String(g.id), dbx.getTaskTimerTotalSince(taskId, startDate));
+    }
+    return out;
+  }, [dbx, goals, dataTick]);
+
+  // Per-stage percents for timeline goals (stageId → percent 0–100)
+  const timelineStagePercents = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const g of goals) {
+      if (String(g.goal_type ?? 'standard') !== 'timeline') continue;
+      const gid = String(g.id);
+      const secs = timelineAccumSeconds.get(gid) ?? 0;
+      const stages = stagesByGoal.get(gid) ?? [];
+      const percents = calcTimelineStagePercents(stages, secs);
+      for (const [sid, pct] of percents) out.set(sid, pct);
+    }
+    return out;
+  }, [goals, stagesByGoal, timelineAccumSeconds]);
+
   const goalProgress = useMemo(() => {
     const out = new Map<string, { completed: number; total: number; percent: number }>();
     if (!dbx || !dbx.getStagesByGoal || !dbx.getTasksByStage) return out;
     for (const g of goals) {
       const gid = String(g.id);
+      const isTimeline = String(g.goal_type ?? 'standard') === 'timeline';
+
+      if (isTimeline) {
+        const allStages = stagesByGoal.get(gid) ?? [];
+        const total = allStages.length;
+        const completed = allStages.filter((s) => (timelineStagePercents.get(String(s.id)) ?? 0) >= 100).length;
+        out.set(gid, { completed, total, percent: total > 0 ? Math.round((completed / total) * 100) : 0 });
+        continue;
+      }
+
       const allStages = stagesByGoal.get(gid) ?? [];
       let total = 0;
       let completed = 0;
@@ -177,11 +224,12 @@ export function GoalsManagementPanel() {
       out.set(gid, { completed, total, percent: total > 0 ? Math.round((completed / total) * 100) : 0 });
     }
     return out;
-  }, [dbx, goals, stagesByGoal, tasksByStage, goalTaskProgressById]);
+  }, [dbx, goals, stagesByGoal, tasksByStage, goalTaskProgressById, timelineStagePercents]);
 
   const stageProgress = useMemo(() => {
     const out = new Map<string, { completed: number; total: number; percent: number }>();
     if (!dbx) return out;
+    // Standard stages: task-based
     for (const [sid, allTasks] of tasksByStage.entries()) {
       let total = 0;
       let completed = 0;
@@ -192,8 +240,12 @@ export function GoalsManagementPanel() {
       }
       out.set(sid, { completed, total, percent: total > 0 ? Math.round((completed / total) * 100) : 0 });
     }
+    // Timeline stages: hour-based (override)
+    for (const [sid, pct] of timelineStagePercents) {
+      out.set(sid, { completed: pct >= 100 ? 1 : 0, total: 1, percent: Math.round(pct) });
+    }
     return out;
-  }, [dbx, tasksByStage, goalTaskProgressById]);
+  }, [dbx, tasksByStage, goalTaskProgressById, timelineStagePercents]);
 
   const goalDetails = useMemo(() => {
     const out = new Map<
@@ -260,6 +312,7 @@ export function GoalsManagementPanel() {
   const currentGoal = filteredGoals[goalIndex] ?? null;
   const currentGoalId = currentGoal ? String(currentGoal.id) : null;
   const canDeleteCurrentGoal = goals.length > 1;
+  const isCurrentGoalTimeline = currentGoal ? String(currentGoal.goal_type ?? 'standard') === 'timeline' : false;
   const currentGoalHeroTint =
     currentGoal && typeof currentGoal.color === 'string' && currentGoal.color.trim()
       ? String(currentGoal.color)
@@ -427,6 +480,8 @@ export function GoalsManagementPanel() {
                       >
                         {typeof currentGoal.icon === 'string' && currentGoal.icon ? (
                           <AuraThemedIcon name={currentGoal.icon} className="size-4" tint={currentGoalHeroTint} />
+                        ) : isCurrentGoalTimeline ? (
+                          <Clock className="size-4" strokeWidth={1.75} />
                         ) : (
                           <Target className="size-4" strokeWidth={1.75} />
                         )}
@@ -438,6 +493,13 @@ export function GoalsManagementPanel() {
                             : `${goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0} этапов`}
                           <span className="mx-1 opacity-40">·</span>
                           {(() => {
+                            if (isCurrentGoalTimeline) {
+                              const secs = timelineAccumSeconds.get(String(currentGoal.id)) ?? 0;
+                              const lastStage = currentStages[currentStages.length - 1];
+                              const totalHours = lastStage ? Number(lastStage.threshold_hours ?? 0) : 0;
+                              if (!totalHours) return formatHoursMinutes(secs);
+                              return `${formatHoursMinutes(secs)} / ${totalHours}ч`;
+                            }
                             const p = goalProgress.get(String(currentGoal.id));
                             if (!p || p.total === 0) return 'нет задач';
                             return p.completed === p.total ? `все ${p.total}` : `${p.completed} / ${p.total}`;
@@ -468,8 +530,16 @@ export function GoalsManagementPanel() {
 
                     {/* Full-width flush progress bar — edge-to-edge, single bar */}
                     {(() => {
-                      const p = goalProgress.get(String(currentGoal.id));
-                      const pct = p && p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+                      let pct: number;
+                      if (isCurrentGoalTimeline) {
+                        const lastStage = currentStages[currentStages.length - 1];
+                        const totalHours = lastStage ? Number(lastStage.threshold_hours ?? 0) : 0;
+                        const secs = timelineAccumSeconds.get(String(currentGoal.id)) ?? 0;
+                        pct = totalHours > 0 ? Math.min(100, (secs / (totalHours * 3600)) * 100) : 0;
+                      } else {
+                        const p = goalProgress.get(String(currentGoal.id));
+                        pct = p && p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+                      }
                       return (
                         <div className="h-[3px] w-full bg-[var(--aura-surface-control)]">
                           <div
@@ -635,9 +705,15 @@ export function GoalsManagementPanel() {
                               ) : null}
                             </div>
                             <span className={cn('shrink-0 text-xs tabular-nums', stageClasses.meta)}>
-                              {stageP.total === 0
-                                ? ''
-                                : `${stageP.completed}/${stageP.total}`}
+                              {isCurrentGoalTimeline
+                                ? (() => {
+                                    const threshold = Number(s.threshold_hours ?? 0);
+                                    if (!threshold) return '';
+                                    const secs = timelineAccumSeconds.get(currentGoalId ?? '') ?? 0;
+                                    const displaySecs = Math.min(secs, threshold * 3600);
+                                    return `${formatHoursMinutes(displaySecs)} / ${threshold}ч`;
+                                  })()
+                                : stageP.total === 0 ? '' : `${stageP.completed}/${stageP.total}`}
                             </span>
                             {editMode ? (
                               <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0')} role="toolbar" aria-label="Действия с этапом">
@@ -662,8 +738,35 @@ export function GoalsManagementPanel() {
                             ) : null}
                           </div>
 
-                            {/* Task list */}
-                            {tasks.length > 0 ? (
+                            {/* Timeline stage body: hour progress */}
+                            {isCurrentGoalTimeline ? (() => {
+                              const threshold = Number(s.threshold_hours ?? 0);
+                              const secs = timelineAccumSeconds.get(currentGoalId ?? '') ?? 0;
+                              const pct = stageP.percent;
+                              return (
+                                <div className="px-3 py-3 space-y-2">
+                                  <div className="flex items-center justify-between text-xs text-[var(--aura-text-muted)]">
+                                    <span>Накоплено</span>
+                                    {threshold > 0 ? (
+                                      <span className="tabular-nums font-medium">{formatHoursMinutes(Math.min(secs, threshold * 3600))} / {threshold}ч</span>
+                                    ) : (
+                                      <span className="text-[var(--aura-text-disabled)]">Порог не задан</span>
+                                    )}
+                                  </div>
+                                  {threshold > 0 ? (
+                                    <div className="h-2 overflow-hidden rounded-full bg-[var(--aura-surface-control)]">
+                                      <div
+                                        className="h-full rounded-full aura-tx-width"
+                                        style={{ width: `${Math.min(100, pct)}%`, backgroundColor: stageState === 'frozen' ? 'var(--muted-foreground)' : goalTint }}
+                                      />
+                                    </div>
+                                  ) : null}
+                                </div>
+                              );
+                            })() : null}
+
+                            {/* Task list (standard goals only) */}
+                            {!isCurrentGoalTimeline && tasks.length > 0 ? (
                               <div className="divide-y divide-[var(--aura-border-soft)]">
                                 {tasks.map((t, ti) => {
                                   const tid = String(t.id);
@@ -875,16 +978,16 @@ export function GoalsManagementPanel() {
                                   );
                                 })}
                               </div>
-                            ) : (
+                            ) : !isCurrentGoalTimeline ? (
                               <EmptyState
                                 title="Пока нет задач."
                                 hint="Добавьте задачу в этот этап, чтобы отслеживать прогресс."
                                 className="px-3 py-3"
                                 compact
                               />
-                            )}
+                            ) : null}
 
-                            {editMode ? (
+                            {editMode && !isCurrentGoalTimeline ? (
                               <div className="border-t border-[var(--aura-border-soft)] px-3 py-2">
                                 <AddListButton
                                   label="Добавить задачу"
@@ -919,12 +1022,17 @@ export function GoalsManagementPanel() {
         onOpenChange={(open) => setGoalDialog((s) => ({ ...s, open }))}
         title={goalDialog.editId ? 'Редактирование цели' : 'Новая цель'}
         supportsColor
+        showGoalTypeFields
+        pickerTasks={pickerTasks}
         initial={{
           title: String(goalInitial?.title ?? ''),
           description: String(goalInitial?.description ?? ''),
           icon: String(goalInitial?.icon ?? ''),
           color: String(goalInitial?.color ?? 'var(--primary)'),
           completedAt: asIsoDate(goalInitial?.completed_at),
+          goalType: String(goalInitial?.goal_type ?? 'standard') === 'timeline' ? 'timeline' : 'standard',
+          linkedTaskId: String(goalInitial?.linked_task_id ?? ''),
+          timelineStartDate: asIsoDate(goalInitial?.timeline_start_date),
         }}
         onSubmit={(v) => {
           if (goalDialog.editId) {
@@ -934,6 +1042,9 @@ export function GoalsManagementPanel() {
               icon: v.icon,
               color: v.color,
               completed_at: v.completedAt,
+              goal_type: v.goalType ?? 'standard',
+              linked_task_id: v.linkedTaskId ?? null,
+              timeline_start_date: v.timelineStartDate ?? null,
             });
           } else {
             dbx.addGoal?.({
@@ -943,6 +1054,9 @@ export function GoalsManagementPanel() {
               icon: v.icon,
               color: v.color,
               completed_at: v.completedAt,
+              goal_type: v.goalType ?? 'standard',
+              linked_task_id: v.linkedTaskId ?? null,
+              timeline_start_date: v.timelineStartDate ?? null,
               level: goals.length,
             });
           }
@@ -955,12 +1069,14 @@ export function GoalsManagementPanel() {
         onOpenChange={(open) => setStageDialog((s) => ({ ...s, open }))}
         title={stageDialog.editId ? 'Редактирование этапа' : 'Новый этап'}
         supportsColor={false}
+        showThresholdHoursField={isCurrentGoalTimeline}
         initial={{
           title: String(stageInitial?.title ?? ''),
           description: String(stageInitial?.description ?? ''),
           icon: String(stageInitial?.icon ?? ''),
           color: '',
           completedAt: asIsoDate(stageInitial?.completed_at),
+          thresholdHours: stageInitial?.threshold_hours != null ? Number(stageInitial.threshold_hours) : null,
         }}
         onSubmit={(v) => {
           if (!currentGoalId) return;
@@ -970,6 +1086,7 @@ export function GoalsManagementPanel() {
               description: v.description,
               icon: v.icon,
               completed_at: v.completedAt,
+              ...(isCurrentGoalTimeline ? { threshold_hours: v.thresholdHours ?? null } : {}),
             });
           } else {
             dbx.addStage?.({
@@ -980,6 +1097,7 @@ export function GoalsManagementPanel() {
               icon: v.icon,
               completed_at: v.completedAt,
               order_index: currentStages.length,
+              ...(isCurrentGoalTimeline ? { threshold_hours: v.thresholdHours ?? null } : {}),
             });
           }
           refresh();

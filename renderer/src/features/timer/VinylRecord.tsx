@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -10,37 +9,6 @@ type Props = {
 };
 
 export function VinylRecord({ coverImage, accent, isPlaying, size = 220, className }: Props) {
-  const discRef = useRef<HTMLDivElement>(null);
-  const rotationRef = useRef(0);
-  const lastTimestampRef = useRef<number | null>(null);
-  const rafRef = useRef<number>(0);
-
-  useEffect(() => {
-    const disc = discRef.current;
-    if (!disc) return;
-
-    if (!isPlaying) {
-      lastTimestampRef.current = null;
-      cancelAnimationFrame(rafRef.current);
-      return;
-    }
-
-    const rpm = 33.33;
-    const degPerMs = (rpm * 360) / 60000;
-
-    const tick = (ts: number) => {
-      if (lastTimestampRef.current !== null) {
-        rotationRef.current += (ts - lastTimestampRef.current) * degPerMs;
-        if (disc) disc.style.transform = `rotate(${rotationRef.current}deg)`;
-      }
-      lastTimestampRef.current = ts;
-      rafRef.current = requestAnimationFrame(tick);
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => { cancelAnimationFrame(rafRef.current); lastTimestampRef.current = null; };
-  }, [isPlaying]);
-
   const labelRadius = size * 0.21;
   const labelSize = labelRadius * 2;
   const holeSize = size * 0.038;
@@ -64,9 +32,7 @@ export function VinylRecord({ coverImage, accent, isPlaying, size = 220, classNa
 
       {/* Disc */}
       <div
-        ref={discRef}
-        className="absolute inset-0 rounded-full"
-        style={{ willChange: 'transform' }}
+        className={cn('absolute inset-0 rounded-full aura-vinyl-spin', !isPlaying && 'aura-vinyl-paused')}
       >
         {/* Base vinyl black */}
         <div

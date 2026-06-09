@@ -76,6 +76,22 @@ function createWindow() {
   const x = Math.floor((screenWidth - windowWidth) / 2);
   const y = Math.floor((screenHeight - windowHeight) / 2);
 
+  // Read saved theme from electron-store / settings file to set matching backgroundColor.
+  // This eliminates the white flash before HTML/CSS loads on first paint.
+  let savedThemeBg = '#161618'; // dark default
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    // Try to read from a lightweight JSON prefs file if it exists
+    const prefsPath = path.join(app.getPath('userData'), 'aura-prefs.json');
+    if (fs.existsSync(prefsPath)) {
+      const prefs = JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
+      if (prefs.theme === 'light') savedThemeBg = '#f0f0f8';
+      else if (prefs.theme === 'dim') savedThemeBg = '#212027';
+      else savedThemeBg = '#1e1e1e';
+    }
+  } catch { /* use dark default */ }
+
   mainWindow = new BrowserWindow({
     x,
     y,
@@ -88,6 +104,7 @@ function createWindow() {
     titleBarStyle: isMac ? 'default' : 'hidden', // Стандартная шапка для macOS
     autoHideMenuBar: false,
     fullscreenable: true,
+    backgroundColor: savedThemeBg, // Prevents white flash before HTML loads
     show: process.env.AURA_START_HIDDEN === '1' ? false : true,
     webPreferences: {
       nodeIntegration: true,
@@ -106,26 +123,57 @@ function createWindow() {
 
     // Inject database access via window.getDB
     const userDataPath = app.getPath('userData');
+    const appPath = app.getAppPath();
+
     mainWindow.webContents.executeJavaScript(`
       if (typeof window !== 'undefined' && typeof process !== 'undefined' && process.versions && process.versions.electron) {
         try {
           const Database = require('better-sqlite3');
           const path = require('path');
-          const { createDatabaseAdapter } = require('./renderer/src/db-adapter.js');
+          const fs = require('fs');
 
-          // Create/open database
-          const dbPath = path.join(${JSON.stringify(userDataPath)}, 'aura.db');
-          const db = new Database(dbPath);
-          const adapter = createDatabaseAdapter(db);
+          // Load db-adapter from the correct location in both dev and built versions
+          let adapterPath = path.join(${JSON.stringify(appPath)}, 'db-adapter.js');
+          let adapter;
+
+          try {
+            // Try loading from app root (both dev and built)
+            if (fs.existsSync(adapterPath)) {
+              // Clear require cache to ensure fresh load
+              delete require.cache[adapterPath];
+              const { createDatabaseAdapter } = require(adapterPath);
+
+              // Create/open database
+              const dbPath = path.join(${JSON.stringify(userDataPath)}, 'aura.db');
+              const db = new Database(dbPath);
+              adapter = createDatabaseAdapter(db, dbPath);
+              console.log('[Renderer] ✅ Database loaded from:', adapterPath);
+            } else {
+              throw new Error('db-adapter.js not found at ' + adapterPath);
+            }
+          } catch (innerError) {
+            console.error('[Renderer] ❌ Failed to load db-adapter:', innerError.message);
+            // Try dev fallback path
+            adapterPath = path.join(${JSON.stringify(appPath)}, '..', 'renderer', 'src', 'db-adapter.js');
+            if (fs.existsSync(adapterPath)) {
+              delete require.cache[adapterPath];
+              const { createDatabaseAdapter } = require(adapterPath);
+              const dbPath = path.join(${JSON.stringify(userDataPath)}, 'aura.db');
+              const db = new Database(dbPath);
+              adapter = createDatabaseAdapter(db, dbPath);
+              console.log('[Renderer] ✅ Database loaded from fallback path:', adapterPath);
+            } else {
+              throw new Error('db-adapter.js not found at any location');
+            }
+          }
 
           // Expose as getDB function
           window.getDB = () => adapter;
           window.__auraUserDataPath = ${JSON.stringify(userDataPath)};
 
-          console.log('[Renderer] ✅ Database loaded from Electron process');
           window.dispatchEvent(new CustomEvent('aura-db-ready'));
         } catch (e) {
-          console.error('[Renderer] ❌ Database error:', e.message);
+          console.error('[Renderer] ❌ Database error:', e.message, e.stack);
           window.getDB = () => null;
           window.dispatchEvent(new CustomEvent('aura-db-ready'));
         }
@@ -509,28 +557,37 @@ ipcMain.on('timer:state-changed', (event, state) => {
   }
 });
 
+// Показать окно и вывести на передний план
+ipcMain.on('window:focus', () => {
+  showWindowFromTray();
+});
+
 // Обработка события завершения таймера
 ipcMain.on('timer:completed', (event, data) => {
   const { isNaturalCompletion, taskTitle } = data || {};
-  
-  // Показываем уведомление при завершении таймера
+
+  // При естественном завершении — сразу показываем окно
+  if (isNaturalCompletion) {
+    showWindowFromTray();
+  }
+
+  // Показываем уведомление
   if (Notification.isSupported()) {
     const notification = new Notification({
-      title: isNaturalCompletion ? 'Таймер завершен' : 'Таймер остановлен',
-      body: taskTitle ? `Задача "${taskTitle}" завершена` : 'Сессия таймера завершена',
+      title: isNaturalCompletion ? '✅ Таймер завершён' : 'Таймер остановлен',
+      body: taskTitle ? `Задача "${taskTitle}" выполнена` : 'Сессия таймера завершена',
       icon: path.join(__dirname, 'public', 'icon.ico'),
-      silent: false
+      silent: isNaturalCompletion, // не дублируем звук — в renderer уже играет тон
     });
-    
+
     notification.show();
-    
-    // При клике на уведомление показываем окно
+
+    // Клик на уведомление тоже показывает окно
     notification.on('click', () => {
       showWindowFromTray();
     });
   }
-  
-  // Обновляем меню трея
+
   updateTrayMenu();
 });
 
@@ -690,9 +747,72 @@ function createTray() {
   console.log('[Main] Системный трей создан');
 }
 
+function buildAppMenu() {
+  const isMac = process.platform === 'darwin';
+
+  const template = [
+    // macOS: первый пункт — имя приложения
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about', label: 'О программе AURA' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide', label: 'Скрыть AURA' },
+        { role: 'hideOthers', label: 'Скрыть остальные' },
+        { role: 'unhide', label: 'Показать все' },
+        { type: 'separator' },
+        { role: 'quit', label: 'Завершить AURA' },
+      ],
+    }] : []),
+    {
+      label: 'Правка',
+      submenu: [
+        { role: 'undo', label: 'Отменить' },
+        { role: 'redo', label: 'Повторить' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Вырезать' },
+        { role: 'copy', label: 'Копировать' },
+        { role: 'paste', label: 'Вставить' },
+        { role: 'selectAll', label: 'Выбрать всё' },
+      ],
+    },
+    {
+      label: 'Вид',
+      submenu: [
+        { role: 'reload', label: 'Обновить' },
+        { role: 'forceReload', label: 'Принудительно обновить' },
+        { role: 'toggleDevTools', label: 'Инструменты разработчика' },
+        { type: 'separator' },
+        { role: 'resetZoom', label: 'Реальный размер' },
+        { role: 'zoomIn', label: 'Увеличить' },
+        { role: 'zoomOut', label: 'Уменьшить' },
+        { type: 'separator' },
+        { role: 'togglefullscreen', label: 'На весь экран' },
+      ],
+    },
+    {
+      label: 'Окно',
+      submenu: [
+        { role: 'minimize', label: 'Свернуть' },
+        { role: 'zoom', label: 'Развернуть' },
+        ...(isMac ? [
+          { type: 'separator' },
+          { role: 'front', label: 'На передний план' },
+        ] : [
+          { role: 'close', label: 'Закрыть' },
+        ]),
+      ],
+    },
+  ];
+
+  return Menu.buildFromTemplate(template);
+}
+
 app.whenReady()
   .then(async () => {
-    Menu.setApplicationMenu(null);
+    Menu.setApplicationMenu(buildAppMenu());
     // API сервер не требуется - приложение работает оффлайн с локальной БД
     // await ensureLocalApiServer();
     createWindow();

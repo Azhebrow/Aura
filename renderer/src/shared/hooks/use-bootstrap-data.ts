@@ -17,6 +17,17 @@ type Options = {
 const inFlightBootstrap = new Map<string, Promise<unknown>>();
 const bootstrapCache = new Map<string, { ts: number; data: unknown; serialized: string }>();
 
+// Last successful payload per screen+params (stable key, independent of the
+// volatile dedupe/dataTick key). Persists across mount/unmount so that
+// navigating back to a screen — or any remount — can paint the previous
+// content instantly instead of flashing the gray loading skeleton, while a
+// fresh fetch revalidates in the background (stale-while-revalidate).
+const lastStableData = new Map<string, { data: unknown; serialized: string }>();
+
+function stableKeyFor(screen: BootstrapScreen, params: Params): string {
+  return `${screen}:${safeSerialize(params ?? {})}`;
+}
+
 function screensForMutation(detail?: AuraDataChangedDetail): Set<BootstrapScreen> | null {
   if (!detail?.type) return null;
   if (detail.scope === 'global') return null;
@@ -76,11 +87,9 @@ export async function prefetchBootstrap<T>(
   if (!inFlightBootstrap.has(requestKey)) inFlightBootstrap.set(requestKey, requestPromise);
   const payload = await requestPromise;
   const normalized = (payload ?? null) as T | null;
-  bootstrapCache.set(requestKey, {
-    ts: Date.now(),
-    data: normalized,
-    serialized: safeSerialize(normalized),
-  });
+  const serialized = safeSerialize(normalized);
+  bootstrapCache.set(requestKey, { ts: Date.now(), data: normalized, serialized });
+  lastStableData.set(stableKeyFor(screen, params), { data: normalized, serialized });
   return normalized;
 }
 
@@ -124,8 +133,21 @@ export function useBootstrapData<T>(
       return;
     }
 
+    // Stale-while-revalidate: on a fresh mount (data === null) seed the last
+    // known payload for this screen so the page paints real content immediately
+    // instead of the gray skeleton. The fetch below still runs and overwrites
+    // with fresh data. This is what eliminates the contrast/color "flash" on
+    // navigation and on any remount.
+    const stable = lastStableData.get(stableKeyFor(screen, params));
+    if (stable) {
+      setData((prev) => (prev == null ? (stable.data as T) : prev));
+      hasSuccessRef.current = true;
+    }
+
     const shouldShowLoading =
-      mode === 'initial-blocking' && (!suppressLoadingAfterFirstSuccess || !hasSuccessRef.current);
+      mode === 'initial-blocking' &&
+      !stable &&
+      (!suppressLoadingAfterFirstSuccess || !hasSuccessRef.current);
     setLoading((prev) => (shouldShowLoading ? (prev ? prev : true) : false));
     setError(null);
 
@@ -147,6 +169,8 @@ export function useBootstrapData<T>(
         const normalized = (payload ?? null) as T | null;
         const serialized = safeSerialize(normalized);
         bootstrapCache.set(requestKey, { ts: Date.now(), data: normalized, serialized });
+        lastStableData.set(stableKeyFor(screen, params), { data: normalized, serialized });
+
         setData((prev) => {
           const prevSerialized = safeSerialize(prev);
           if (prevSerialized === serialized) return prev;

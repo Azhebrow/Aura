@@ -10,6 +10,7 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -18,11 +19,13 @@ import {
   AlertTriangle,
   ChevronDown,
   FolderOpen,
+  ImageIcon,
   ListPlus,
   Music2,
   Palette,
   Pencil,
   Trash2,
+  X,
   XIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -69,6 +72,8 @@ import {
   readAmbientMusicFileNames,
   ambientMusicImportKey,
   AMBIENT_MUSIC_DEFAULT_ICON,
+  resolveAmbientCoverImageUrl,
+  saveAmbientCoverImageFile,
 } from '@/features/timer/ambient-music-fs';
 
 // ─── Local feature imports ─────────────────────────────────────────────────────
@@ -106,6 +111,96 @@ import {
 } from './cfg-category-utils';
 import { CfgPresetProductsPanel } from './CfgPresetProductsPanel';
 import { CfgCategoryEditorDialog } from './CfgCategoryEditorDialog';
+
+// ─── AmbientCoverImageField ───────────────────────────────────────────────────
+
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function AmbientCoverImageField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const dropRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const previewSrc = value ? resolveAmbientCoverImageUrl(value) ?? value : '';
+
+  const handleFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    try {
+      const savedName = await saveAmbientCoverImageFile(file);
+      onChange(savedName ?? await readFileAsDataURL(file));
+    } catch { /* ignore */ }
+  }, [onChange]);
+
+  useEffect(() => {
+    const el = dropRef.current;
+    if (!el) return;
+
+    const onPaste = async (e: ClipboardEvent) => {
+      const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'));
+      if (item) { e.preventDefault(); const f = item.getAsFile(); if (f) await handleFile(f); }
+    };
+
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, [handleFile]);
+
+  const onDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault(); setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) await handleFile(file);
+  }, [handleFile]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        ref={dropRef}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        className={cn(
+          'relative flex h-24 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors',
+          dragging
+            ? 'border-primary bg-primary/10'
+            : 'border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)]/40 hover:border-primary/50'
+        )}
+        onClick={() => {
+          const input = document.createElement('input');
+          input.type = 'file'; input.accept = 'image/*';
+          input.onchange = async () => { if (input.files?.[0]) await handleFile(input.files[0]); };
+          input.click();
+        }}
+      >
+        {previewSrc ? (
+          <>
+            <img src={previewSrc} alt="cover" className="h-full w-full object-cover" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
+              <span className="text-xs font-medium text-white">Заменить</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-1.5 text-[var(--aura-text-disabled)]">
+            <ImageIcon className="size-5" />
+            <span className="text-xs">Перетащите, вставьте (Ctrl+V) или нажмите</span>
+          </div>
+        )}
+      </div>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--aura-border-soft)] text-xs text-[var(--aura-text-muted)] hover:border-destructive/40 hover:text-destructive transition-colors"
+        >
+          <X className="size-3" /> Удалить обложку
+        </button>
+      )}
+    </div>
+  );
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -507,6 +602,16 @@ export function CfgSectionCard({ spec }: Props) {
           </span>
           <span className="text-muted-foreground shrink-0 text-xs">Настроить</span>
         </button>
+      );
+    }
+
+    if (spec.table === 'cfg_ambient_music' && f.key === 'cover_image') {
+      const imgSrc = form[f.key] || '';
+      return (
+        <AmbientCoverImageField
+          value={imgSrc}
+          onChange={(v) => setForm((prev) => ({ ...prev, cover_image: v }))}
+        />
       );
     }
 

@@ -517,6 +517,17 @@ html[data-page-transitions='off'] *::after {
   animation-delay: 0ms !important;
 }
 
+/* Подавляет только цветовые переходы (aura-tx-*) при начальной загрузке данных,
+   не трогая layout-анимации (transform, opacity на RootLayout). */
+html[data-no-color-flash] .aura-tx-colors,
+html[data-no-color-flash] .aura-tx-surface,
+html[data-no-color-flash] .aura-tx-opacity,
+html[data-no-color-flash] .aura-tx-opacity-fast,
+html[data-no-color-flash] .aura-tx-interactive,
+html[data-no-color-flash] .aura-tx-shadow {
+  transition-duration: 0ms !important;
+}
+
 /* ════════════════════════════════════════════════
    TRANSITION UTILITIES
    Consistent transitions referencing motion tokens
@@ -692,7 +703,7 @@ html[data-page-transitions='off'] *::after {
 
   /* ─── App startup reveal (matches loading overlay fade-out: 300ms) ─── */
   .aura-app-soft-reveal {
-    animation: aura-fade-in 300ms var(--aura-motion-ease) both;
+    animation: aura-fade-in 200ms ease-out 180ms both;
   }
   .aura-enter-slide-up {
     animation: aura-slide-up var(--aura-motion-duration-slow) var(--aura-motion-ease) both;
@@ -941,14 +952,14 @@ html:not(.dark) svg:not([data-slot='scrollbar']) {
   to   { opacity: 1; }
 }
 
+/* Анимация проявления контента отключена: она проигрывалась при КАЖДОМ
+   (ре)монтировании страницы (навигация, обновление данных), из-за чего контент
+   на широких экранах «мерцал» — проявлялся из opacity:0 поверх фона. Токены
+   цвета при этом не меняются, поэтому визуально это выглядело как мерцание
+   цвета/контраста без видимой причины. Первичный плавный показ всего приложения
+   обеспечивает поэтапный reveal в RootLayout — отдельный fade на страницу не нужен. */
 .aura-content-fade-in {
-  animation: content-fade-in var(--aura-motion-duration-slow) var(--aura-motion-ease) both;
-}
-
-@media (max-width: 767px) {
-  .aura-content-fade-in {
-    animation: none;
-  }
+  animation: none;
 }
 
 
@@ -1090,11 +1101,12 @@ html:not(.dark) svg:not([data-slot='scrollbar']) {
    Surface-переменные нейтрализуются до chroma=0 только для режимов,
    которые сильно меняют насыщенность — тогда saturate() на них не влияет.
    ─────────────────────────────────────────────────────────────────────────── */
-/* serious — загадочный, как в фэнтэзи: кинематографичный цветокор,
-   чуть холоднее в тенях, немного снижена насыщенность без «выцветания»,
-   контраст слегка выше — не реклама, а художественное кино / книжная обложка */
+/* serious — тёмный кинематографичный стиль: film noir / нуар.
+   Глубокие тени (brightness down), поднятый контраст (раздавленные чёрные),
+   мягкое desaturate без сероватости, холодный сдвиг (-8deg) в тенях —
+   никакого sepia/тепла. Ощущение: художественное кино, тёмный триллер. */
 html[data-color-filter="serious"]  body {
-  filter: contrast(1.08) saturate(0.78) sepia(0.10) hue-rotate(10deg) brightness(0.97);
+  filter: brightness(0.90) contrast(1.16) saturate(0.82) hue-rotate(-8deg);
 }
 
 /* warm — тёплый сдвиг, чуть живее */
@@ -1128,7 +1140,21 @@ html[data-color-filter="bw"]       body { filter: saturate(0); }
    оттенков) и достаточной разницей в яркости, чтобы после любого фильтра
    расслоение оставалось видимым.
    ─────────────────────────────────────────────────────────────────────────── */
-html[data-theme='light'][data-color-filter="serious"],
+/* serious в светлой теме: brightness(0.90) сильно затемняет — поднимаем
+   базу фона, чтобы после фильтра он выглядел нормально, не слишком тёмным */
+html[data-theme='light'][data-color-filter="serious"] {
+  --background:         oklch(0.955 0 0);
+  --card:               oklch(0.995 0 0);
+  --popover:            oklch(0.995 0 0);
+  --secondary:          oklch(0.965 0 0);
+  --muted:              oklch(0.958 0 0);
+  --accent:             oklch(0.950 0 0);
+  --border:             oklch(0.58 0 0);
+  --input:              oklch(0.58 0 0);
+  --aura-border-soft:   oklch(0 0 0 / 22%);
+  --aura-border-strong: oklch(0 0 0 / 36%);
+}
+
 html[data-theme='light'][data-color-filter="pastel"] {
   --background:         oklch(0.91 0 0);
   --card:               oklch(0.99 0 0);
@@ -1177,10 +1203,11 @@ html.dark[data-color-filter="pastel"] {
 }
 
 html.dark[data-color-filter="serious"] {
-  --border:             oklch(1 0 0 / 18%);
-  --input:              oklch(1 0 0 / 18%);
-  --aura-border-soft:   oklch(1 0 0 / 20%);
-  --aura-border-strong: oklch(1 0 0 / 34%);
+  /* brightness(0.90) сжимает границы — компенсируем подъёмом opacity */
+  --border:             oklch(1 0 0 / 24%);
+  --input:              oklch(1 0 0 / 24%);
+  --aura-border-soft:   oklch(1 0 0 / 26%);
+  --aura-border-strong: oklch(1 0 0 / 42%);
 }
 
 html.dark[data-color-filter="warm"],
@@ -1207,8 +1234,8 @@ html.dark[data-theme='dim'][data-color-filter="pastel"] {
 }
 
 html.dark[data-theme='dim'][data-color-filter="serious"] {
-  --aura-border-soft:   color-mix(in oklab, var(--foreground) 18%, transparent);
-  --aura-border-strong: color-mix(in oklab, var(--foreground) 30%, transparent);
+  --aura-border-soft:   color-mix(in oklab, var(--foreground) 24%, transparent);
+  --aura-border-strong: color-mix(in oklab, var(--foreground) 40%, transparent);
 }
 
 html.dark[data-theme='dim'][data-color-filter="warm"],
@@ -1234,4 +1261,58 @@ html[data-color-filter="bw"].dark[data-theme="dim"] {
   --aura-surface-raised:  oklch(0.365 0 0);
   --card-foreground:      oklch(0.95 0 0);
   --popover-foreground:   oklch(0.95 0 0);
+}
+
+/* ─── Settings reload fade overlay ──────────────────────────────────────── */
+
+@keyframes aura-reload-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Fullscreen timer open/close animations ─────────────────────────────── */
+
+@keyframes aura-fullscreen-reveal {
+  0%   { opacity: 0; transform: scale(0.94); filter: blur(16px) brightness(0.7); }
+  45%  { filter: blur(0px) brightness(1); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0px) brightness(1); }
+}
+
+@keyframes aura-fullscreen-dismiss {
+  0%   { opacity: 1; transform: scale(1); filter: blur(0px) brightness(1); }
+  30%  { filter: blur(4px) brightness(0.8); }
+  100% { opacity: 0; transform: scale(1.06); filter: blur(20px) brightness(0.5); }
+}
+
+/* Applied via data-aura-fullscreen on DialogContent */
+[data-aura-fullscreen][data-state="open"] {
+  animation: aura-fullscreen-reveal 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-aura-fullscreen][data-state="closed"] {
+  animation: aura-fullscreen-dismiss 300ms cubic-bezier(0.6, 0, 0.8, 0) both;
+}
+
+/* ─── Vinyl spin ─────────────────────────────────────────────────────────── */
+
+@keyframes aura-vinyl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.aura-vinyl-spin {
+  animation: aura-vinyl-spin 1.8s linear infinite;
+  animation-play-state: running;
+  will-change: transform;
+}
+
+.aura-vinyl-paused {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura-vinyl-spin {
+    animation: none;
+  }
 }

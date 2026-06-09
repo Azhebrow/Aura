@@ -9,12 +9,10 @@ import { useAuraDb } from '@/shared/hooks/use-aura-db';
 
 type Stage = 'idle' | 'sidebar' | 'header' | 'content';
 
-const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
-
-// Delays for each stage (ms from mount)
-const T_SIDEBAR = 120;
-const T_HEADER  = 480;
-const T_CONTENT = 780;
+// Delays for each stage (ms from mount) — pure fade, no translate
+const T_SIDEBAR = 0;
+const T_HEADER  = 60;
+const T_CONTENT = 120;
 
 function isOnboardingComplete(value: unknown) {
   return value === true || value === 1 || value === '1';
@@ -45,7 +43,7 @@ export function RootLayout() {
   const contentReady  = stage === 'content';
 
   const tx = (delay = 0) =>
-    `transition-all duration-[520ms] ease-[${EASE}] transform-gpu will-change-transform${delay ? ` delay-[${delay}ms]` : ''}`;
+    `transition-opacity duration-[380ms] ease-out${delay ? ` delay-[${delay}ms]` : ''}`;
 
   if (!ready || onboardingDone === null) {
     return (
@@ -76,46 +74,31 @@ export function RootLayout() {
         {/* Sidebar — slides in from left */}
         <div
           className={`flex min-h-0 shrink-0 ${tx()}`}
-          style={{
-            opacity:    sidebarReady ? 1 : 0,
-            transform:  sidebarReady ? 'translateX(0)' : 'translateX(-100%)',
-          }}
+          style={{ opacity: sidebarReady ? 1 : 0 }}
         >
           <AppSidebar />
         </div>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {/* Header — slides down from top */}
           <div
             className={`shrink-0 ${tx(40)}`}
-            style={{
-              opacity:   headerReady ? 1 : 0,
-              transform: headerReady ? 'translateY(0)' : 'translateY(-110%)',
-            }}
+            style={{ opacity: headerReady ? 1 : 0 }}
           >
             <AppHeader />
           </div>
 
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            {/* Content — fades in without scale to avoid layout jitter after settings changes. */}
             <div
               className={`${tx(80)} flex min-h-0 min-w-0 flex-1 flex-col`}
-              style={{
-                opacity:   contentReady ? 1 : 0,
-                transform: contentReady ? 'translateY(0)' : 'translateY(8px)',
-              }}
+              style={{ opacity: contentReady ? 1 : 0 }}
             >
               <AppMainArea />
             </div>
           </div>
 
-          {/* Mobile dock — slides up from bottom */}
           <div
             className={`shrink-0 ${tx(120)}`}
-            style={{
-              opacity:   contentReady ? 1 : 0,
-              transform: contentReady ? 'translateY(0)' : 'translateY(100%)',
-            }}
+            style={{ opacity: contentReady ? 1 : 0 }}
           >
             <AppMobileDock />
           </div>

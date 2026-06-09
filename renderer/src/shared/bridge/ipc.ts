@@ -31,3 +31,8 @@ export function sendTimerCompleted(payload: {
 }): void {
   getIpcRenderer()?.send('timer:completed', payload);
 }
+
+/** Просим main показать окно приложения и вывести его на передний план. */
+export function sendFocusWindow(): void {
+  getIpcRenderer()?.send('window:focus');
+}

@@ -7,7 +7,11 @@ import { ThemeSync } from '@/features/theme/ThemeSync';
 import { DesignTokensSync } from '@/features/theme/DesignTokensSync';
 import { LanguageProvider } from '@/app/providers/LanguageContext';
 import { ChromeArrowNavigation } from '@/widgets/app-chrome/ChromeArrowNavigation';
+import { registerPointsService } from '@/shared/services/PointsService';
 import '@/i18n/config';
+
+// Регистрируем PointsService глобально — используется useDayLocked, CalendarPage и др.
+registerPointsService();
 
 /**
  * Корневые провайдеры renderer.

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
+import { resolveAmbientCoverImageUrl } from '@/features/timer/ambient-music-fs';
 
 const AMBIENT_VOLUME_KEY = 'timer-ambient-volume';
 
@@ -8,6 +9,7 @@ export type AmbientTrack = {
   name: string;
   icon?: string;
   fileName: string;
+  coverImage?: string;
 };
 
 export type AmbientDefaults = {
@@ -19,7 +21,7 @@ export type AmbientDefaults = {
 export function readStoredVolume() {
   try {
     const raw = localStorage.getItem(AMBIENT_VOLUME_KEY);
-    if (!raw) return 50;
+    if (!raw) return 30;
     const parsed = Number(raw);
     if (!Number.isFinite(parsed)) return 50;
     return Math.min(100, Math.max(0, Math.round(parsed * 100)));
@@ -82,6 +84,9 @@ export function parseAmbientTracks(db: AuraDatabase): AmbientTrack[] {
       name: String(row.name ?? row.title ?? row.id ?? 'Ambient'),
       icon: typeof row.icon === 'string' && row.icon.trim() ? row.icon.trim() : undefined,
       fileName: typeof row.file_name === 'string' ? row.file_name.trim() : '',
+      coverImage: typeof row.cover_image === 'string' && row.cover_image
+        ? resolveAmbientCoverImageUrl(row.cover_image) ?? undefined
+        : undefined,
     }))
     .filter((row) => row.id && row.fileName)
     .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
@@ -120,6 +125,7 @@ export function useAmbientAudio({ open, db, timerType, shouldPlay }: UseAmbientA
   const userPickedRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioTrackRef = useRef('');
+  const audioUrlRef = useRef('');
 
   const currentTrack = tracks.find((t) => t.id === trackId) ?? null;
 
@@ -129,6 +135,7 @@ export function useAmbientAudio({ open, db, timerType, shouldPlay }: UseAmbientA
     try { audio.pause(); if (resetPosition) audio.currentTime = 0; audio.src = ''; } catch { /* ignore */ }
     audioRef.current = null;
     audioTrackRef.current = '';
+    audioUrlRef.current = '';
   }, []);
 
   const seekRandomly = useCallback(() => {
@@ -172,23 +179,33 @@ export function useAmbientAudio({ open, db, timerType, shouldPlay }: UseAmbientA
     if (audioRef.current) audioRef.current.volume = volume / 100;
   }, [volume]);
 
-  // Sync audio element playback
+  // Prepare audio element only when the selected track changes.
   useEffect(() => {
     if (!open) return;
     if (!trackId || !currentTrack) { dispose(false); return; }
     const nextUrl = resolveAmbientFileUrl(currentTrack.fileName);
     if (!nextUrl) { dispose(false); return; }
-    if (!audioRef.current || audioTrackRef.current !== trackId || audioRef.current.src !== nextUrl) {
+    if (!audioRef.current || audioTrackRef.current !== trackId || audioUrlRef.current !== nextUrl) {
       dispose(true);
       const a = new Audio(nextUrl);
-      a.loop = true; a.volume = volume / 100;
-      audioRef.current = a; audioTrackRef.current = trackId;
+      a.loop = true;
+      a.preload = 'auto';
+      a.volume = volume / 100;
+      audioRef.current = a;
+      audioTrackRef.current = trackId;
+      audioUrlRef.current = nextUrl;
     }
-    if (!audioRef.current) return;
-    audioRef.current.volume = volume / 100;
-    if (shouldPlay) void audioRef.current.play().catch(() => {});
-    else audioRef.current.pause();
-  }, [trackId, volume, currentTrack, dispose, open, shouldPlay]);
+  }, [trackId, currentTrack, dispose, open]);
+
+  // Sync playback without recreating or reconfiguring the audio element.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!open || !audio) return;
+    if (shouldPlay) void audio.play().catch(() => {});
+    else {
+      try { audio.pause(); } catch { /* ignore */ }
+    }
+  }, [open, shouldPlay, trackId]);
 
   return {
     tracks, defaults,

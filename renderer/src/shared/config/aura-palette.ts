@@ -123,26 +123,31 @@ export function moodColor(level: number): string {
 export function applyTaskCategoryCssVarsFromSettings(settings: Record<string, unknown> | null | undefined): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+
+  // Resolve the final value for each category in one pass, then apply atomically.
+  // Never set a default and then immediately override it — that causes a one-frame
+  // color flash visible to the user.
+  const raw = settings?.task_categories_config;
+  let parsed: Record<string, { color?: string }> | null = null;
+  if (raw != null) {
+    try {
+      parsed = typeof raw === 'string'
+        ? (JSON.parse(raw) as Record<string, { color?: string }>)
+        : (raw as Record<string, { color?: string }>);
+      if (!parsed || typeof parsed !== 'object') parsed = null;
+    } catch {
+      parsed = null;
+    }
+  }
+
   for (const [cat, def] of Object.entries(DEFAULT_TASK_CATEGORY_COLORS)) {
     const v = CSS_VAR_MAP[cat as keyof typeof DEFAULT_TASK_CATEGORY_COLORS];
-    root.style.setProperty(v, def);
+    const custom = parsed?.[cat]?.color;
+    const value = (typeof custom === 'string' && custom.trim())
+      ? validateTaskCategoryColor(custom)
+      : def;
+    root.style.setProperty(v, value);
   }
-  const raw = settings?.task_categories_config;
-  if (raw == null) return;
-  let parsed: Record<string, { color?: string }> | null = null;
-  try {
-    parsed = typeof raw === 'string' ? (JSON.parse(raw) as Record<string, { color?: string }>) : (raw as Record<string, { color?: string }>);
-  } catch {
-    return;
-  }
-  if (!parsed || typeof parsed !== 'object') return;
-  (Object.keys(CSS_VAR_MAP) as (keyof typeof CSS_VAR_MAP)[]).forEach((cat) => {
-    const entry = parsed![cat];
-    const c = entry?.color;
-    if (typeof c === 'string' && c.trim()) {
-      root.style.setProperty(CSS_VAR_MAP[cat], validateTaskCategoryColor(c));
-    }
-  });
 }
 
 export function applyFinanceSemanticCssVars(): void {

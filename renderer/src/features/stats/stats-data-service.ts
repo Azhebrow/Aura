@@ -160,8 +160,30 @@ export function getTasksData(db: AuraDatabase, startDate: string, endDate: strin
       const id = String(task.id ?? '');
       const title = String(task.title ?? id);
       try {
-        const progress = db.getTaskProgress(id, date);
-        values[title] = progress?.completion_percent != null ? Number(progress.completion_percent) : 0;
+        const taskType = String(task.task_type ?? '');
+
+        if (taskType === 'timer') {
+          // Таймер-задачи: прогресс = сессии за день / целевые часы
+          const targetHours = Number(task.cfg_target_hours) || 0;
+          if (targetHours > 0) {
+            const totalSec = db.getTaskTimerTotal(date, id) ?? 0;
+            values[title] = Math.min(100, (Number(totalSec) / 3600 / targetHours) * 100);
+          } else {
+            values[title] = 0;
+          }
+        } else if (taskType === 'ritual') {
+          // Ритуалы: через calculateRitualProgress
+          const ritualType = String(task.ritual_type ?? 'sunrise');
+          try {
+            values[title] = db.calculateRitualProgress?.(ritualType, date) ?? 0;
+          } catch {
+            values[title] = 0;
+          }
+        } else {
+          // Остальные типы (checkbox, number, list, nutrition): completion_percent
+          const progress = db.getTaskProgress(id, date);
+          values[title] = progress?.completion_percent != null ? Number(progress.completion_percent) : 0;
+        }
       } catch {
         values[title] = 0;
       }

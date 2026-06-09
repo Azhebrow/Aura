@@ -221,7 +221,7 @@ export function DateCellStrip() {
                 !isFuture && 'hover:bg-background/80',
                 isSel && 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
                 !isSel && isToday && 'text-foreground',
-                isLocked && !isSel && 'text-muted-foreground/85',
+                isLocked && 'text-muted-foreground/60 opacity-65',
                 isFuture && '!bg-transparent !text-muted-foreground',
                 isFuture && 'calendar-ghost-day pointer-events-none'
               )}
@@ -230,12 +230,13 @@ export function DateCellStrip() {
                 {dow}
               </span>
               <span className="text-xs font-semibold tabular-nums sm:text-sm">
-                {isSel && isLocked ? <Lock className="mx-auto size-3.5 sm:size-4" aria-hidden /> : dayNum}
+                {dayNum}
               </span>
               <span
                 className={cn(
                   'mt-0.5 h-1 w-[85%] max-w-[2.75rem] overflow-hidden rounded-full bg-foreground/10',
-                  isSel && 'bg-primary-foreground/25'
+                  isSel && 'bg-primary-foreground/25',
+                  isLocked && 'opacity-60'
                 )}
                 aria-hidden
               >

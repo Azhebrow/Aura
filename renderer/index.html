@@ -8,17 +8,56 @@
     />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self' file:; script-src 'self' file: https://telegram.org; style-src 'self' 'unsafe-inline' file: https://fonts.googleapis.com; font-src 'self' file: https://fonts.gstatic.com; img-src 'self' blob: data: file:; media-src 'self' blob: file:; connect-src 'self' file:;"
+      content="default-src 'self' file:; script-src 'self' 'unsafe-inline' file: https://telegram.org; style-src 'self' 'unsafe-inline' file: https://fonts.googleapis.com; font-src 'self' file: https://fonts.gstatic.com; img-src 'self' blob: data: file:; media-src 'self' blob: file:; connect-src 'self' file: http: https:;"
     />
     <title>AURA</title>
     <script>
       (function () {
-        // Тема до загрузки CSS — убирает белый флеш
+        // Тема до загрузки CSS — убирает белый флеш.
+        // Используем точные oklch-значения из globals.css (не hex-аппроксимации).
         var theme = localStorage.getItem('aura-theme') || 'dark';
-        var bg = theme === 'light' ? '#f0eef7' : theme === 'dim' ? '#31303a' : '#161618';
+        var bg = theme === 'light' ? 'oklch(0.952 0.008 260)'
+               : theme === 'dim'   ? 'oklch(0.22 0.01 262)'
+               :                     'oklch(0.13 0 0)';
         document.documentElement.style.background = bg;
         document.documentElement.setAttribute('data-theme', theme);
         if (theme !== 'light') document.documentElement.classList.add('dark');
+
+        // Apply color-filter and theme-style synchronously to avoid background/border token flash
+        var colorFilter = localStorage.getItem('aura-color-filter') || 'vivid';
+        document.documentElement.setAttribute('data-color-filter', colorFilter);
+        var themeStyle = localStorage.getItem('aura-theme-style') || 'vivid';
+        document.documentElement.setAttribute('data-theme-style', themeStyle);
+
+        // Set --primary from accent preset immediately — so LoadingScreen and
+        // the inline preloader show the correct accent color before ThemeContext runs.
+        var ACCENT = {
+          slate:    { l: 'oklch(0.72 0.08 255)',  d: 'oklch(0.72 0.08 255)' },
+          stone:    { l: 'oklch(0.5 0.01 85)',     d: 'oklch(0.82 0.008 85)' },
+          graphite: { l: 'oklch(0.34 0.01 260)',   d: 'oklch(0.74 0.01 260)' },
+          violet:   { l: 'oklch(0.54 0.26 285)',   d: 'oklch(0.68 0.24 285)' },
+          indigo:   { l: 'oklch(0.52 0.18 280)',   d: 'oklch(0.7 0.14 280)' },
+          blue:     { l: 'oklch(0.52 0.24 248)',   d: 'oklch(0.66 0.22 248)' },
+          cobalt:   { l: 'oklch(0.52 0.18 262)',   d: 'oklch(0.7 0.14 262)' },
+          cyan:     { l: 'oklch(0.57 0.22 212)',   d: 'oklch(0.72 0.2 212)' },
+          teal:     { l: 'oklch(0.55 0.18 188)',   d: 'oklch(0.7 0.16 188)' },
+          emerald:  { l: 'oklch(0.56 0.22 158)',   d: 'oklch(0.7 0.2 158)' },
+          forest:   { l: 'oklch(0.5 0.12 150)',    d: 'oklch(0.7 0.1 150)' },
+          lime:     { l: 'oklch(0.68 0.24 132)',   d: 'oklch(0.78 0.24 132)' },
+          amber:    { l: 'oklch(0.62 0.2 68)',     d: 'oklch(0.78 0.2 68)' },
+          orange:   { l: 'oklch(0.6 0.24 44)',     d: 'oklch(0.76 0.22 44)' },
+          rose:     { l: 'oklch(0.56 0.26 14)',    d: 'oklch(0.7 0.24 14)' },
+          pink:     { l: 'oklch(0.58 0.26 340)',   d: 'oklch(0.72 0.24 340)' },
+          mono:     { l: 'oklch(0.36 0 0)',        d: 'oklch(0.82 0 0)' },
+        };
+        var preset = localStorage.getItem('aura-accent-preset') || 'violet';
+        var entry = ACCENT[preset] || ACCENT.violet;
+        var primary = theme === 'light' ? entry.l : entry.d;
+        document.documentElement.style.setProperty('--primary', primary);
+
+        // Подавляем цветовые переходы до первого рендера React.
+        // AppMainArea снимет атрибут после загрузки данных страницы.
+        document.documentElement.setAttribute('data-no-color-flash', '');
 
         // Плавное появление/исчезания скроллбара через класс .is-scrolling
         var timers = new WeakMap();
@@ -36,6 +75,75 @@
     </script>
   </head>
   <body style="background:inherit">
+    <!-- Inline preloader — visible instantly before React loads, no JS deps.
+         AppStartupGate removes it after loading is complete.
+         Must visually match LoadingScreen.tsx so the transition is seamless. -->
+    <div id="aura-preload" aria-hidden="true">
+      <style>
+        /* Preloader — position: fixed relative to viewport, never moves */
+        #aura-preload {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          z-index: 9998;
+          background: inherit;
+          transition: opacity 200ms ease;
+        }
+        #aura-preload.aura-preload-gone {
+          opacity: 0;
+          pointer-events: none;
+        }
+        /* Single anchor point: absolute center of viewport, no flexbox */
+        ._pl-anchor {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+        }
+        /* All children positioned relative to anchor center */
+        ._pl-ring {
+          position: absolute;
+          border-radius: 50%;
+          border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+          animation: _pl-ring 2.8s ease-in-out infinite;
+        }
+        ._pl-ring-1 {
+          width: 72px; height: 72px;
+          top: -36px; left: -36px;
+        }
+        ._pl-ring-2 {
+          width: 52px; height: 52px;
+          top: -26px; left: -26px;
+          border-color: color-mix(in oklab, var(--primary) 14%, transparent);
+          animation-delay: .6s;
+        }
+        ._pl-star {
+          position: absolute;
+          width: 28px; height: 28px;
+          top: -14px; left: -14px;
+          color: var(--primary);
+          filter: drop-shadow(0 0 8px color-mix(in oklab, var(--primary) 40%, transparent));
+          animation: _pl-star 4s ease-in-out infinite;
+          transform-origin: 14px 14px;
+        }
+        @keyframes _pl-ring {
+          0%, 100% { opacity: .4; transform: scale(1); }
+          50%       { opacity: .12; transform: scale(1.1); }
+        }
+        @keyframes _pl-star {
+          0%, 100% { opacity: .8; }
+          50%       { opacity: 1; }
+        }
+      </style>
+      <div class="_pl-anchor">
+        <div class="_pl-ring _pl-ring-1"></div>
+        <div class="_pl-ring _pl-ring-2"></div>
+        <svg class="_pl-star" viewBox="0 0 24 24" fill="none">
+          <path d="M12 1.75L14.88 9.12L22.25 12L14.88 14.88L12 22.25L9.12 14.88L1.75 12L9.12 9.12L12 1.75Z" fill="currentColor"/>
+        </svg>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -266,13 +266,24 @@ export function TimerStatusPage() {
   useEffect(() => {
     const selected = timer.model.selectedTask;
     if (!selected) return;
+
+    // Пока задачи не загружены (byGroup пустой) — ничего не делаем.
+    // Иначе found = null → selectTask(null) сбросил бы задачу из IPC до загрузки БД.
+    const allEmpty =
+      byGroup.tasks.length === 0 &&
+      byGroup.escape.length === 0 &&
+      byGroup.filling.length === 0;
+    if (allEmpty) return;
+
     let found: { task: (typeof byGroup)['tasks'][0]; group: typeof selectedTaskGroup } | null = null;
     for (const group of ['tasks', 'escape', 'filling'] as const) {
       const task = byGroup[group].find((t) => t.id === selected.id);
       if (task) { found = { task, group }; break; }
     }
+    // Задача удалена из конфига — сбрасываем
     if (!found) { timer.selectTask(null); return; }
-    // Пропускаем если мета уже есть
+
+    // Обновляем мета если её нет (selectedTask из IPC содержит только id+title)
     const hasMeta = (typeof selected.icon === 'string' && selected.icon.trim())
       || (typeof selected.color === 'string' && selected.color.trim())
       || (typeof selected.cfg_target_hours === 'number');

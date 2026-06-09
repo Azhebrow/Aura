@@ -100,6 +100,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
+    // Persist theme for Electron main process — used to set backgroundColor
+    // before React loads, eliminating white flash on next launch.
+    try {
+      const uDataPath = (window as { __auraUserDataPath?: string }).__auraUserDataPath;
+      if (uDataPath && typeof require !== 'undefined') {
+        const fs = (require as NodeRequire)('fs') as { writeFileSync: (p: string, d: string) => void };
+        const path = (require as NodeRequire)('path') as { join: (...p: string[]) => string };
+        fs.writeFileSync(path.join(uDataPath, 'aura-prefs.json'), JSON.stringify({ theme: mode }));
+      }
+    } catch {
+      /* non-critical, ignore in web mode */
+    }
   }, []);
 
   const setAccentPreset = useCallback((preset: AuraAccentPreset) => {

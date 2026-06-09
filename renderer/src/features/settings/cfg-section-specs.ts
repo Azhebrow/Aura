@@ -227,6 +227,7 @@ const AMBIENT_FIELDS: CfgFieldDef[] = [
   { key: 'name', label: 'settings_cfg:fields.name.label', kind: 'text' },
   { key: 'icon', label: 'settings_cfg:fields.icon.label', kind: 'text', hint: 'settings_cfg:fields.icon.hint' },
   { key: 'file_name', label: 'settings_cfg:fields.file_name.label', kind: 'text', hint: 'settings_cfg:fields.file_name.hint' },
+  { key: 'cover_image', label: 'Обложка', kind: 'text', hint: 'Обложка трека — вставьте через Ctrl+V, перетащите или выберите файл.' },
 ];
 
 const DIARY_CAT_FIELDS: CfgFieldDef[] = [

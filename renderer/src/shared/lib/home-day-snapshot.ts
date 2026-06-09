@@ -88,7 +88,7 @@ function progressObject(percent: number, value: unknown = percent): AuraTaskProg
   };
 }
 
-function taskProgressPercent(params: {
+export function taskProgressPercent(params: {
   task: AuraRow;
   progress: AuraTaskProgress | null;
   timerTotalSec: number;
@@ -111,7 +111,7 @@ function taskProgressPercent(params: {
   return clampPct(progress?.completion_percent ?? 0);
 }
 
-function buildCategoryProgresses(
+export function buildCategoryProgresses(
   cfgTasks: AuraRow[],
   progressById: Record<string, AuraTaskProgress | null>,
   timerTotalsByTaskId: Record<string, number>,

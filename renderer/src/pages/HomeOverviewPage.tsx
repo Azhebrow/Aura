@@ -14,7 +14,6 @@ import { getPageSectionsFromSettings } from '@/shared/lib/page-sections-visibili
 import {
   MEGA_PAGEFRAME_CN,
   MEGA_PAGEFRAME_CONTENT_CN,
-  MEGA_PANEL_BODY_CN,
   MEGA_SHELL_CARD_CN,
   MEGA_SHELL_CONTENT_CN,
 } from '@/shared/ui/mega-section-layout';
@@ -109,7 +108,10 @@ export function HomeOverviewPage() {
   const tasksWouldUseTwoByTwo = showTasks && visibleBottomPanels > 0 && layoutWidth > 0 && layoutWidth < 720;
   const shouldUseCompactLayout = desktopRowCount > 2 || tasksWouldUseTwoByTwo;
 
-  const mobileSections = [
+  // Memoized to prevent new JSX object references on every dataTick re-render,
+  // which would cause SectionTabsLayout to pass new content props to children
+  // and trigger unnecessary re-renders of TasksCategoriesCard etc.
+  const mobileSections = useMemo(() => [
     showTasks
       ? {
           id: 'tasks' as const,
@@ -170,7 +172,7 @@ export function HomeOverviewPage() {
           ),
         }
       : null,
-  ].filter(Boolean) as Array<{ id: 'tasks' | 'tx' | 'plans' | 'chart'; label: string; Icon: typeof ListTodo; content: ReactNode }>;
+  ].filter(Boolean) as Array<{ id: 'tasks' | 'tx' | 'plans' | 'chart'; label: string; Icon: typeof ListTodo; content: ReactNode }>, [showTasks, showTx, showPlans, showChart]);
 
   const desktopGrid = (sampleRows = false) => (
     <div className="flex min-h-0 flex-1 flex-col divide-y divide-[var(--aura-border-soft)] h-full">

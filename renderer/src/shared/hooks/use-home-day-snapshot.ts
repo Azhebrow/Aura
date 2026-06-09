@@ -26,10 +26,17 @@ export function useHomeDaySnapshot(dateString: string): {
     { keepStaleOnError: true }
   );
 
+  // dataTick is intentionally NOT in the snapshot memo deps.
+  // The bootstrap dep already drives freshness: when a mutation fires,
+  // bootstrap is refetched and this memo recomputes with fresh data.
+  // Including dataTick caused the snapshot (and all derived UI) to recompute
+  // synchronously on every mutation, even before new bootstrap data arrived,
+  // which produced a one-frame flash of stale/zero values.
   const snapshot = useMemo(() => {
     if (!db) return null;
     return buildHomeDaySnapshot(db, dateString, bootstrap);
-  }, [bootstrap, db, dateString, dataTick]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bootstrap, db, dateString]);
 
   return { data: snapshot, loading: !snapshot && loading, dataTick };
 }

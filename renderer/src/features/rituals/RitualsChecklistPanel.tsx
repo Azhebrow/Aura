@@ -123,12 +123,15 @@ export function RitualsChecklistPanel() {
   const [optimisticDone, setOptimisticDone] = useState<Record<string, boolean>>({});
 
   // Single source of truth — synchronous DB read, reactive to 'ritual' events.
+  // NOTE: completedSet returns a Set, but JSON.stringify(Set) → "{}" so the
+  // hash in useAsyncData would never change. We spread into arrays so the
+  // serializer can see the actual ids and detect changes across days.
   const { data: loaded, status } = useAsyncData(
     (db) => ({
       morningRituals: loadCfg(db, 'morning'),
       eveningRituals: loadCfg(db, 'evening'),
-      morningDone: completedSet(db, 'morning', dateString),
-      eveningDone: completedSet(db, 'evening', dateString),
+      morningDone: [...completedSet(db, 'morning', dateString)],
+      eveningDone: [...completedSet(db, 'evening', dateString)],
     }),
     [dateString],
     { events: ['ritual'] }

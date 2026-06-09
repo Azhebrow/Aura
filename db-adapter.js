@@ -33,8 +33,6 @@ function createDatabaseAdapter(db, _dbPath) {
   }
 
   // ─── Core day-progress computation ─────────────────────────────────────────
-  // Single source of truth: reads from act_tasks, act_timer_sessions,
-  // act_rituals_morning/evening. Never reads from act_task_completions.
   function computeDayProgress(date) {
     const CATEGORIES = ['rituals', 'time', 'body', 'deps'];
     const actRow = (() => { try { return db.prepare('SELECT * FROM act_tasks WHERE date = ? LIMIT 1').get(date); } catch { return null; } })();
@@ -148,7 +146,6 @@ function createDatabaseAdapter(db, _dbPath) {
     // ─── Generic query methods ────────────────────────────────────────────────
     getAll(tableName, filters = null) {
       try {
-        // Before any read of these two aggregate tables, ensure today's row is current.
         if ((tableName === 'act_daily_points' || tableName === 'act_task_completions') && !filters) {
           try {
             const today = new Date().toISOString().slice(0, 10);
@@ -724,6 +721,14 @@ function createDatabaseAdapter(db, _dbPath) {
       this.recomputeDailyAggregates(date);
     },
 
+    // ─── Daily aggregate recomputation ───────────────────────────────────────
+    recomputeDailyAggregates(date) {
+      try {
+        const { categoryPercents, completionPercent } = computeDayProgress(date);
+        persistDayAggregates(date, categoryPercents, completionPercent);
+      } catch { /* silent */ }
+    },
+
     // ─── Category progress — computed live from source tables ────────────────
     getCategoryProgress(categoryType, date) {
       try {
@@ -749,14 +754,6 @@ function createDatabaseAdapter(db, _dbPath) {
       try {
         return db.prepare('SELECT * FROM cfg_tasks WHERE category_type = ? ORDER BY level ASC, id ASC').all(categoryType) || [];
       } catch { return []; }
-    },
-
-    // ─── Daily aggregate recomputation ───────────────────────────────────────
-    recomputeDailyAggregates(date) {
-      try {
-        const { categoryPercents, completionPercent } = computeDayProgress(date);
-        persistDayAggregates(date, categoryPercents, completionPercent);
-      } catch { /* silent */ }
     },
 
     // ─── Points (act_daily_points) ────────────────────────────────────────────

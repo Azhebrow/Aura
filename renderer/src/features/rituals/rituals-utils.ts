@@ -3,6 +3,7 @@ import type { AuraDatabase, AuraRow } from '@/types/aura';
 export type RitualKind = 'morning' | 'evening';
 export type GoalsMode = 'active' | 'archive';
 export type TaskType = 'checkbox' | 'number';
+export type GoalType = 'standard' | 'timeline';
 export type StageVisualState = 'completed' | 'current' | 'frozen' | 'active';
 
 export type GoalsDbApi = {
@@ -27,6 +28,9 @@ export type GoalsDbApi = {
   setTaskCompletedAt?: (id: string, date: string | null) => boolean;
   deleteTask?: (id: string) => void;
   moveTask?: (id: string, direction: 'up' | 'down') => boolean;
+  // Timeline goal methods
+  getTaskTimerTotalSince?: (taskId: string, startDate: string) => number;
+  getTimerTasks?: () => AuraRow[];
 };
 
 export const RAW_BUTTON_FOCUS_CN = 'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none';
@@ -220,4 +224,42 @@ export function getGoalTintSurfaceStyle(goalTint: string, state: StageVisualStat
     shellStyle: baseShell,
     progressFillStyle: { backgroundColor: `color-mix(in srgb, ${goalTint} 80%, var(--primary) 20%)` },
   };
+}
+
+/**
+ * Calculates per-stage progress for a timeline goal.
+ * Stages must be sorted by threshold_hours ascending.
+ * Returns a map: stageId → percent (0–100).
+ */
+export function calcTimelineStagePercents(
+  stages: AuraRow[],
+  accumulatedSeconds: number,
+): Map<string, number> {
+  const out = new Map<string, number>();
+  const accHours = accumulatedSeconds / 3600;
+  let prevThreshold = 0;
+  for (const stage of stages) {
+    const sid = String(stage.id);
+    const threshold = Number(stage.threshold_hours ?? 0);
+    if (threshold <= 0) { out.set(sid, 0); continue; }
+    if (accHours >= threshold) {
+      out.set(sid, 100);
+    } else if (accHours > prevThreshold) {
+      const pct = ((accHours - prevThreshold) / (threshold - prevThreshold)) * 100;
+      out.set(sid, Math.min(99, Math.max(0, pct)));
+    } else {
+      out.set(sid, 0);
+    }
+    prevThreshold = threshold;
+  }
+  return out;
+}
+
+/** Format seconds as "Xч YYм" for display in timeline stage headers. */
+export function formatHoursMinutes(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h === 0) return `${m}м`;
+  if (m === 0) return `${h}ч`;
+  return `${h}ч ${String(m).padStart(2, '0')}м`;
 }
