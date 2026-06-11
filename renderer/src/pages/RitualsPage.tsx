@@ -32,10 +32,10 @@ function LeftStackRitualsVows({
   if (showRituals && showVows) {
     return (
       <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-border/60 overflow-hidden">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="aura-col">
           <RitualsChecklistPanel />
         </div>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="aura-col">
       <VowsSingleViewer vows={vows} />
         </div>
       </div>
@@ -45,7 +45,7 @@ function LeftStackRitualsVows({
   // Only rituals
   if (showRituals) {
     return (
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="aura-col min-w-0">
         <RitualsChecklistPanel />
       </div>
     );
@@ -53,7 +53,7 @@ function LeftStackRitualsVows({
 
   // Only vows
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="aura-col min-w-0">
       <VowsSingleViewer vows={vows} />
     </div>
   );

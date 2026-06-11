@@ -741,6 +741,13 @@ html[data-no-color-flash] .aura-tx-shadow {
     @apply bg-muted/40 animate-pulse;
   }
 
+  /* Вертикальная «колонка-панель»: сжимаемый flex-столбец с обрезкой переполнения.
+     Раньше комбинация `flex min-h-0 flex-1 flex-col overflow-hidden` дублировалась
+     по всему UI десятки раз. Дополнения (h-full, min-w-0) — обычными утилитами. */
+  .aura-col {
+    @apply flex min-h-0 flex-1 flex-col overflow-hidden;
+  }
+
   .aura-data-table-scroll {
     scrollbar-width: thin;
   }

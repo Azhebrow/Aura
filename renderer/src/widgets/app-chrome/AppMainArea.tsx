@@ -36,7 +36,7 @@ export function AppMainArea() {
   const displayPageId = calendarOpen ? prevPageId : activePageId;
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <main className="aura-col">
       <div className={`relative ${scrollAreaClass}`}>
         <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
           <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">

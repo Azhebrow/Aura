@@ -57,7 +57,7 @@ export function StatsOverviewPage() {
   const { meta, table, allSeriesKeys, currencyCode, timeSummary, loading } = useStatsData(db, ready, controls);
 
   const filtersContent = (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="aura-col">
       <MegaPanelHeader title="Фильтры" />
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <StatsControlsPanel state={controls} onChange={patch} seriesKeys={allSeriesKeys} meta={meta} />

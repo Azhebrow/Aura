@@ -171,7 +171,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
   }, [flat, dataType, monthData, pointsApi, view, todayString]);
 
   const content = (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="aura-col">
       {/* ── Header ── */}
       <MegaPanelHeader
         title="Календарь"

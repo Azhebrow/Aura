@@ -155,7 +155,7 @@ export function DiaryEditorPage() {
   void entryPresetPrompt;
 
   const entryColumn = (
-    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <section className="aura-col h-full">
       <MegaPanelHeader title={isEntryEmpty ? entryPresetTitle : t('diary.entry')} />
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
         <div className="shrink-0 overflow-hidden rounded-xl border border-soft bg-card shadow-xs">
@@ -575,7 +575,7 @@ export function DiaryEditorPage() {
   );
 
   const rightColumn = (
-    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <section className="aura-col h-full">
       {rightPanelHeader}
       {rightPanelBody}
     </section>
@@ -597,7 +597,7 @@ export function DiaryEditorPage() {
   ].filter(Boolean) as Array<{ id: 'entry' | 'nutrition' | 'entries'; label: string; Icon: typeof BookText; content: ReactNode }>;
 
   const layout = bothColumns ? (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="aura-col min-w-0">
       {isDesktopViewport ? (
         <div className="min-h-0 min-w-0 flex-1 divide-y divide-soft overflow-hidden lg:grid lg:grid-cols-2 lg:divide-x lg:divide-y-0">
           {showEntry ? entryColumn : null}
@@ -614,7 +614,7 @@ export function DiaryEditorPage() {
       )}
     </div>
   ) : (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="aura-col min-w-0">
       {isDesktopViewport ? (
         <div className="min-h-0 flex-1 overflow-hidden">
           {showEntry ? entryColumn : rightColumn}

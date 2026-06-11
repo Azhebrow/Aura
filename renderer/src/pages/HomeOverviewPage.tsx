@@ -118,7 +118,7 @@ export function HomeOverviewPage() {
           label: 'Задачи',
           Icon: ListTodo,
           content: (
-            <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+            <section className="aura-col h-full">
               <MegaPanelHeader title="Задачи" />
               <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
                 <TasksCategoriesCard />
@@ -133,7 +133,7 @@ export function HomeOverviewPage() {
           label: 'Финансы',
           Icon: PiggyBank,
           content: (
-            <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+            <section className="aura-col h-full">
               <MegaPanelHeader title="Финансы" />
               <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
                 <TransactionsCard contentClassName="min-h-0 flex-1 gap-2" />
@@ -148,7 +148,7 @@ export function HomeOverviewPage() {
           label: 'Планы',
           Icon: ReceiptText,
           content: (
-            <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+            <section className="aura-col h-full">
               <MegaPanelHeader title="Планы" />
               <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
                 <DailyPlansCard contentClassName="min-h-0 flex-1 gap-2" />
@@ -163,7 +163,7 @@ export function HomeOverviewPage() {
           label: 'Прогресс',
           Icon: ChartColumn,
           content: (
-            <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+            <section className="aura-col h-full">
               <MegaPanelHeader title="Прогресс" />
               <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
                 <CategoryProgressCard contentClassName="min-h-0 flex-1 rounded-lg border border-soft bg-panel p-2 shadow-sm" />
@@ -190,7 +190,7 @@ export function HomeOverviewPage() {
         </section>
       ) : null}
       {visibleBottomPanels > 0 ? (
-        <section className="flex min-h-0 flex-1 flex-col overflow-hidden h-full">
+        <section className="aura-col h-full">
           <div
             className={cn(
               'flex min-h-0 flex-1 h-full overflow-hidden',
@@ -200,7 +200,7 @@ export function HomeOverviewPage() {
           >
             {showTx ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full"
+                className="aura-col h-full"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Финансы" />
@@ -209,7 +209,7 @@ export function HomeOverviewPage() {
             ) : null}
             {showPlans ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full"
+                className="aura-col h-full"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Планы" />
@@ -218,7 +218,7 @@ export function HomeOverviewPage() {
             ) : null}
             {showChart ? (
               <div
-                className="flex min-h-0 flex-1 flex-col overflow-hidden h-full"
+                className="aura-col h-full"
                 data-home-row-sample={sampleRows ? '1' : undefined}
               >
                 <MegaPanelHeader title="Прогресс" />
