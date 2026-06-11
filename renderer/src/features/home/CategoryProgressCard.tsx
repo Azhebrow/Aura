@@ -137,7 +137,7 @@ export function CategoryProgressCard({ cardClassName, contentClassName }: Catego
                     <span
                       key={cat}
                       className={cn(
-                        'absolute inline-flex size-5 items-center justify-center rounded-full bg-[var(--aura-surface-panel)]',
+                        'absolute inline-flex size-5 items-center justify-center rounded-full bg-panel',
                         pos
                       )}
                       title={`${LABELS[cat]}: ${Math.round(displayData[index] ?? 0)}%`}

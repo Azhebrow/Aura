@@ -10,6 +10,7 @@ import { useDragScroll } from '@/shared/hooks/use-drag-scroll';
 import { TASK_CATEGORY_IDS, type TaskCategoryId } from '@/shared/config/domain-taxonomy';
 import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
 import { LoadingShell } from '@/shared/ui/data-states';
+import { STICKY_HEADER_SHADOW, STICKY_COLUMN_SHADOW, STICKY_CORNER_SHADOW } from '@/shared/ui/sticky-table';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import { formatHistoryDateShort } from './rank-utils';
 
@@ -23,10 +24,7 @@ const HISTORY_CATEGORY_PERCENT_KEYS: Record<TaskCategoryId, string> = {
 
 // ─── Константы стилей ─────────────────────────────────────────────────────────
 
-const STICKY_HEADER_SHADOW = 'inset 0 -1px 0 hsl(var(--border) / 0.35)';
-const STICKY_COLUMN_SHADOW = 'inset -1px 0 0 hsl(var(--border) / 0.35)';
-const STICKY_CORNER_SHADOW = `${STICKY_HEADER_SHADOW}, ${STICKY_COLUMN_SHADOW}`;
-const TABLE_CELL_CN = 'border-r border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-1 py-2 text-center text-xs tabular-nums';
+const TABLE_CELL_CN = 'border-r border-b border-soft bg-panel px-1 py-2 text-center text-xs tabular-nums';
 
 const COL_HEADERS: { key: string; Icon: LucideIcon; label: string; color: string }[] = [
   { key: 'date',       Icon: Calendar, label: 'Дата',         color: 'var(--aura-text-muted)'  },
@@ -91,7 +89,7 @@ export function PointsHistoryTable({ db, history }: Props) {
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
-      <div className="aura-surface-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/80">
+      <div className="aura-surface-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-soft/80">
         <div
           ref={scrollRef}
           className={cn(
@@ -120,7 +118,7 @@ export function PointsHistoryTable({ db, history }: Props) {
                     title={label}
                     aria-label={label}
                     className={cn(
-                      'bg-card text-[var(--aura-text-muted)] sticky top-0 z-[5] border-b border-r border-[var(--aura-border-soft)]/40 px-1 py-1.5 text-center align-middle sm:py-2',
+                      'bg-card text-dim sticky top-0 z-[5] border-b border-r border-soft/40 px-1 py-1.5 text-center align-middle sm:py-2',
                       idx === 0 && 'sticky left-0 z-[6]',
                       idx === COL_HEADERS.length - 1 && 'border-r-0'
                     )}
@@ -151,7 +149,7 @@ export function PointsHistoryTable({ db, history }: Props) {
                     {/* Sticky-столбец даты */}
                     <td
                       className={cn(
-                        'sticky left-0 z-[3] border-r border-b border-[var(--aura-border-soft)] bg-card px-1.5 py-2 text-center text-xs font-medium text-foreground whitespace-nowrap',
+                        'sticky left-0 z-[3] border-r border-b border-soft bg-card px-1.5 py-2 text-center text-xs font-medium text-foreground whitespace-nowrap',
                         isLastRow && 'border-b-0'
                       )}
                       style={{ boxShadow: STICKY_COLUMN_SHADOW }}
@@ -202,7 +200,7 @@ export function PointsHistoryTable({ db, history }: Props) {
 
                     {/* Статус дня */}
                     <td className={cn(
-                      'border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-1 py-2 text-center text-muted-foreground',
+                      'border-b border-soft bg-panel px-1 py-2 text-center text-muted-foreground',
                       isLastRow && 'border-b-0'
                     )}>
                       <StatusIc className="inline size-3.5 shrink-0 opacity-80" aria-hidden />

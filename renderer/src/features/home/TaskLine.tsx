@@ -118,7 +118,7 @@ function TaskRowFrame({ icon, accent, title, pct, satisfied, disabled, control, 
       </div>
 
       {/* Control column */}
-      <div className="relative z-10 flex min-h-0 shrink-0 items-stretch border-t border-[var(--aura-border-soft)]/50 [@container(min-width:720px)]:border-t-0 [@container(min-width:720px)]:border-l">
+      <div className="relative z-10 flex min-h-0 shrink-0 items-stretch border-t border-soft/50 [@container(min-width:720px)]:border-t-0 [@container(min-width:720px)]:border-l">
         {control}
       </div>
     </li>
@@ -224,8 +224,8 @@ export function TaskLine({
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => { onNumberDraftChange(id, e.target.value); onScheduleNumberPersist(id, e.target.value); }}
             onBlur={(e) => { const n = parseFloat(String(e.target.value).replace(',', '.')); if (Number.isFinite(n)) onPersist(id, { current_value: n }); }} />
-          <div className="w-full border-t border-[var(--aura-border-soft)]/50" />
-          <span className={cn(CTRL_TEXT, 'text-[var(--aura-text-disabled)] h-[40%] flex items-center justify-center')}>
+          <div className="w-full border-t border-soft/50" />
+          <span className={cn(CTRL_TEXT, 'text-faint h-[40%] flex items-center justify-center')}>
             {numberTarget ? `/${numberTarget}${unitStr ? ` ${unitStr}` : ''}` : '—'}
           </span>
         </TaskControlSlot>
@@ -243,7 +243,7 @@ export function TaskLine({
     return (
       <TaskRowFrame {...frameProps} control={
         items.length === 0 ? (
-          <TaskControlSlot><span className={cn(CTRL_TEXT, 'text-[var(--aura-text-disabled)]')}>—</span></TaskControlSlot>
+          <TaskControlSlot><span className={cn(CTRL_TEXT, 'text-faint')}>—</span></TaskControlSlot>
         ) : (
           <TaskControlSlot className={disabled ? 'pointer-events-none opacity-50' : ''}>
             <button type="button" disabled={disabled} aria-label="Переключить пункт списка" className={CTRL_BTN_FLUSH}
@@ -292,7 +292,7 @@ export function TaskLine({
           <button type="button" disabled={disabled} className={cn(CTRL_BTN, 'flex-col gap-0.5')}
             onClick={(e) => { e.stopPropagation(); onGoNutrition(); }}>
             <span className={CTRL_TEXT}>{kcal}</span>
-            <span className={cn(CTRL_TEXT, 'text-[var(--aura-text-disabled)]')}>{target > 0 ? `/${target}` : 'ккал'}</span>
+            <span className={cn(CTRL_TEXT, 'text-faint')}>{target > 0 ? `/${target}` : 'ккал'}</span>
           </button>
         </TaskControlSlot>
       } />
@@ -318,7 +318,7 @@ export function TaskLine({
 
   return (
     <TaskRowFrame {...frameProps} control={
-      <TaskControlSlot><span className={cn(CTRL_TEXT, 'text-[var(--aura-text-disabled)]')}>—</span></TaskControlSlot>
+      <TaskControlSlot><span className={cn(CTRL_TEXT, 'text-faint')}>—</span></TaskControlSlot>
     } />
   );
 }

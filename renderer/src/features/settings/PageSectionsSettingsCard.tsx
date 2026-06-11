@@ -65,7 +65,7 @@ function VisibilityChip({ item }: { item: VisibilityItem }) {
         'focus-visible:ring-2 focus-visible:ring-ring/60',
         item.checked
           ? 'border-primary/25 bg-primary/10 text-foreground'
-          : 'border-[var(--aura-border-soft)] bg-transparent text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground',
+          : 'border-soft bg-transparent text-subtle hover:bg-hover hover:text-foreground',
         item.disabled && 'cursor-not-allowed opacity-35 pointer-events-none',
       )}
     >
@@ -80,10 +80,10 @@ function VisibilityChip({ item }: { item: VisibilityItem }) {
 
 function PageVisibilityRow({ page }: { page: VisibilityPage }) {
   return (
-    <section className="grid min-w-0 grid-cols-1 gap-2 border-t border-[var(--aura-border-soft)] py-3 first:border-t-0 first:pt-0 last:pb-0 md:grid-cols-[7rem_minmax(0,1fr)]">
+    <section className="grid min-w-0 grid-cols-1 gap-2 border-t border-soft py-3 first:border-t-0 first:pt-0 last:pb-0 md:grid-cols-[7rem_minmax(0,1fr)]">
       <div className="flex min-w-0 items-center gap-2">
-        <page.Icon className="size-3.5 shrink-0 text-[var(--aura-text-muted)]" aria-hidden />
-        <p className="min-w-0 truncate text-xs font-bold uppercase tracking-[0.13em] text-[var(--aura-text-muted)]">{page.title}</p>
+        <page.Icon className="size-3.5 shrink-0 text-dim" aria-hidden />
+        <p className="min-w-0 truncate text-xs font-bold uppercase tracking-[0.13em] text-dim">{page.title}</p>
       </div>
       <div className="flex min-w-0 flex-wrap gap-1.5">
         {page.items.map((item) => <VisibilityChip key={item.id} item={item} />)}

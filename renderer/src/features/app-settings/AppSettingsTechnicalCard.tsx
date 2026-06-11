@@ -38,13 +38,13 @@ function safeGetAmbientRows(db: AuraDatabase): AuraRow[] {
 function CompactField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <Label className="text-caption font-semibold text-[var(--aura-text-subtle)]">{label}</Label>
+      <Label className="text-caption font-semibold text-subtle">{label}</Label>
       {children}
     </div>
   );
 }
 
-const SECTION_CN = 'overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/50 divide-y divide-[var(--aura-border-soft)]/40';
+const SECTION_CN = 'overflow-hidden rounded-lg border border-soft/50 divide-y divide-soft/40';
 
 export function AppSettingsTechnicalCard() {
   const { db, ready } = useAuraDb();
@@ -78,7 +78,7 @@ if (!ready || !db) {
         <p className="aura-label">База и режим</p>
         <div className={SECTION_CN}>
           <div className="flex min-h-10 items-center gap-2.5 px-3 py-2">
-            <Database className="size-3.5 shrink-0 text-[var(--aura-text-subtle)]" />
+            <Database className="size-3.5 shrink-0 text-subtle" />
             <span className="flex-1 text-xs font-medium text-foreground">Управление базой</span>
             <Button
               type="button"
@@ -92,7 +92,7 @@ if (!ready || !db) {
             </Button>
           </div>
           <div className="flex h-10 items-center gap-2.5 px-3">
-            <Wrench className="size-3.5 shrink-0 text-[var(--aura-text-subtle)]" />
+            <Wrench className="size-3.5 shrink-0 text-subtle" />
             <span className="flex-1 text-xs font-medium text-foreground">Вкладка разработчика</span>
             <Switch
               className="shrink-0"

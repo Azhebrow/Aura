@@ -47,7 +47,7 @@ function ChartSkeleton({ variant }: { variant: 'series' | 'donut' }) {
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="flex items-center gap-2 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-2.5 py-2">
+              <div key={index} className="flex items-center gap-2 rounded-lg border border-soft bg-control px-2.5 py-2">
                 <div className="aura-skeleton size-3 rounded-full" />
                 <div className="aura-skeleton h-3 flex-1 rounded-full" style={{ opacity: 1 - index * 0.08 }} />
               </div>
@@ -207,8 +207,8 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
   }, [option, correlationIconRows]);
 
   return (
-    <div className="aura-surface-panel relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/80" style={{ minHeight }}>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--aura-surface-control)] via-transparent to-transparent opacity-70" />
+    <div className="aura-surface-panel relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-soft/80" style={{ minHeight }}>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-control via-transparent to-transparent opacity-70" />
       <div
         ref={chartRef}
         className="absolute inset-0 h-full w-full transition-all duration-500 ease-out"
@@ -225,14 +225,14 @@ function ChartCanvas({ option, minHeight = '0', skeletonVariant = 'series', corr
               className="absolute left-3 -translate-y-1/2"
               style={{ top: row.top }}
             >
-              <StatsMetaIconBadge icon={row.icon} tint={row.color} size={16} className="bg-[var(--aura-surface-raised)] shadow-sm" />
+              <StatsMetaIconBadge icon={row.icon} tint={row.color} size={16} className="bg-raised shadow-sm" />
             </div>
           ))}
         </div>
       ) : null}
       {showSkeleton ? (
         <div
-          className="absolute inset-0 bg-[var(--aura-surface-panel)]/45 backdrop-blur-[1px] transition-opacity duration-500 ease-out"
+          className="absolute inset-0 bg-panel/45 backdrop-blur-[1px] transition-opacity duration-500 ease-out"
           style={{ opacity: isLoading ? 1 : 0 }}
           aria-hidden
         >
@@ -255,7 +255,7 @@ function skeletonPanelsForMode(mode: StatsMode, groupBy: StatsGroupBy): Array<'s
 
 function SummaryEmptyPanel({ message }: { message: string }) {
   return (
-    <div className="aura-surface-control text-[var(--aura-text-subtle)] flex h-full min-h-0 w-full items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm">
+    <div className="aura-surface-control text-subtle flex h-full min-h-0 w-full items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm">
       {message}
     </div>
   );
@@ -295,7 +295,7 @@ export function StatsChartView({
 
   if (!table.rows.length) {
     return (
-      <div className="aura-surface-control text-[var(--aura-text-subtle)] flex min-h-0 flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm">
+      <div className="aura-surface-control text-subtle flex min-h-0 flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm">
         Нет данных за выбранный период. Смените режим или расширьте даты.
       </div>
     );
@@ -306,7 +306,7 @@ export function StatsChartView({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
         {skeletonPanelsForMode(mode, groupBy).map((variant, index) => (
           <div key={`${variant}-${index}`} className="flex min-h-0 flex-1">
-            <div className="aura-surface-panel relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/80">
+            <div className="aura-surface-panel relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-soft/80">
               <ChartSkeleton variant={variant} />
             </div>
           </div>

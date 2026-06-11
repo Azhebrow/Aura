@@ -158,15 +158,15 @@ export function DiaryEditorPage() {
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <MegaPanelHeader title={isEntryEmpty ? entryPresetTitle : t('diary.entry')} />
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
-        <div className="shrink-0 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
-          <div className="flex h-10 min-h-10 items-stretch border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] sm:h-11 sm:min-h-11">
+        <div className="shrink-0 overflow-hidden rounded-xl border border-soft bg-card shadow-xs">
+          <div className="flex h-10 min-h-10 items-stretch border-b border-soft bg-panel sm:h-11 sm:min-h-11">
             {/* Настроение */}
             <Label htmlFor="diary-mood-slider" className="sr-only">{t('diary.mood')}</Label>
             {moods.length === 0 ? (
-              <div className="flex flex-1 items-center px-3 text-[var(--aura-text-muted)] text-xs">{t('diary.no_moods')}</div>
+              <div className="flex flex-1 items-center px-3 text-dim text-xs">{t('diary.no_moods')}</div>
             ) : (
               <div className="flex min-w-0 flex-1 items-stretch">
-                <div className="flex items-center border-r border-[var(--aura-border-soft)] px-3">
+                <div className="flex items-center border-r border-soft px-3">
                   <AuraThemedIcon
                     name={activeMood && typeof activeMood.icon === 'string' && activeMood.icon.trim() ? activeMood.icon : null}
                     tint={typeof activeMood?.color === 'string' && activeMood.color.trim() ? activeMood.color : 'var(--primary)'}
@@ -182,7 +182,7 @@ export function DiaryEditorPage() {
                     step={1}
                     className={cn(
                       'w-full py-0',
-                      '[&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-track]]:rounded-full [&_[data-slot=slider-track]]:bg-[var(--aura-surface-control)]',
+                      '[&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-track]]:rounded-full [&_[data-slot=slider-track]]:bg-control',
                       '[&_[data-slot=slider-range]]:bg-foreground/65',
                       '[&_[data-slot=slider-thumb]]:size-[16px] [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:bg-background [&_[data-slot=slider-thumb]]:shadow'
                     )}
@@ -198,11 +198,11 @@ export function DiaryEditorPage() {
               </div>
             )}
             {/* Разделитель */}
-            <div className="w-px shrink-0 bg-[var(--aura-border-soft)]" />
+            <div className="w-px shrink-0 bg-soft" />
             {/* Категория */}
             <Label htmlFor="diary-category" className="sr-only">{t('diary.category')}</Label>
             <div className="flex min-w-0 flex-1 items-stretch">
-              <div className="flex items-center border-r border-[var(--aura-border-soft)] px-3">
+              <div className="flex items-center border-r border-soft px-3">
                 {activeCategory ? (
                   <AuraThemedIcon
                     name={typeof activeCategory.icon === 'string' && activeCategory.icon.trim() ? activeCategory.icon : null}
@@ -210,7 +210,7 @@ export function DiaryEditorPage() {
                     size={15}
                   />
                 ) : (
-                  <CircleOff className="size-[15px] shrink-0 text-[var(--aura-text-muted)]" aria-hidden />
+                  <CircleOff className="size-[15px] shrink-0 text-dim" aria-hidden />
                 )}
               </div>
               <Select
@@ -265,7 +265,7 @@ export function DiaryEditorPage() {
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                  className="shrink-0 text-dim hover:text-foreground"
                   onMouseDown={(e) => { e.preventDefault(); applyEditorCommand(cmd); }}
                   title={t(key)}
                   aria-label={t(key)}
@@ -275,7 +275,7 @@ export function DiaryEditorPage() {
               ))}
               <Button
                 type="button" variant="ghost" size="icon-sm"
-                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                className="shrink-0 text-dim hover:text-foreground"
                 onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('formatBlock', 'H2'); }}
                 title={t('formatting.heading')} aria-label={t('formatting.heading')}
               >
@@ -283,7 +283,7 @@ export function DiaryEditorPage() {
               </Button>
               <Button
                 type="button" variant="ghost" size="icon-sm"
-                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                className="shrink-0 text-dim hover:text-foreground"
                 onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('insertUnorderedList'); }}
                 title={t('formatting.bullet_list')} aria-label={t('formatting.bullet_list')}
               >
@@ -291,7 +291,7 @@ export function DiaryEditorPage() {
               </Button>
               <Button
                 type="button" variant="ghost" size="icon-sm"
-                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                className="shrink-0 text-dim hover:text-foreground"
                 onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('insertOrderedList'); }}
                 title={t('formatting.numbered_list')} aria-label={t('formatting.numbered_list')}
               >
@@ -299,7 +299,7 @@ export function DiaryEditorPage() {
               </Button>
               <Button
                 type="button" variant="ghost" size="icon-sm"
-                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                className="shrink-0 text-dim hover:text-foreground"
                 onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('formatBlock', 'BLOCKQUOTE'); }}
                 title={t('formatting.quote')} aria-label={t('formatting.quote')}
               >
@@ -307,7 +307,7 @@ export function DiaryEditorPage() {
               </Button>
               <Button
                 type="button" variant="ghost" size="icon-sm"
-                className="shrink-0 text-[var(--aura-text-muted)] hover:text-foreground"
+                className="shrink-0 text-dim hover:text-foreground"
                 onMouseDown={(e) => { e.preventDefault(); applyEditorCommand('removeFormat'); applyEditorCommand('formatBlock', 'P'); }}
                 title={t('formatting.clear_format')} aria-label={t('formatting.clear_format')}
               >
@@ -330,14 +330,14 @@ export function DiaryEditorPage() {
             </div>
           </div>
         </div>
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-soft bg-card shadow-xs">
           {isEntryEmpty && activeEntryPreset ? (
             <div className="pointer-events-none absolute inset-0 overflow-hidden px-3 py-3 sm:px-4">
-              <p className="text-[var(--aura-text-disabled)] select-none text-base italic leading-relaxed">
+              <p className="text-faint select-none text-base italic leading-relaxed">
                 «{normalizeDiaryPresetText(activeEntryPreset.prompt)}»
               </p>
               {activeEntryPreset.description ? (
-                <p className="text-[var(--aura-text-disabled)] mt-2.5 select-none text-xs font-medium tracking-wide opacity-70">
+                <p className="text-faint mt-2.5 select-none text-xs font-medium tracking-wide opacity-70">
                   — {String(activeEntryPreset.description)}
                 </p>
               ) : null}
@@ -349,7 +349,7 @@ export function DiaryEditorPage() {
             contentEditable
             suppressContentEditableWarning
             data-placeholder={isEntryEmpty && !activeEntryPreset ? t('diary.entry') : ''}
-            className="text-foreground empty:before:text-[var(--aura-text-disabled)] empty:before:content-[attr(data-placeholder)] min-h-0 h-full flex-1 overflow-y-auto bg-transparent px-3 py-3 pb-7 text-base leading-relaxed outline-none sm:px-4 [&_h2]:my-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:leading-tight [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-[var(--aura-border-soft)] [&_blockquote]:pl-3 [&_blockquote]:text-[var(--aura-text-muted)] [&_blockquote]:italic"
+            className="text-foreground empty:before:text-faint empty:before:content-[attr(data-placeholder)] min-h-0 h-full flex-1 overflow-y-auto bg-transparent px-3 py-3 pb-7 text-base leading-relaxed outline-none sm:px-4 [&_h2]:my-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:leading-tight [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-soft [&_blockquote]:pl-3 [&_blockquote]:text-dim [&_blockquote]:italic"
             spellCheck={spellcheckEnabled}
             onInput={(e) => editor.setText((e.currentTarget as HTMLDivElement).innerHTML)}
             onBlur={() => {
@@ -359,7 +359,7 @@ export function DiaryEditorPage() {
             onMouseUp={saveEditorSelection}
             onKeyUp={saveEditorSelection}
           />
-          <span className="text-[var(--aura-text-subtle)] pointer-events-none absolute bottom-1.5 right-3 text-xs tabular-nums sm:right-4">
+          <span className="text-subtle pointer-events-none absolute bottom-1.5 right-3 text-xs tabular-nums sm:right-4">
             S {toPlainText(text).length}
           </span>
         </div>
@@ -406,8 +406,8 @@ export function DiaryEditorPage() {
               compact
             />
           ) : (
-            <div className="mb-2 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
-              <ul className="divide-y divide-[var(--aura-border-soft)]">
+            <div className="mb-2 overflow-hidden rounded-xl border border-soft bg-card shadow-xs">
+              <ul className="divide-y divide-soft">
                 {nutritionEntries.map((e) => {
                   const productRow =
                     e.product_id && db ? (db.getById('cfg_nutrition_products', String(e.product_id)) as AuraRow | null) : null;
@@ -487,7 +487,7 @@ export function DiaryEditorPage() {
       ) : null}
       {resolvedRightTab === 'entries' && showEntries ? (
         <>
-          <div className="mb-2 shrink-0 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
+          <div className="mb-2 shrink-0 overflow-hidden rounded-xl border border-soft bg-card shadow-xs">
             <div className="px-3 py-2">
               <Input
                 value={entriesSearch}
@@ -497,7 +497,7 @@ export function DiaryEditorPage() {
                 aria-label={t('diary.search_placeholder')}
               />
             </div>
-            <div className="flex divide-x divide-[var(--aura-border-soft)] border-t border-[var(--aura-border-soft)]">
+            <div className="flex divide-x divide-soft border-t border-soft">
               <button
                 type="button"
                 onClick={() => setEntriesCategoryFilters([])}
@@ -505,8 +505,8 @@ export function DiaryEditorPage() {
                 aria-label={t('diary.all_categories')}
                 aria-pressed={entriesCategoryFilters.length === 0}
                 className={cn(
-                  'flex flex-1 items-center justify-center py-2 text-[var(--aura-text-muted)] aura-tx-interactive hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground',
-                  entriesCategoryFilters.length === 0 && 'bg-[var(--aura-surface-control)] text-foreground'
+                  'flex flex-1 items-center justify-center py-2 text-dim aura-tx-interactive hover:bg-hover hover:text-foreground',
+                  entriesCategoryFilters.length === 0 && 'bg-control text-foreground'
                 )}
               >
                 <CircleOff className="size-3.5" aria-hidden />
@@ -527,8 +527,8 @@ export function DiaryEditorPage() {
                     title={String(c.title ?? c.id)}
                     aria-label={String(c.title ?? c.id)}
                     className={cn(
-                      'flex flex-1 items-center justify-center py-2 text-[var(--aura-text-muted)] aura-tx-interactive hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground',
-                      active && 'bg-[var(--aura-surface-control)] text-foreground'
+                      'flex flex-1 items-center justify-center py-2 text-dim aura-tx-interactive hover:bg-hover hover:text-foreground',
+                      active && 'bg-control text-foreground'
                     )}
                   >
                     <AuraThemedIcon name={typeof c.icon === 'string' ? c.icon : null} className="size-3.5 shrink-0" />
@@ -540,8 +540,8 @@ export function DiaryEditorPage() {
           {filteredDiaryEntries.length === 0 ? (
             <EmptyState title={t('diary.entries_not_found')} hint={t('diary.search_hint')} compact />
           ) : (
-            <div className="overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs">
-              <ul className="divide-y divide-[var(--aura-border-soft)]">
+            <div className="overflow-hidden rounded-xl border border-soft bg-card shadow-xs">
+              <ul className="divide-y divide-soft">
                 {filteredDiaryEntries.map((e) => {
                   const mood = e.mood_id ? moodById.get(String(e.mood_id)) : undefined;
                   const cat = e.category_id ? categoryById.get(String(e.category_id)) : undefined;
@@ -599,7 +599,7 @@ export function DiaryEditorPage() {
   const layout = bothColumns ? (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {isDesktopViewport ? (
-        <div className="min-h-0 min-w-0 flex-1 divide-y divide-[var(--aura-border-soft)] overflow-hidden lg:grid lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+        <div className="min-h-0 min-w-0 flex-1 divide-y divide-soft overflow-hidden lg:grid lg:grid-cols-2 lg:divide-x lg:divide-y-0">
           {showEntry ? entryColumn : null}
           {(showNutrition || showEntries) ? rightColumn : null}
         </div>

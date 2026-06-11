@@ -16,7 +16,7 @@ function DockPageButton({ pageId, active, onSelect }: { pageId: PageId; active: 
         'focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
         active
           ? 'bg-primary/10 text-primary'
-          : 'text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground active:scale-[0.95]'
+          : 'text-subtle hover:bg-hover hover:text-foreground active:scale-[0.95]'
       )}
       aria-current={active ? 'page' : undefined}
       onClick={onSelect}
@@ -47,7 +47,7 @@ export function AppMobileDock() {
 
   return (
     <nav
-      className="aura-mobile-dock shrink-0 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-shell)] px-4 pb-[calc(env(safe-area-inset-bottom,0)+0.7rem)] pt-2 aura-tx-surface md:hidden"
+      className="aura-mobile-dock shrink-0 border-t border-soft bg-shell px-4 pb-[calc(env(safe-area-inset-bottom,0)+0.7rem)] pt-2 aura-tx-surface md:hidden"
       aria-label="Мобильная навигация"
     >
       <div className="aura-surface-panel mx-auto flex w-full items-stretch gap-1 rounded-lg border p-1">

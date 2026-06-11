@@ -21,7 +21,7 @@ export function StatsAggregationSelector({ value, onChange }: Props) {
   }));
   return (
     <div className="space-y-1.5">
-      <p className="text-[var(--aura-text-muted)] text-nano font-medium uppercase tracking-wider">Агрегация</p>
+      <p className="text-dim text-nano font-medium uppercase tracking-wider">Агрегация</p>
       <UniversalRadioGroup
         value={value}
         onValueChange={onChange}
@@ -29,7 +29,7 @@ export function StatsAggregationSelector({ value, onChange }: Props) {
         ariaLabel="Агрегация времени"
         fullWidth
       />
-      {active ? <p className="text-[var(--aura-text-muted)] px-0.5 text-nano leading-snug">{active.hint}</p> : null}
+      {active ? <p className="text-dim px-0.5 text-nano leading-snug">{active.hint}</p> : null}
     </div>
   );
 }

@@ -80,7 +80,7 @@ export function CfgCategoryEditorDialog({
                 </p>
               ) : null}
 
-              <div className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)] divide-y divide-[var(--aura-border-soft)]/70">
+              <div className="overflow-hidden rounded-lg border border-soft divide-y divide-soft/70">
                 {/* Title */}
                 <CfgModalGridRow label="Название">
                   <Input

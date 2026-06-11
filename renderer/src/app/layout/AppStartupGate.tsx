@@ -7,7 +7,6 @@ import { PageWarmer } from './PageWarmer';
  * Единственный loading UI — inline HTML preloader в index.html (#aura-preload).
  * Он появляется мгновенно (до React), реагирует на тему/акцент из localStorage,
  * и убирается здесь с fade-out когда PageWarmer сигнализирует готовность.
- * React LoadingScreen больше не используется — один экран, нет переключений.
  */
 export function AppStartupGate({ children }: { children: ReactNode }) {
   const [loadingDone, setLoadingDone] = useState(false);

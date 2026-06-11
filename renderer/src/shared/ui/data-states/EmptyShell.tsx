@@ -23,11 +23,11 @@ export function EmptyShell({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-aura-sm rounded-lg border border-dashed border-[var(--aura-border-soft)] bg-transparent p-aura-lg text-center',
+        'flex flex-col items-center justify-center gap-aura-sm rounded-lg border border-dashed border-soft bg-transparent p-aura-lg text-center',
         className
       )}
     >
-      <Icon className="size-9 text-[var(--aura-text-disabled)]" aria-hidden />
+      <Icon className="size-9 text-faint" aria-hidden />
       <p className="aura-body-muted text-sm leading-snug">{message}</p>
       {action && <div className="mt-aura-xs">{action}</div>}
     </div>

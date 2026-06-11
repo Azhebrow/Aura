@@ -8,11 +8,11 @@
 
 /** Единый ритм правой колонки CFG-модалки (высота как у `h-9`). */
 export const CFG_INPUT_CN =
-  'border-[var(--aura-border-soft)] bg-transparent h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-none';
+  'border-soft bg-transparent h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-none';
 
 /** Кнопка-триггер для выбора иконки — иконка + текст, центрировано. */
 export const CFG_ICON_TRIGGER_CN =
-  'border-[var(--aura-border-soft)] bg-transparent hover:bg-[var(--aura-action-hover-bg)] flex h-9 w-full min-w-0 flex-row items-center justify-center gap-2 rounded-md border px-3 text-center text-sm font-normal aura-tx-colors shadow-none';
+  'border-soft bg-transparent hover:bg-hover flex h-9 w-full min-w-0 flex-row items-center justify-center gap-2 rounded-md border px-3 text-center text-sm font-normal aura-tx-colors shadow-none';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
@@ -104,7 +104,7 @@ export function CfgAffixValueField({
         id={id}
         aria-label={ariaLabel}
         onClick={start}
-        className="border-[var(--aura-border-soft)] bg-transparent text-foreground hover:bg-[var(--aura-action-hover-bg)] flex h-9 w-full min-w-0 items-center justify-center rounded-md border px-3 text-center text-sm shadow-none aura-tx-colors"
+        className="border-soft bg-transparent text-foreground hover:bg-hover flex h-9 w-full min-w-0 items-center justify-center rounded-md border px-3 text-center text-sm shadow-none aura-tx-colors"
       >
         <span className={cn('max-w-full truncate', inputKind === 'number' && 'tabular-nums')}>{displayLine}</span>
       </button>
@@ -129,7 +129,7 @@ export function CfgAffixValueField({
         if (e.key === 'Escape') { e.preventDefault(); cancel(); }
       }}
       className={cn(
-        'border-[var(--aura-border-soft)] bg-transparent h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-none',
+        'border-soft bg-transparent h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-none',
         inputKind === 'number' && 'tabular-nums'
       )}
     />
@@ -150,7 +150,7 @@ type GridRowProps = {
  */
 export function CfgModalGridRow({ label, htmlFor, children }: GridRowProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[minmax(9rem,28%)_1fr] sm:items-stretch sm:divide-x sm:divide-[var(--aura-border-soft)]/70">
+    <div className="grid grid-cols-1 sm:grid-cols-[minmax(9rem,28%)_1fr] sm:items-stretch sm:divide-x sm:divide-soft/70">
       <div className="flex items-center px-3 py-2.5 text-left sm:min-h-9">
         <Label
           htmlFor={htmlFor}

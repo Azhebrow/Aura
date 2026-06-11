@@ -42,7 +42,7 @@ export function UniversalRadioGroup<T extends string>({
       className={cn(
         isHeader
           ? 'rounded-none border-0 bg-transparent p-0'
-          : 'rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] p-1',
+          : 'rounded-lg border border-soft bg-control p-1',
         fullWidth && orientation === 'horizontal'
           ? cn('flex w-full min-w-0 flex-1 items-center', isHeader ? 'gap-1.5 px-2 py-1.5 sm:px-3' : 'gap-0.5')
           : orientation === 'horizontal'
@@ -79,10 +79,10 @@ export function UniversalRadioGroup<T extends string>({
               isHeader
                 ? selected
                   ? 'border border-primary/20 bg-primary/10 text-primary shadow-none hover:bg-primary/12'
-                  : 'border border-transparent bg-transparent text-[var(--aura-text-subtle)] hover:border-border/50 hover:bg-muted/25 hover:text-foreground'
+                  : 'border border-transparent bg-transparent text-subtle hover:border-border/50 hover:bg-muted/25 hover:text-foreground'
                 : selected
                   ? 'border border-transparent bg-primary text-primary-foreground hover:bg-primary/90'
-                  : 'border border-transparent text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
+                  : 'border border-transparent text-subtle hover:bg-hover hover:text-foreground'
             )}
             onClick={() => onValueChange(optionValue)}
           >

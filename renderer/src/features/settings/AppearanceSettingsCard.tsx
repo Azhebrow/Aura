@@ -75,12 +75,12 @@ function saveAppSettings(db: ReturnType<typeof useAuraDb>['db'], patch: Partial<
 }
 
 function SectionDivider() {
-  return <div className="-mx-3 h-px bg-[var(--aura-border-soft)] sm:-mx-4" />;
+  return <div className="-mx-3 h-px bg-soft sm:-mx-4" />;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--aura-text-muted)]">
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-dim">
       {children}
     </p>
   );
@@ -138,7 +138,7 @@ export function AppearanceSettingsCard() {
                   'flex w-full flex-col items-center justify-center gap-1 rounded-lg py-2 text-center transition-colors',
                   active
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-[var(--aura-surface-control)] text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground',
+                    : 'bg-control text-subtle hover:bg-hover hover:text-foreground',
                 )}
               >
                 {Icon && <Icon className="size-3.5 shrink-0" aria-hidden />}
@@ -234,7 +234,7 @@ export function AppearanceSettingsCard() {
             }}
             className="flex-1 px-0.5"
           />
-          <span className="w-9 shrink-0 text-right tabular-nums text-xs font-medium text-[var(--aura-text-muted)]">
+          <span className="w-9 shrink-0 text-right tabular-nums text-xs font-medium text-dim">
             {Math.round(Number(appScale) * 100)}%
           </span>
         </div>
@@ -253,7 +253,7 @@ export function AppearanceSettingsCard() {
             }}
             className="flex-1 px-0.5"
           />
-          <span className="w-9 shrink-0 text-right tabular-nums text-xs font-medium text-[var(--aura-text-muted)]">
+          <span className="w-9 shrink-0 text-right tabular-nums text-xs font-medium text-dim">
             {Math.round(Number(textScale) * 100)}%
           </span>
         </div>

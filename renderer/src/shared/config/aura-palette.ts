@@ -36,6 +36,9 @@ export const LEGACY_TASK_CATEGORY_PALETTE = [
   'hsl(330, 42%, 50%)',
 ] as const;
 
+/** Нейтральный дефолт для color-picker'ов (slate-500), когда цвет не выбран. */
+export const DEFAULT_PICKER_COLOR = '#64748b';
+
 export const DEFAULT_TASK_CATEGORY_COLORS: Record<'rituals' | 'time' | 'body' | 'deps', string> = {
   rituals: 'hsl(24, 58%, 52%)',
   time: 'hsl(165, 50%, 46%)',

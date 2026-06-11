@@ -352,7 +352,7 @@ export function TimerFullscreenDialog({
           className="absolute top-5 right-5 z-10 flex items-center gap-2 transition-all duration-500 ease-out"
           style={{ opacity: isIdle ? 0 : 1, pointerEvents: isIdle ? 'none' : 'auto' }}
         >
-          <div className="flex items-center gap-0.5 rounded-full border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)]/80 p-1 backdrop-blur-sm">
+          <div className="flex items-center gap-0.5 rounded-full border border-soft bg-control/80 p-1 backdrop-blur-sm">
             {([
               { value: 'light' as const, Icon: Sun },
               { value: 'dim' as const, Icon: MoonStar },
@@ -366,8 +366,8 @@ export function TimerFullscreenDialog({
                 className={cn(
                   'flex size-7 items-center justify-center rounded-full transition',
                   theme === value
-                    ? 'bg-[var(--aura-surface-panel)] text-foreground shadow-sm'
-                    : 'text-[var(--aura-text-disabled)] hover:text-[var(--aura-text-muted)]'
+                    ? 'bg-panel text-foreground shadow-sm'
+                    : 'text-faint hover:text-dim'
                 )}
               >
                 <Icon className="size-3.5" />
@@ -379,7 +379,7 @@ export function TimerFullscreenDialog({
             <button
               type="button"
               onClick={handleCloseRequest}
-              className="flex size-9 items-center justify-center rounded-full border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)]/80 text-[var(--aura-text-muted)] backdrop-blur-sm transition hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground"
+              className="flex size-9 items-center justify-center rounded-full border border-soft bg-control/80 text-dim backdrop-blur-sm transition hover:bg-hover hover:text-foreground"
               aria-label="Закрыть"
             >
               <X className="size-4" />
@@ -406,8 +406,8 @@ export function TimerFullscreenDialog({
                 </div>
               ) : breakPhase !== 'idle' ? (
                 <div className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2">
-                  <Coffee className="size-4 text-[var(--aura-text-muted)]" />
-                  <span className="text-sm font-semibold text-[var(--aura-text-muted)]">Перерыв</span>
+                  <Coffee className="size-4 text-dim" />
+                  <span className="text-sm font-semibold text-dim">Перерыв</span>
                 </div>
               ) : null}
 
@@ -434,7 +434,7 @@ export function TimerFullscreenDialog({
                     />
                   </div>
                   <div className="flex items-center justify-between px-0.5">
-                    <span className="text-[10px] font-medium text-[var(--aura-text-disabled)]">Цель задачи</span>
+                    <span className="text-[10px] font-medium text-faint">Цель задачи</span>
                     <span className="text-[10px] font-bold tabular-nums" style={{ color: dailyPct > 0 ? accent : 'var(--aura-text-disabled)' }}>{dailyPct}%</span>
                   </div>
                 </div>
@@ -443,7 +443,7 @@ export function TimerFullscreenDialog({
               {subtitle ? (
                 <div className="flex items-center gap-2">
                   {breakPhase === 'alarm' ? <span className="size-1.5 animate-ping rounded-full bg-destructive" /> : null}
-                  <span className="text-nano font-semibold uppercase tracking-[0.28em] text-[var(--aura-text-disabled)]">{subtitle}</span>
+                  <span className="text-nano font-semibold uppercase tracking-[0.28em] text-faint">{subtitle}</span>
                 </div>
               ) : null}
 
@@ -508,7 +508,7 @@ export function TimerFullscreenDialog({
                 </span>
               )}
               {breakPhase === 'idle' && dialMode === 'time' ? (
-                <span className="text-sm font-medium text-[var(--aura-text-subtle)]">{progressHint}</span>
+                <span className="text-sm font-medium text-subtle">{progressHint}</span>
               ) : null}
             </button>
 
@@ -540,7 +540,7 @@ export function TimerFullscreenDialog({
             >
               {/* Всплывающий список треков — над панелью */}
               {ambientExpanded ? (
-                <div className="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-2xl border border-white/8 bg-[var(--aura-surface-panel)] shadow-2xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                <div className="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-2xl border border-white/8 bg-panel shadow-2xl animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
                   <div className="max-h-52 overflow-y-auto overscroll-contain p-1.5">
                     {ambientOptions.map((opt) => {
                       const selected = ambientTrackId === opt.value;
@@ -551,7 +551,7 @@ export function TimerFullscreenDialog({
                           onClick={() => { userPickedAmbientRef.current = true; setAmbientTrackId(opt.value); setAmbientExpanded(false); }}
                           className={cn(
                             'flex h-11 w-full min-w-0 items-center gap-3 rounded-[1.1rem] px-3 text-left text-sm transition-all duration-150 active:scale-[0.99]',
-                            selected ? 'font-semibold' : 'text-[var(--aura-text-muted)] hover:bg-white/8 hover:text-foreground'
+                            selected ? 'font-semibold' : 'text-dim hover:bg-white/8 hover:text-foreground'
                           )}
                           style={selected ? { backgroundColor: `color-mix(in oklab, ${accent} 14%, transparent)`, color: accent } : undefined}
                         >
@@ -572,7 +572,7 @@ export function TimerFullscreenDialog({
 
               {/* Единая панель: музыка + управление */}
               {breakPhase !== 'idle' ? (
-                <div className="flex flex-col items-center gap-3 rounded-3xl bg-[var(--aura-surface-control)]/60 px-6 py-5 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-3 rounded-3xl bg-control/60 px-6 py-5 backdrop-blur-sm">
                   <button
                     type="button"
                     onClick={() => finishBreak(true)}
@@ -581,7 +581,7 @@ export function TimerFullscreenDialog({
                     <Timer className="size-4 shrink-0" />
                     {breakPhase === 'alarm' ? 'Вернуться к таймеру' : 'Прервать перерыв'}
                   </button>
-                  {breakPhase === 'alarm' ? <span className="text-nano text-[var(--aura-text-disabled)]">Сигнал остановится автоматически</span> : null}
+                  {breakPhase === 'alarm' ? <span className="text-nano text-faint">Сигнал остановится автоматически</span> : null}
                 </div>
               ) : (
                 <div
@@ -614,9 +614,9 @@ export function TimerFullscreenDialog({
                       <span className="block truncate text-sm font-semibold leading-tight text-foreground">
                         {currentAmbientTrack ? formatAmbientTrackName(currentAmbientTrack.name) : 'Без музыки'}
                       </span>
-                      <span className="block text-[11px] text-[var(--aura-text-disabled)]">Фоновая музыка</span>
+                      <span className="block text-[11px] text-faint">Фоновая музыка</span>
                     </span>
-                    <ChevronDown className={cn('size-4 shrink-0 text-[var(--aura-text-disabled)] transition-all duration-200', ambientExpanded && '-rotate-180')} />
+                    <ChevronDown className={cn('size-4 shrink-0 text-faint transition-all duration-200', ambientExpanded && '-rotate-180')} />
                   </button>
 
                   {/* Разделитель */}
@@ -628,14 +628,14 @@ export function TimerFullscreenDialog({
                       type="button"
                       onClick={seekAmbientRandomly}
                       disabled={!currentAmbientTrack}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-xl text-[var(--aura-text-muted)] transition-all duration-200 hover:bg-white/8 hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+                      className="flex size-8 shrink-0 items-center justify-center rounded-xl text-dim transition-all duration-200 hover:bg-white/8 hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-30"
                       aria-label="Случайный момент"
                     >
                       <Shuffle className="size-4" />
                     </button>
                     <div className="flex flex-1 items-center gap-2.5">
                       {ambientVolume <= 0
-                        ? <VolumeX className="size-4 shrink-0 text-[var(--aura-text-disabled)]" />
+                        ? <VolumeX className="size-4 shrink-0 text-faint" />
                         : <Volume1 className="size-4 shrink-0" style={{ color: accent }} />}
                       <input
                         type="range"
@@ -647,7 +647,7 @@ export function TimerFullscreenDialog({
                         style={volumeTrackStyle}
                         aria-label="Громкость"
                       />
-                      <span className="w-8 text-right text-xs tabular-nums text-[var(--aura-text-disabled)]">{ambientVolume}%</span>
+                      <span className="w-8 text-right text-xs tabular-nums text-faint">{ambientVolume}%</span>
                     </div>
                   </div>
 
@@ -660,7 +660,7 @@ export function TimerFullscreenDialog({
                       type="button"
                       onClick={() => { onOpenChange(false); window.requestAnimationFrame(() => onStopAndSave()); }}
                       disabled={!isRunning && elapsedTimeSec <= 0}
-                      className="flex size-11 items-center justify-center rounded-2xl text-[var(--aura-text-muted)] transition-all duration-200 hover:bg-destructive/10 hover:text-destructive active:scale-95 disabled:pointer-events-none disabled:opacity-25"
+                      className="flex size-11 items-center justify-center rounded-2xl text-dim transition-all duration-200 hover:bg-destructive/10 hover:text-destructive active:scale-95 disabled:pointer-events-none disabled:opacity-25"
                       aria-label="Стоп и сохранить"
                     >
                       <Square className="size-4 fill-current" />
@@ -685,7 +685,7 @@ export function TimerFullscreenDialog({
                       type="button"
                       onClick={startBreak}
                       disabled={!isRunning}
-                      className="flex size-11 items-center justify-center rounded-2xl text-[var(--aura-text-muted)] transition-all duration-200 hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-25"
+                      className="flex size-11 items-center justify-center rounded-2xl text-dim transition-all duration-200 hover:bg-hover hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-25"
                       aria-label="Перерыв 15 минут"
                     >
                       <Coffee className="size-4" />

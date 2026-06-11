@@ -23,7 +23,7 @@ export function CurrentRankHero({ current, actualCurrent, next, points, pct, nee
 
   return (
     <div
-      className="relative shrink-0 overflow-hidden border-b border-[var(--aura-border-soft)]/40 bg-transparent px-2.5 py-3 sm:px-4 sm:py-5"
+      className="relative shrink-0 overflow-hidden border-b border-soft/40 bg-transparent px-2.5 py-3 sm:px-4 sm:py-5"
       style={heroAuraVars}
     >
       {/* Фоновое свечение ранга */}
@@ -69,12 +69,12 @@ export function CurrentRankHero({ current, actualCurrent, next, points, pct, nee
 
           {/* Карточки: накоплено / до следующего */}
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <div className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="rounded-lg border border-soft bg-panel px-3 py-2.5 sm:px-4 sm:py-3">
               <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Накоплено очков</p>
               <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">{formatRankPoints(points)}</p>
               <p className="text-muted-foreground mt-1 text-xs tabular-nums">на {dateString}</p>
             </div>
-            <div className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="rounded-lg border border-soft bg-panel px-3 py-2.5 sm:px-4 sm:py-3">
               {next ? (
                 <>
                   <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">До «{next.name}»</p>

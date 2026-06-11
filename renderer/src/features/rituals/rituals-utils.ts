@@ -150,9 +150,9 @@ export function getStageStateClasses(state: StageVisualState): {
   if (state === 'completed') {
     return {
       shell: '',
-      title: 'text-[var(--aura-text-subtle)]',
-      meta: 'text-[var(--aura-text-disabled)]',
-      progressTrack: 'bg-[var(--aura-surface-control)]',
+      title: 'text-subtle',
+      meta: 'text-faint',
+      progressTrack: 'bg-control',
       progressFill: 'bg-primary/50',
       opacity: 'opacity-70',
     };
@@ -161,8 +161,8 @@ export function getStageStateClasses(state: StageVisualState): {
     return {
       shell: '',
       title: 'text-foreground',
-      meta: 'text-[var(--aura-text-muted)]',
-      progressTrack: 'bg-[var(--aura-surface-control)]',
+      meta: 'text-dim',
+      progressTrack: 'bg-control',
       progressFill: 'bg-primary',
       opacity: '',
     };
@@ -170,18 +170,18 @@ export function getStageStateClasses(state: StageVisualState): {
   if (state === 'frozen') {
     return {
       shell: '',
-      title: 'text-[var(--aura-text-disabled)]',
-      meta: 'text-[var(--aura-text-disabled)]',
-      progressTrack: 'bg-[var(--aura-surface-control)]',
-      progressFill: 'bg-[var(--aura-text-disabled)]',
+      title: 'text-faint',
+      meta: 'text-faint',
+      progressTrack: 'bg-control',
+      progressFill: 'bg-faint',
       opacity: 'opacity-50',
     };
   }
   return {
     shell: '',
     title: 'text-foreground',
-    meta: 'text-[var(--aura-text-muted)]',
-    progressTrack: 'bg-[var(--aura-surface-control)]',
+    meta: 'text-dim',
+    progressTrack: 'bg-control',
     progressFill: 'bg-primary',
     opacity: '',
   };

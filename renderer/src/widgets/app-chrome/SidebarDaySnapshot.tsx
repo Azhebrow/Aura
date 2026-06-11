@@ -78,7 +78,7 @@ type RowProps = { icon: LucideIcon; label: string; value: string; muted?: boolea
 
 function StatRow({ icon: Icon, label, value, muted, compact }: RowProps) {
   return (
-    <div className={cn('grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-[var(--aura-border-soft)] px-2.5', compact ? 'h-9' : 'h-10')}>
+    <div className={cn('grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-soft px-2.5', compact ? 'h-9' : 'h-10')}>
       <div className="flex min-w-0 items-center gap-2">
         <span className="text-muted-foreground/85 flex size-5 shrink-0 items-center justify-center">
           <Icon className={cn('opacity-90', compact ? 'size-3.5' : 'size-4')} aria-hidden />
@@ -282,14 +282,14 @@ export function SidebarDaySnapshot({ compact = false }: { compact?: boolean } = 
 
   if (!rawSnap) {
     return (
-      <section className="mb-2 shrink-0 overflow-hidden rounded-lg border border-[var(--aura-border-soft)] bg-transparent" aria-label="Сводка по выбранному дню">
+      <section className="mb-2 shrink-0 overflow-hidden rounded-lg border border-soft bg-transparent" aria-label="Сводка по выбранному дню">
         <p className="px-3 py-3 text-center text-xs font-medium text-muted-foreground">Данные недоступны.</p>
       </section>
     );
   }
 
   return (
-    <section className="mb-2 shrink-0 overflow-hidden rounded-lg border border-[var(--aura-border-soft)] bg-transparent" aria-label="Сводка по выбранному дню">
+    <section className="mb-2 shrink-0 overflow-hidden rounded-lg border border-soft bg-transparent" aria-label="Сводка по выбранному дню">
       <div className={cn('grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 px-3', isDense ? 'py-2' : 'py-2.5')}>
         <div className="min-w-0">
           <p className={cn('truncate font-semibold leading-tight text-foreground', isDense ? 'text-sm' : 'text-[15px]')}>{title}</p>
@@ -299,18 +299,18 @@ export function SidebarDaySnapshot({ compact = false }: { compact?: boolean } = 
         {displayPct != null ? (
           <div className="text-right leading-none">
             <p className={cn('font-semibold tabular-nums text-primary', isDense ? 'text-sm' : 'text-[15px]')}>{displayPct}%</p>
-            <p className={cn('mt-1 text-[var(--aura-text-disabled)]', isDense ? 'text-nano' : 'text-caption')}>прогресс</p>
+            <p className={cn('mt-1 text-faint', isDense ? 'text-nano' : 'text-caption')}>прогресс</p>
           </div>
         ) : null}
       </div>
 
       {displayPct != null ? (
-        <div className="border-t border-[var(--aura-border-soft)] px-3 py-2">
+        <div className="border-t border-soft px-3 py-2">
           {/* Progress component already has CSS transition via --aura-motion-duration-task-fill */}
           <Progress value={rawSnap.progressPct ?? 0} className="h-1 bg-border/55 [&_[data-slot=progress-indicator]]:bg-primary" />
         </div>
       ) : (
-        <p className="border-t border-[var(--aura-border-soft)] px-3 py-2 text-xs font-medium text-muted-foreground">День без данных.</p>
+        <p className="border-t border-soft px-3 py-2 text-xs font-medium text-muted-foreground">День без данных.</p>
       )}
 
       <div>

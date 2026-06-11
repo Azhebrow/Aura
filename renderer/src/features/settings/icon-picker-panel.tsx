@@ -348,7 +348,7 @@ export function IconPickerPanel({ current, onPick }: Props) {
       : 'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium aura-tx-colors text-left',
     activeGroup === g
       ? 'bg-primary text-primary-foreground'
-      : 'text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
+      : 'text-dim hover:bg-hover hover:text-foreground'
   );
 
   return (
@@ -370,7 +370,7 @@ export function IconPickerPanel({ current, onPick }: Props) {
         <p className="text-destructive shrink-0 text-xs">{loadError}</p>
       ) : isLoading ? (
         /* Скелетон — показывается пока манифест грузится */
-        <div className="flex min-h-0 flex-1 flex-col gap-2 rounded-xl border border-[var(--aura-border-soft)] p-2 animate-in fade-in duration-200">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 rounded-xl border border-soft p-2 animate-in fade-in duration-200">
           <div className="bg-muted/60 h-3 w-40 animate-pulse rounded" />
           <div className="grid flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5 overflow-hidden">
             {Array.from({ length: 48 }).map((_, idx) => (
@@ -381,7 +381,7 @@ export function IconPickerPanel({ current, onPick }: Props) {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:grid sm:grid-cols-[10rem_minmax(0,1fr)] animate-in fade-in duration-200">
           {/* Панель групп — shrink-0 на мобильном, боковая колонка на sm+ */}
-          <div className="flex shrink-0 min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--aura-border-soft)] sm:order-1 sm:shrink sm:flex-1">
+          <div className="flex shrink-0 min-h-0 flex-col overflow-hidden rounded-xl border border-soft sm:order-1 sm:shrink sm:flex-1">
             {/* Мобильный горизонтальный скролл */}
             <div className="flex min-w-0 overflow-x-auto p-1.5 sm:hidden" style={{ scrollbarWidth: 'none' }}>
               <div className="flex gap-1">
@@ -413,10 +413,10 @@ export function IconPickerPanel({ current, onPick }: Props) {
           </div>
 
           {/* Сетка иконок — flex-1 чтобы заполнить остаток высоты */}
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] sm:order-2">
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-soft sm:order-2">
             {/* Оверлей во время смены группы */}
             {isPending && (
-              <div className="pointer-events-none absolute inset-0 z-10 bg-[var(--aura-surface-panel)]/35 animate-in fade-in duration-100" />
+              <div className="pointer-events-none absolute inset-0 z-10 bg-panel/35 animate-in fade-in duration-100" />
             )}
             {filtered.length === 0 ? (
               <div className="text-muted-foreground flex h-full min-h-[11rem] items-center justify-center px-3 text-center text-sm">
@@ -450,7 +450,7 @@ export function IconPickerPanel({ current, onPick }: Props) {
                             'flex h-[3.25rem] w-full items-center justify-center rounded-lg border aura-tx-colors',
                             active
                               ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
-                              : 'border-[var(--aura-border-soft)]/60 bg-transparent hover:border-primary/30 hover:bg-[var(--aura-action-hover-bg)]'
+                              : 'border-soft/60 bg-transparent hover:border-primary/30 hover:bg-hover'
                           )}
                         >
                           <AuraThemedIcon name={id} size={22} tint={active ? 'var(--primary)' : undefined} />

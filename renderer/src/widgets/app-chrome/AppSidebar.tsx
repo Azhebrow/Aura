@@ -56,7 +56,7 @@ export function AppSidebar() {
   }, [navOrder, sectionsVis]);
 
   return (
-    <aside className="hidden h-full min-h-0 w-[12.5rem] shrink-0 flex-col border-r border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-2 py-3 aura-tx-surface md:flex xl:w-52">
+    <aside className="hidden h-full min-h-0 w-[12.5rem] shrink-0 flex-col border-r border-soft bg-panel px-2 py-3 aura-tx-surface md:flex xl:w-52">
       <div className="mb-2.5 shrink-0 px-0.5">
         <div
           className="relative h-8"

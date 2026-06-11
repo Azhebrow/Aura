@@ -47,13 +47,13 @@ export function NutritionTargetsSettingsCard() {
 
   const fields = [
     { id: 'nt-cal', label: 'Ккал', suffix: 'ккал', value: calories, ariaLabel: 'Калории',
-      borderCn: 'border-r border-b border-[var(--aura-border-soft)] sm:border-b-0',
+      borderCn: 'border-r border-b border-soft sm:border-b-0',
       onCommit: (next: string) => { setCalories(next); persist({ calories: next }); } },
     { id: 'nt-p', label: 'Белки', suffix: 'г', value: proteins, ariaLabel: 'Белки',
-      borderCn: 'border-b border-[var(--aura-border-soft)] sm:border-r sm:border-b-0',
+      borderCn: 'border-b border-soft sm:border-r sm:border-b-0',
       onCommit: (next: string) => { setProteins(next); persist({ proteins: next }); } },
     { id: 'nt-f', label: 'Жиры', suffix: 'г', value: fats, ariaLabel: 'Жиры',
-      borderCn: 'border-r border-[var(--aura-border-soft)] sm:border-b-0',
+      borderCn: 'border-r border-soft sm:border-b-0',
       onCommit: (next: string) => { setFats(next); persist({ fats: next }); } },
     { id: 'nt-c', label: 'Углеводы', suffix: 'г', value: carbs, ariaLabel: 'Углеводы',
       borderCn: '',
@@ -62,7 +62,7 @@ export function NutritionTargetsSettingsCard() {
 
   return (
     <SettingsSectionCard title="Цели КБЖУ" leadingIcon={Target} contentClassName="gap-0">
-      <div className="w-full overflow-hidden rounded-xl border border-[var(--aura-border-soft)]">
+      <div className="w-full overflow-hidden rounded-xl border border-soft">
         <div className="grid w-full grid-cols-2 sm:grid-cols-4">
           {fields.map((f) => (
             <div key={f.id} className={`flex flex-col gap-1.5 px-3 py-2.5 ${f.borderCn}`}>

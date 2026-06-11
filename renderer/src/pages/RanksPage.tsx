@@ -165,7 +165,7 @@ export function RanksPage() {
             onChange={(v) => setMobilePanel(v as 'rank' | 'history')}
           />
           {both ? (
-            <div className="hidden h-full min-h-0 flex-1 overflow-hidden xl:grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] xl:divide-x xl:divide-[var(--aura-border-soft)]">
+            <div className="hidden h-full min-h-0 flex-1 overflow-hidden xl:grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] xl:divide-x xl:divide-soft">
               {rankColumn}
               {historyColumn}
             </div>

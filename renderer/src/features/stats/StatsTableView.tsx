@@ -4,6 +4,7 @@ import type { StatsMeta, StatsMode } from '@/features/stats/types';
 import { AURA_STATIC_SEMANTIC, FINANCE_SEMANTIC, MOOD_SCALE } from '@/shared/config/aura-palette';
 import { IconWithBadge } from '@/components/ui/icon-with-badge';
 import { useDragScroll } from '@/shared/hooks/use-drag-scroll';
+import { STICKY_HEADER_SHADOW, STICKY_COLUMN_SHADOW, STICKY_CORNER_SHADOW } from '@/shared/ui/sticky-table';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -101,9 +102,6 @@ function makeCellStyle(mode: StatsMode, colColor: string | undefined, raw: numbe
   return undefined;
 }
 
-const STICKY_HEADER_SHADOW = 'inset 0 -1px 0 hsl(var(--border) / 0.35)';
-const STICKY_COLUMN_SHADOW = 'inset -1px 0 0 hsl(var(--border) / 0.35)';
-const STICKY_CORNER_SHADOW = `${STICKY_HEADER_SHADOW}, ${STICKY_COLUMN_SHADOW}`;
 
 export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props) {
   const { ref: scrollRef, isDragging, dragScrollHandlers } = useDragScroll<HTMLDivElement>();
@@ -112,7 +110,7 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
 
   if (!table.rows.length) {
     return (
-      <div className="aura-surface-control text-[var(--aura-text-subtle)] flex flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm">
+      <div className="aura-surface-control text-subtle flex flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm">
         Нет данных за выбранный период. Смените режим или расширьте даты.
       </div>
     );
@@ -130,7 +128,7 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
-      <div className="aura-surface-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/80">
+      <div className="aura-surface-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-soft/80">
         <div
           ref={scrollRef}
           className={cn(
@@ -150,7 +148,7 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
             <thead className="sticky top-0 z-[4]">
               <tr>
                 <th
-                  className="bg-card text-[var(--aura-text-muted)] sticky left-0 top-0 z-[6] border-b border-r border-[var(--aura-border-soft)]/40 px-2 py-2 text-left align-middle sm:py-3"
+                  className="bg-card text-dim sticky left-0 top-0 z-[6] border-b border-r border-soft/40 px-2 py-2 text-left align-middle sm:py-3"
                   style={{ boxShadow: STICKY_CORNER_SHADOW }}
                 >
                   <span className="text-xs font-semibold uppercase tracking-wider">Период</span>
@@ -159,7 +157,7 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
                   <th
                     key={col}
                     className={cn(
-                      'bg-card text-[var(--aura-text-muted)] sticky top-0 z-[5] border-b border-r border-[var(--aura-border-soft)]/40 px-2 py-2 text-center align-middle sm:py-3',
+                      'bg-card text-dim sticky top-0 z-[5] border-b border-r border-soft/40 px-2 py-2 text-center align-middle sm:py-3',
                       colIdx === cols.length - 1 && 'border-r-0'
                     )}
                     style={{ boxShadow: STICKY_HEADER_SHADOW }}
@@ -183,7 +181,7 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
                 <tr key={row.date}>
                   <td
                     className={cn(
-                      'text-foreground sticky left-0 z-[4] border-r border-b border-[var(--aura-border-soft)] bg-card px-2 py-2.5 text-xs font-medium',
+                      'text-foreground sticky left-0 z-[4] border-r border-b border-soft bg-card px-2 py-2.5 text-xs font-medium',
                       rowIdx === table.rows.length - 1 && 'border-b-0'
                     )}
                     style={{ boxShadow: STICKY_COLUMN_SHADOW }}
@@ -194,7 +192,7 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
                     <td
                       key={col}
                       className={cn(
-                        'border-r border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-2 py-2.5 text-center text-xs tabular-nums',
+                        'border-r border-b border-soft bg-panel px-2 py-2.5 text-center text-xs tabular-nums',
                         colIdx === cols.length - 1 && 'border-r-0',
                         rowIdx === table.rows.length - 1 && 'border-b-0'
                       )}

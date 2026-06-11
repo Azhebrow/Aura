@@ -112,7 +112,7 @@ const DialogContent = React.forwardRef<
         className={cn(
           // Do not set sm:* max-width here — UniversalModalContent and other callers pass explicit caps;
           // a default sm:max-w-* would override unprefixed max-w-* from merged classes at sm+ breakpoints.
-          "fixed top-1/2 left-1/2 z-50 origin-center grid w-full max-w-[calc(100%-0.5rem)] -translate-x-1/2 -translate-y-1/2 gap-0 rounded-xl bg-[var(--aura-surface-panel)] p-0 text-sm text-popover-foreground outline-none sm:max-w-[calc(100%-1rem)] shadow-[0_2px_8px_rgba(0,0,0,0.12),0_8px_24px_rgba(0,0,0,0.18),0_24px_64px_rgba(0,0,0,0.28)]",
+          "fixed top-1/2 left-1/2 z-50 origin-center grid w-full max-w-[calc(100%-0.5rem)] -translate-x-1/2 -translate-y-1/2 gap-0 rounded-xl bg-panel p-0 text-sm text-popover-foreground outline-none sm:max-w-[calc(100%-1rem)] shadow-[0_2px_8px_rgba(0,0,0,0.12),0_8px_24px_rgba(0,0,0,0.18),0_24px_64px_rgba(0,0,0,0.28)]",
           "duration-aura-base ease-aura data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:duration-aura-fast",
           className
@@ -163,9 +163,9 @@ function DialogFooter({
       data-slot="dialog-footer"
       className={cn(
         variant === "inset" &&
-          "-mx-2.5 -mb-2.5 flex flex-col-reverse gap-2 rounded-b-xl border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] p-2.5 sm:-mx-3 sm:-mb-3 sm:p-3 sm:flex-row sm:justify-end",
+          "-mx-2.5 -mb-2.5 flex flex-col-reverse gap-2 rounded-b-xl border-t border-soft bg-control p-2.5 sm:-mx-3 sm:-mb-3 sm:p-3 sm:flex-row sm:justify-end",
         variant === "flush" &&
-          "mt-auto flex shrink-0 flex-col-reverse gap-2 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 py-2.5 sm:px-4 sm:py-3 sm:flex-row sm:justify-end",
+          "mt-auto flex shrink-0 flex-col-reverse gap-2 border-t border-soft bg-control px-3 py-2.5 sm:px-4 sm:py-3 sm:flex-row sm:justify-end",
         className
       )}
       {...props}

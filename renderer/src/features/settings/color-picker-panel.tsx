@@ -5,8 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { CFG_COLOR_PRESETS, type CfgColorPreset, normalizeHexColor } from '@/features/settings/cfg-color-presets';
 import { cn } from '@/lib/utils';
-
-const COLOR_PICKER_DEFAULT = '#64748b';
+import { DEFAULT_PICKER_COLOR } from '@/shared/config/aura-palette';
 
 type Props = {
   value: string;
@@ -24,7 +23,7 @@ export function ColorPickerPanel({ value, onChange, onPresetPick, presets, allow
   const isSelected = (color: string) => draft.toLowerCase() === color.toLowerCase();
 
   useEffect(() => {
-    setDraft(value || COLOR_PICKER_DEFAULT);
+    setDraft(value || DEFAULT_PICKER_COLOR);
   }, [value]);
 
   const applyDraft = (next: string) => {

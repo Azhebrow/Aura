@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DEFAULT_PICKER_COLOR } from '@/shared/config/aura-palette';
 import { ColorPickerPanel } from '@/features/settings/color-picker-panel';
 import { IconPickerPanel } from '@/features/settings/icon-picker-panel';
 import { warmIconsManifest } from '@/features/settings/load-icons-manifest';
@@ -21,8 +22,8 @@ const PICKER_GROUP_ORDER = ['Фокус', 'Эскапизм', 'Наполнен�
 
 export function CfgLikeDialogRow({ label, htmlFor, children }: { label: string; htmlFor?: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-1 border-b border-[var(--aura-border-soft)] last:border-b-0 sm:grid-cols-[minmax(9rem,30%)_1fr] sm:divide-x sm:divide-[var(--aura-border-soft)]">
-      <div className="bg-[var(--aura-surface-panel)] flex items-center justify-center px-2 py-2 text-center sm:min-h-9 sm:px-3">
+    <div className="grid grid-cols-1 border-b border-soft last:border-b-0 sm:grid-cols-[minmax(9rem,30%)_1fr] sm:divide-x sm:divide-soft">
+      <div className="bg-panel flex items-center justify-center px-2 py-2 text-center sm:min-h-9 sm:px-3">
         <Label htmlFor={htmlFor} className="text-foreground cursor-default text-xs font-semibold leading-snug break-words">
           {label}
         </Label>
@@ -197,7 +198,7 @@ export function GoalEditDialog({
                     <button
                       type="button"
                       className={cn('border-input h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-xs aura-tx-opacity hover:opacity-90', RAW_BUTTON_FOCUS_CN)}
-                      style={{ backgroundColor: color || '#64748b' }}
+                      style={{ backgroundColor: color || DEFAULT_PICKER_COLOR }}
                       onClick={() => setDialogSub('color')}
                     />
                   </CfgLikeDialogRow>

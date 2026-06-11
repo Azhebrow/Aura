@@ -217,7 +217,7 @@ export function SettingsPage() {
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
       <Card className={MEGA_SHELL_CARD_CN}>
         <CardContent className={MEGA_SHELL_CONTENT_CN}>
-          <div className="grid h-full min-h-0 flex-1 grid-cols-1 divide-y divide-[var(--aura-border-soft)] overflow-hidden aura-content-fade-in lg:grid-cols-[minmax(11.5rem,13rem)_minmax(0,1fr)] lg:divide-x lg:divide-y-0 xl:grid-cols-[minmax(12rem,13.5rem)_minmax(0,1fr)]">
+          <div className="grid h-full min-h-0 flex-1 grid-cols-1 divide-y divide-soft overflow-hidden aura-content-fade-in lg:grid-cols-[minmax(11.5rem,13rem)_minmax(0,1fr)] lg:divide-x lg:divide-y-0 xl:grid-cols-[minmax(12rem,13.5rem)_minmax(0,1fr)]">
             <aside className="hidden min-h-0 flex-col overflow-hidden bg-transparent lg:flex">
               <MegaPanelHeader title="Разделы" />
               <ScrollArea className="h-full min-h-0">
@@ -262,7 +262,7 @@ export function SettingsPage() {
               </ScrollArea>
             </aside>
 
-            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--aura-surface-panel)]">
+            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel">
               {activeItem ? (
                 <SettingsTabActionsProvider>
                   {(rightSlot) => (

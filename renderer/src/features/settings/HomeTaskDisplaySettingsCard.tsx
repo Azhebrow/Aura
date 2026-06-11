@@ -35,11 +35,11 @@ export function HomeTaskDisplaySettingsCard() {
 
   return (
     <SettingsSectionCard title="Задачи на главной" leadingIcon={Percent} contentClassName="gap-3">
-      <div className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/50">
-        <label className="flex h-12 cursor-pointer items-center gap-3 px-3 aura-tx-colors hover:bg-[var(--aura-action-hover-bg)]">
+      <div className="overflow-hidden rounded-lg border border-soft/50">
+        <label className="flex h-12 cursor-pointer items-center gap-3 px-3 aura-tx-colors hover:bg-hover">
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold leading-tight text-foreground">Проценты в строках задач</p>
-            <p className="mt-0.5 text-nano leading-snug text-[var(--aura-text-subtle)]">Бейджи 0%, 28%, 50%. Выполненные — галочка вместо 100%.</p>
+            <p className="mt-0.5 text-nano leading-snug text-subtle">Бейджи 0%, 28%, 50%. Выполненные — галочка вместо 100%.</p>
           </div>
           <Switch
             checked={showPercentBadges}

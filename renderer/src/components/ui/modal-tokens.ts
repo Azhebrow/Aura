@@ -35,4 +35,4 @@ export const MODAL_FULLSCREEN_CN =
   'top-0 right-0 bottom-0 left-0 h-svh w-screen max-h-none max-w-none translate-x-0 translate-y-0 rounded-none border-0 ring-0 sm:max-w-none data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100';
 
 export const MODAL_SHELL_BASE_CN =
-  'flex min-h-0 flex-1 flex-col overflow-hidden rounded-none border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-0 shadow-xl sm:rounded-xl';
+  'flex min-h-0 flex-1 flex-col overflow-hidden rounded-none border border-soft bg-panel p-0 shadow-xl sm:rounded-xl';

@@ -181,7 +181,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 shrink-0 px-2.5 text-caption font-medium sm:px-3 sm:text-sm border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] hover:bg-[var(--aura-action-hover-bg)]"
+              className="h-8 shrink-0 px-2.5 text-caption font-medium sm:px-3 sm:text-sm border-soft bg-control hover:bg-hover"
               onClick={() => {
                 const base = parseYmd(todayString) ?? new Date();
                 setView(new Date(base.getFullYear(), base.getMonth(), 1));
@@ -195,7 +195,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                className="size-8 shrink-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground"
+                className="size-8 shrink-0 rounded-md border border-soft bg-control text-dim hover:bg-hover hover:text-foreground"
                 aria-label="Закрыть календарь"
                 onClick={onRequestClose}
               >
@@ -207,13 +207,13 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
       />
 
       {/* ── Toolbar ── */}
-      <div className="flex items-center justify-between gap-2 border-b border-[var(--aura-border-soft)] px-4 py-2.5">
+      <div className="flex items-center justify-between gap-2 border-b border-soft px-4 py-2.5">
         {/* Month nav */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg border border-soft bg-control p-0.5">
           <button
             type="button"
             aria-label="Предыдущий месяц"
-            className="flex size-7 items-center justify-center rounded-md text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground aura-tx-colors"
+            className="flex size-7 items-center justify-center rounded-md text-dim hover:bg-hover hover:text-foreground aura-tx-colors"
             onClick={() => setView((v) => new Date(v.getFullYear(), v.getMonth() - 1, 1))}
           >
             <ChevronLeft className="size-4" />
@@ -224,7 +224,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
           <button
             type="button"
             aria-label="Следующий месяц"
-            className="flex size-7 items-center justify-center rounded-md text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground aura-tx-colors"
+            className="flex size-7 items-center justify-center rounded-md text-dim hover:bg-hover hover:text-foreground aura-tx-colors"
             onClick={() => setView((v) => new Date(v.getFullYear(), v.getMonth() + 1, 1))}
           >
             <ChevronRight className="size-4" />
@@ -233,7 +233,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
 
         {/* Data type */}
         <Select value={dataType} onValueChange={(v) => setDataType(v as DataType)}>
-          <SelectTrigger className="h-8 w-[9.5rem] rounded-lg border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-xs shadow-none sm:h-8 sm:w-[11.5rem] sm:text-sm">
+          <SelectTrigger className="h-8 w-[9.5rem] rounded-lg border-soft bg-control text-xs shadow-none sm:h-8 sm:w-[11.5rem] sm:text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -257,7 +257,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
         {/* Day-of-week header */}
         <div className="mb-1.5 grid grid-cols-7 gap-1">
           {DOW_LABELS.map((l) => (
-            <div key={l} className="py-1 text-center text-caption font-semibold uppercase tracking-wider text-[var(--aura-text-subtle)]">
+            <div key={l} className="py-1 text-center text-caption font-semibold uppercase tracking-wider text-subtle">
               {l}
             </div>
           ))}
@@ -289,10 +289,10 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
                     className={cn(
                       'group relative flex min-h-[4.5rem] min-w-0 flex-col overflow-hidden rounded-xl border px-2 py-1.5 text-left transition-colors duration-150 sm:min-h-[5.5rem]',
                       // base
-                      !inMonth && 'border-[var(--aura-border-soft)]/40 bg-transparent text-[var(--aura-text-disabled)]',
-                      inMonth && !isSel && !future && 'border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-foreground hover:bg-[var(--aura-action-hover-bg)]',
+                      !inMonth && 'border-soft/40 bg-transparent text-faint',
+                      inMonth && !isSel && !future && 'border-soft bg-control text-foreground hover:bg-hover',
                       // future
-                      future && 'border-[var(--aura-border-soft)]/30 bg-transparent text-[var(--aura-text-disabled)] pointer-events-none',
+                      future && 'border-soft/30 bg-transparent text-faint pointer-events-none',
                       // selected
                       isSel && 'border-primary/45 bg-primary/8 text-foreground shadow-sm hover:bg-primary/12',
                       // today ring
@@ -315,7 +315,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
                     {/* Day number + today dot */}
                     <span className="relative z-[1] flex items-center gap-1">
                       {locked ? (
-                        <Lock className="size-3 shrink-0 text-[var(--aura-text-disabled)]" aria-hidden />
+                        <Lock className="size-3 shrink-0 text-faint" aria-hidden />
                       ) : (
                         <span className={cn(
                           'text-xs font-semibold tabular-nums leading-none',
@@ -334,12 +334,12 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
                       {inMonth && !future ? (
                         <span className={cn(
                           'text-nano tabular-nums leading-snug',
-                          isSel ? 'text-primary/80 font-semibold' : locked ? 'text-[var(--aura-text-disabled)]' : 'text-[var(--aura-text-muted)]'
+                          isSel ? 'text-primary/80 font-semibold' : locked ? 'text-faint' : 'text-dim'
                         )}>
                           {dd.text || '—'}
                         </span>
                       ) : (
-                        <span className="text-nano text-[var(--aura-text-disabled)]">—</span>
+                        <span className="text-nano text-faint">—</span>
                       )}
                     </span>
                   </button>
@@ -351,7 +351,7 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
       </div>
 
       {/* ── Footer: day summary ── */}
-      <footer className="shrink-0 border-t border-[var(--aura-border-soft)] px-4 py-3">
+      <footer className="shrink-0 border-t border-soft px-4 py-3">
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
           {daySummary.map((row) => {
             const Ic = TYPE_ICON[row.type];
@@ -365,14 +365,14 @@ export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: bo
                   'flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors duration-150',
                   isActive
                     ? 'border-primary/35 bg-primary/8 text-primary'
-                    : 'border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
+                    : 'border-soft bg-control text-dim hover:bg-hover hover:text-foreground'
                 )}
               >
                 <span className={cn(
                   'inline-flex size-5 shrink-0 items-center justify-center rounded-md',
-                  isActive ? 'bg-primary/15' : 'bg-[var(--aura-action-hover-bg)]'
+                  isActive ? 'bg-primary/15' : 'bg-hover'
                 )}>
-                  <Ic className={cn('size-3', isActive ? 'text-primary' : 'text-[var(--aura-text-subtle)]')} aria-hidden />
+                  <Ic className={cn('size-3', isActive ? 'text-primary' : 'text-subtle')} aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1 truncate text-xs tabular-nums">{row.text}</span>
               </button>

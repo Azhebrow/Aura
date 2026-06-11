@@ -170,14 +170,14 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                         toggle(id, !done);
                       }}
                       className={cn(
-                        'group grid cursor-pointer grid-cols-[auto_1fr_auto] overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs aura-tx-surface',
-                        'hover:bg-[var(--aura-action-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
+                        'group grid cursor-pointer grid-cols-[auto_1fr_auto] overflow-hidden rounded-xl border border-soft bg-card shadow-xs aura-tx-surface',
+                        'hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
                       )}
                     >
                       <div className="flex h-full shrink-0 items-center justify-center px-2 py-2">
                         <div
                           className={cn(
-                            'flex size-8 items-center justify-center rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-base',
+                            'flex size-8 items-center justify-center rounded-md border border-soft bg-control text-base',
                             done && 'opacity-55'
                           )}
                           aria-hidden
@@ -190,19 +190,19 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                           <div
                             className={cn(
                               'text-sm font-semibold leading-snug text-foreground',
-                              done && 'line-through text-[var(--aura-text-disabled)]'
+                              done && 'line-through text-faint'
                             )}
                           >
                             {label}
                           </div>
                         </div>
                       </div>
-                      <div className="flex min-h-0 shrink-0 items-center border-l border-[var(--aura-border-soft)] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+                      <div className="flex min-h-0 shrink-0 items-center border-l border-soft opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
                         <div className="flex h-full items-center gap-0">
                           {!isFirst ? (
 	                            <button
 	                              type="button"
-	                              className="flex h-full items-center justify-center px-2 py-2 text-[var(--aura-text-muted)] aura-tx-interactive hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground"
+	                              className="flex h-full items-center justify-center px-2 py-2 text-dim aura-tx-interactive hover:bg-hover hover:text-foreground"
 	                              aria-label={t('aria.move_up')}
 	                              onClick={(event) => {
 	                                event.stopPropagation();
@@ -215,7 +215,7 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                           {!isLast ? (
 	                            <button
 	                              type="button"
-	                              className="flex h-full items-center justify-center px-2 py-2 text-[var(--aura-text-muted)] aura-tx-interactive hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground"
+	                              className="flex h-full items-center justify-center px-2 py-2 text-dim aura-tx-interactive hover:bg-hover hover:text-foreground"
 	                              aria-label={t('aria.move_down')}
 	                              onClick={(event) => {
 	                                event.stopPropagation();
@@ -227,7 +227,7 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
                           ) : null}
                           <button
                             type="button"
-                            className="flex h-full items-center justify-center px-2 py-2 text-[var(--aura-text-muted)] aura-tx-interactive hover:bg-destructive/10 hover:text-destructive"
+                            className="flex h-full items-center justify-center px-2 py-2 text-dim aura-tx-interactive hover:bg-destructive/10 hover:text-destructive"
                             aria-label={t('aria.delete_item')}
                             onClick={(event) => {
                               event.stopPropagation();

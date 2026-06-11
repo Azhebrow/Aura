@@ -11,7 +11,7 @@ import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import { SettingsSectionCard } from '@/widgets/settings/SettingsSectionCard';
 
-const SECTION_CN = 'overflow-hidden rounded-lg border border-[var(--aura-border-soft)]/50 divide-y divide-[var(--aura-border-soft)]/40';
+const SECTION_CN = 'overflow-hidden rounded-lg border border-soft/50 divide-y divide-soft/40';
 
 function mergeSave(db: AuraDatabase, patch: AuraRow) {
   const cur = (db.getAppSettings() ?? {}) as AuraRow;
@@ -58,7 +58,7 @@ export function PointsSettingsCard() {
       <div className={SECTION_CN}>
         <div className="relative grid min-h-12 grid-cols-[minmax(0,1fr)_9rem] items-center gap-3 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <LockKeyhole className="size-3.5 shrink-0 text-[var(--aura-text-subtle)]" />
+            <LockKeyhole className="size-3.5 shrink-0 text-subtle" />
             <Label htmlFor="points-open-hours" className="min-w-0 text-xs font-medium text-foreground">
               Блокировка дней через
             </Label>
@@ -79,11 +79,11 @@ export function PointsSettingsCard() {
             className="h-8 pr-7 text-right"
             aria-label="Количество часов до блокировки дня"
           />
-          <span className="pointer-events-none absolute right-6 text-xs font-medium text-[var(--aura-text-subtle)]">ч</span>
+          <span className="pointer-events-none absolute right-6 text-xs font-medium text-subtle">ч</span>
         </div>
         <div className="grid min-h-12 grid-cols-[minmax(0,1fr)_9rem] items-center gap-3 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <CalendarDays className="size-3.5 shrink-0 text-[var(--aura-text-subtle)]" />
+            <CalendarDays className="size-3.5 shrink-0 text-subtle" />
             <Label htmlFor="points-start-date" className="min-w-0 text-xs font-medium text-foreground">
               Дата начала отчёта очков
             </Label>
@@ -101,11 +101,11 @@ export function PointsSettingsCard() {
             aria-label="Дата начала отчёта очков"
           />
         </div>
-        <label className="flex min-h-12 cursor-pointer items-center gap-3 px-3 py-2 aura-tx-colors hover:bg-[var(--aura-action-hover-bg)]">
-          <Percent className="size-3.5 shrink-0 text-[var(--aura-text-subtle)]" />
+        <label className="flex min-h-12 cursor-pointer items-center gap-3 px-3 py-2 aura-tx-colors hover:bg-hover">
+          <Percent className="size-3.5 shrink-0 text-subtle" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold leading-tight text-foreground">Проценты в строках задач</p>
-            <p className="mt-0.5 text-nano leading-snug text-[var(--aura-text-subtle)]">Бейджи 0%, 28%, 50%. Выполненные — галочка вместо 100%.</p>
+            <p className="mt-0.5 text-nano leading-snug text-subtle">Бейджи 0%, 28%, 50%. Выполненные — галочка вместо 100%.</p>
           </div>
           <Switch
             checked={showPercentBadges}

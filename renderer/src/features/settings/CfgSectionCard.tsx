@@ -15,6 +15,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DEFAULT_PICKER_COLOR } from '@/shared/config/aura-palette';
 import {
   AlertTriangle,
   ChevronDown,
@@ -166,7 +167,7 @@ function AmbientCoverImageField({ value, onChange }: { value: string; onChange: 
           'relative flex h-24 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors',
           dragging
             ? 'border-primary bg-primary/10'
-            : 'border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)]/40 hover:border-primary/50'
+            : 'border-soft bg-control/40 hover:border-primary/50'
         )}
         onClick={() => {
           const input = document.createElement('input');
@@ -183,7 +184,7 @@ function AmbientCoverImageField({ value, onChange }: { value: string; onChange: 
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center gap-1.5 text-[var(--aura-text-disabled)]">
+          <div className="flex flex-col items-center gap-1.5 text-faint">
             <ImageIcon className="size-5" />
             <span className="text-xs">Перетащите, вставьте (Ctrl+V) или нажмите</span>
           </div>
@@ -193,7 +194,7 @@ function AmbientCoverImageField({ value, onChange }: { value: string; onChange: 
         <button
           type="button"
           onClick={() => onChange('')}
-          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--aura-border-soft)] text-xs text-[var(--aura-text-muted)] hover:border-destructive/40 hover:text-destructive transition-colors"
+          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-lg border border-soft text-xs text-dim hover:border-destructive/40 hover:text-destructive transition-colors"
         >
           <X className="size-3" /> Удалить обложку
         </button>
@@ -204,7 +205,7 @@ function AmbientCoverImageField({ value, onChange }: { value: string; onChange: 
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const COLOR_PICKER_DEFAULT = '#64748b';
+const COLOR_PICKER_DEFAULT = DEFAULT_PICKER_COLOR;
 
 const CFG_LIST_ITEM_CN =
   'rounded-xl border-border/55 bg-card/55 shadow-none hover:border-border/75 hover:bg-muted/25';
@@ -595,7 +596,7 @@ export function CfgSectionCard({ spec }: Props) {
           id={fid}
           type="button"
           onClick={() => setDialogSub({ k: 'preset-products', field: f.key })}
-          className="border-[var(--aura-border-soft)] bg-transparent hover:bg-[var(--aura-action-hover-bg)] flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-md border px-3 text-sm shadow-none aura-tx-colors"
+          className="border-soft bg-transparent hover:bg-hover flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-md border px-3 text-sm shadow-none aura-tx-colors"
         >
           <span className="truncate">
             {presetIngredients.length > 0 ? `Ингредиентов: ${presetIngredients.length}` : 'Добавить ингредиенты'}
@@ -625,7 +626,7 @@ export function CfgSectionCard({ spec }: Props) {
           placeholder={f.placeholder}
           rows={tall ? 8 : 4}
           className={cn(
-            'border-[var(--aura-border-soft)] bg-transparent w-full min-w-0 resize-y rounded-md border px-3 py-2 text-sm shadow-none',
+            'border-soft bg-transparent w-full min-w-0 resize-y rounded-md border px-3 py-2 text-sm shadow-none',
             tall ? 'text-left text-xs leading-relaxed' : 'text-center'
           )}
         />
@@ -660,7 +661,7 @@ export function CfgSectionCard({ spec }: Props) {
             <SelectTrigger
               id={fid}
               contentAlign="start"
-              className="border-[var(--aura-border-soft)] bg-transparent h-9 w-full min-w-0 justify-center shadow-none"
+              className="border-soft bg-transparent h-9 w-full min-w-0 justify-center shadow-none"
             >
               <SelectValue placeholder={ambientMusicFiles.length > 0 ? 'Выберите файл' : 'Файлы не найдены'} />
             </SelectTrigger>
@@ -722,7 +723,7 @@ export function CfgSectionCard({ spec }: Props) {
           id={fid}
           type="button"
           onClick={() => { setColorDraft(pickerSeed); setDialogSub({ k: 'color', field: f.key }); }}
-          className="border-[var(--aura-border-soft)] focus-visible:ring-ring/70 h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-none aura-tx-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
+          className="border-soft focus-visible:ring-ring/70 h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-none aura-tx-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
           style={{
             backgroundColor: paint ?? undefined,
             backgroundImage: paint ? undefined : emptyPattern,
@@ -759,7 +760,7 @@ export function CfgSectionCard({ spec }: Props) {
           <SelectTrigger
             id={fid}
             contentAlign="center"
-            className="border-[var(--aura-border-soft)] bg-transparent h-9 w-full min-w-0 justify-center shadow-none"
+            className="border-soft bg-transparent h-9 w-full min-w-0 justify-center shadow-none"
           >
             <SelectValue placeholder="Выберите" />
           </SelectTrigger>
@@ -794,7 +795,7 @@ export function CfgSectionCard({ spec }: Props) {
     const maxedOut = isHomeVisible && !checked && visibleHomeAccountsCount >= 2 && !currentRowVisible;
     return (
       <CfgModalGridRow key={f.key} label={f.label} htmlFor={fid}>
-        <div className="border-[var(--aura-border-soft)] bg-transparent flex min-h-9 w-full items-center justify-center rounded-md border px-3 shadow-none">
+        <div className="border-soft bg-transparent flex min-h-9 w-full items-center justify-center rounded-md border px-3 shadow-none">
           <Switch
             id={fid}
             checked={checked}
@@ -1062,7 +1063,7 @@ export function CfgSectionCard({ spec }: Props) {
                     {dialogError}
                   </p>
                 ) : null}
-                <div className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)] divide-y divide-[var(--aura-border-soft)]/70">
+                <div className="overflow-hidden rounded-lg border border-soft divide-y divide-soft/70">
                   {/* Base fields */}
                   {baseVisibleFields.map((f) =>
                     f.kind === 'checkbox' ? renderCheckboxRow(f) : (
@@ -1077,14 +1078,14 @@ export function CfgSectionCard({ spec }: Props) {
                     <div>
                       <button
                         type="button"
-                        className="flex w-full items-center justify-between px-3 py-2.5 text-xs font-semibold text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground aura-tx-colors"
+                        className="flex w-full items-center justify-between px-3 py-2.5 text-xs font-semibold text-subtle hover:bg-hover hover:text-foreground aura-tx-colors"
                         onClick={() => setAdvancedOpen((v) => !v)}
                       >
                         <span>Параметры типа: {taskTypeLabel(translatedSpec, currentTaskType)}</span>
-                        <ChevronDown className={cn('size-3.5 text-[var(--aura-text-disabled)] transition-transform duration-200', advancedOpen && 'rotate-180')} />
+                        <ChevronDown className={cn('size-3.5 text-faint transition-transform duration-200', advancedOpen && 'rotate-180')} />
                       </button>
                       {advancedOpen ? (
-                        <div className="divide-y divide-[var(--aura-border-soft)]/70 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)]/30">
+                        <div className="divide-y divide-soft/70 border-t border-soft bg-panel/30">
                           {conditionalVisibleFields.map((f) =>
                             f.kind === 'checkbox' ? renderCheckboxRow(f) : (
                               <CfgModalGridRow key={f.key} label={f.label} htmlFor={`cfg-${spec.sectionId}-${f.key}`}>
@@ -1099,8 +1100,8 @@ export function CfgSectionCard({ spec }: Props) {
 
                   {/* Task-list items editor */}
                   {(spec.table === 'cfg_tasks' || spec.table === 'cfg_leisure_tasks') && currentTaskType === 'list' ? (
-                    <div className="rounded-lg border border-[var(--aura-border-soft)]/55 bg-transparent p-2">
-                      <div className="border-[var(--aura-border-soft)] bg-transparent overflow-hidden rounded-md border p-2">
+                    <div className="rounded-lg border border-soft/55 bg-transparent p-2">
+                      <div className="border-soft bg-transparent overflow-hidden rounded-md border p-2">
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <p className="text-xs font-medium">Элементы списка</p>
                           <Button

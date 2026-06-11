@@ -1,8 +1,13 @@
 /**
  * AURA Startup Debug Logger
- * Выводит детальные тайминги загрузки в консоль.
- * В продакшене логи всё равно пишутся — Electron DevTools всегда доступен.
+ * Выводит детальные тайминги загрузки в консоль ТОЛЬКО в dev-сборке.
+ * В проде все функции — no-op (import.meta.env.DEV === false), чтобы не
+ * засорять консоль установленного приложения.
  */
+
+// Vite подставляет это значение на этапе сборки; в проде ветки с логами
+// полностью вырезаются минификатором (dead-code elimination).
+const DEV = import.meta.env.DEV;
 
 type TaskEntry = {
   id: string;
@@ -18,6 +23,7 @@ let appStartedAt = Date.now();
 let phaseRevealAt: number | null = null;
 
 export function startupLoggerInit() {
+  if (!DEV) return;
   appStartedAt = Date.now();
   entries.clear();
   phaseRevealAt = null;
@@ -33,6 +39,7 @@ export function startupLoggerInit() {
 }
 
 export function startupLoggerTaskStart(id: string, label: string) {
+  if (!DEV) return;
   const entry: TaskEntry = {
     id,
     label,
@@ -49,6 +56,7 @@ export function startupLoggerTaskStart(id: string, label: string) {
 }
 
 export function startupLoggerTaskDone(id: string) {
+  if (!DEV) return;
   const entry = entries.get(id);
   if (!entry) return;
   entry.endedAt = Date.now();
@@ -63,6 +71,7 @@ export function startupLoggerTaskDone(id: string) {
 }
 
 export function startupLoggerTaskError(id: string, error: string) {
+  if (!DEV) return;
   const entry = entries.get(id);
   if (!entry) return;
   entry.endedAt = Date.now();
@@ -79,6 +88,7 @@ export function startupLoggerTaskError(id: string, error: string) {
 }
 
 export function startupLoggerPhaseReveal() {
+  if (!DEV) return;
   phaseRevealAt = Date.now();
   const elapsed = phaseRevealAt - appStartedAt;
   console.log(
@@ -89,6 +99,7 @@ export function startupLoggerPhaseReveal() {
 }
 
 export function startupLoggerPhaseBackground() {
+  if (!DEV) return;
   const now = Date.now();
   const elapsed = now - appStartedAt;
   console.log(
@@ -99,6 +110,7 @@ export function startupLoggerPhaseBackground() {
 }
 
 export function startupLoggerFinalize() {
+  if (!DEV) return;
   const now = Date.now();
   const totalMs = now - appStartedAt;
 

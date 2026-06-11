@@ -80,8 +80,8 @@ export function ListItem({
       <div
         onClick={handleMainClick}
         className={cn(
-        'group overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs aura-tx-surface',
-        'hover:bg-[var(--aura-action-hover-bg)] cursor-pointer',
+        'group overflow-hidden rounded-xl border border-soft bg-card shadow-xs aura-tx-surface',
+        'hover:bg-hover cursor-pointer',
           className
         )}
       >
@@ -92,23 +92,23 @@ export function ListItem({
               {moodTotal > 0 ? <ProgressDots filled={moodLevel ?? 0} total={moodTotal} size="xs" /> : null}
             </div>
           </div>
-          <div className="w-px self-stretch bg-[var(--aura-border-soft)]" aria-hidden />
+          <div className="w-px self-stretch bg-soft" aria-hidden />
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-1.5">
               <div
                 className={cn(
                   'truncate text-sm font-semibold leading-snug text-foreground',
-                  isDone && 'line-through text-[var(--aura-text-disabled)]'
+                  isDone && 'line-through text-faint'
                 )}
               >
                 {title}
               </div>
-              <span className="text-[var(--aura-text-disabled)] text-xs" aria-hidden>
+              <span className="text-faint text-xs" aria-hidden>
                 •
               </span>
-              <div className="text-[var(--aura-text-muted)] truncate text-xs font-medium">{metaLabel ?? t('aria.entry')}</div>
+              <div className="text-dim truncate text-xs font-medium">{metaLabel ?? t('aria.entry')}</div>
             </div>
-            {description && <div className="text-[var(--aura-text-subtle)] mt-1.5 text-xs leading-relaxed">{description}</div>}
+            {description && <div className="text-subtle mt-1.5 text-xs leading-relaxed">{description}</div>}
           </div>
         </div>
       </div>
@@ -129,8 +129,8 @@ export function ListItem({
     <div
       onClick={handleMainClick}
       className={cn(
-        'group grid overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs aura-tx-surface',
-        'hover:bg-[var(--aura-action-hover-bg)] cursor-pointer',
+        'group grid overflow-hidden rounded-xl border border-soft bg-card shadow-xs aura-tx-surface',
+        'hover:bg-hover cursor-pointer',
         gridClass,
         className
       )}
@@ -159,22 +159,22 @@ export function ListItem({
           <div
             className={cn(
               'text-sm font-semibold leading-snug text-foreground',
-              isDone && 'line-through text-[var(--aura-text-disabled)]'
+              isDone && 'line-through text-faint'
             )}
           >
             {title}
           </div>
           {/* ИСПРАВЛЕНИЕ #7: Amount для edit-delete */}
           {amount && mode === 'edit-delete' && (
-            <div className="text-[var(--aura-text-muted)] mt-0.5 text-xs font-medium aura-tx-colors">
+            <div className="text-dim mt-0.5 text-xs font-medium aura-tx-colors">
               {amount}
             </div>
           )}
           {description ? (
             <div
               className={cn(
-                'text-[var(--aura-text-subtle)] mt-1 text-xs leading-relaxed',
-                isDone && 'line-through text-[var(--aura-text-disabled)]'
+                'text-subtle mt-1 text-xs leading-relaxed',
+                isDone && 'line-through text-faint'
               )}
             >
               {description}
@@ -186,13 +186,13 @@ export function ListItem({
       {/* ИСПРАВЛЕНИЕ #1: Правая часть контейнер - SINGLE opacity управление */}
       <div
         className={cn(
-          'border-[var(--aura-border-soft)] flex shrink-0 items-center min-h-0',
+          'border-soft flex shrink-0 items-center min-h-0',
           borderVisibility
         )}
       >
         {/* ИСПРАВЛЕНИЕ #5: Trailing контент - явная логика по режимам */}
         {trailing && (mode === 'checkbox' || mode === 'active') && (
-          <div className="flex items-center gap-1.5 px-2 py-2 text-xs text-[var(--aura-text-subtle)]">
+          <div className="flex items-center gap-1.5 px-2 py-2 text-xs text-subtle">
             {trailing}
           </div>
         )}
@@ -209,7 +209,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  onMoveUp ? 'text-[var(--aura-text-muted)] hover:text-foreground hover:bg-[var(--aura-action-hover-bg)]' : 'text-[var(--aura-text-disabled)]'
+                  onMoveUp ? 'text-dim hover:text-foreground hover:bg-hover' : 'text-faint'
                 )}
                 aria-label={t('aria.move_up')}
                 disabled={!onMoveUp}
@@ -227,7 +227,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  onMoveDown ? 'text-[var(--aura-text-muted)] hover:text-foreground hover:bg-[var(--aura-action-hover-bg)]' : 'text-[var(--aura-text-disabled)]'
+                  onMoveDown ? 'text-dim hover:text-foreground hover:bg-hover' : 'text-faint'
                 )}
                 aria-label={t('aria.move_down')}
                 disabled={!onMoveDown}
@@ -245,7 +245,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  'text-[var(--aura-text-muted)] hover:text-destructive hover:bg-destructive/10'
+                  'text-dim hover:text-destructive hover:bg-destructive/10'
                 )}
                 aria-label={t('aria.delete_item')}
               >
@@ -279,7 +279,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-[var(--aura-text-muted)] hover:text-foreground hover:bg-[var(--aura-action-hover-bg)]'
+                  'text-dim hover:text-foreground hover:bg-hover'
                 )}
                 aria-label={t('aria.move_up')}
               >
@@ -295,7 +295,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-[var(--aura-text-muted)] hover:text-foreground hover:bg-[var(--aura-action-hover-bg)]'
+                  'text-dim hover:text-foreground hover:bg-hover'
                 )}
                 aria-label={t('aria.move_down')}
               >
@@ -311,7 +311,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-[var(--aura-text-muted)] hover:text-destructive hover:bg-destructive/10'
+                  'text-dim hover:text-destructive hover:bg-destructive/10'
                 )}
                 aria-label={t('aria.delete_item')}
               >

@@ -36,13 +36,13 @@ function RankRibbonCard({ tier, reached, isCurrent, isSelected, onSelect }: Card
     return (
       <div
         className={cn(
-          'isolate flex h-full flex-col items-center justify-center rounded-xl border border-[var(--aura-border-soft)]/50 bg-[var(--aura-surface-panel)] p-2 text-center',
+          'isolate flex h-full flex-col items-center justify-center rounded-xl border border-soft/50 bg-panel p-2 text-center',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura'
         )}
         title={`${tier.name} — ${tier.threshold}+`}
       >
-        <Lock className="size-5 text-[var(--aura-text-subtle)]" aria-hidden />
-        <span className="mt-1 text-xs text-[var(--aura-text-disabled)] tabular-nums">{tier.threshold}+</span>
+        <Lock className="size-5 text-subtle" aria-hidden />
+        <span className="mt-1 text-xs text-faint tabular-nums">{tier.threshold}+</span>
       </div>
     );
   }
@@ -52,7 +52,7 @@ function RankRibbonCard({ tier, reached, isCurrent, isSelected, onSelect }: Card
       type="button"
       onClick={() => onSelect(tier.id)}
       className={cn(
-        'isolate relative flex h-full flex-col items-center justify-center rounded-xl border border-[var(--aura-border-soft)] px-2 py-2 text-center gap-2',
+        'isolate relative flex h-full flex-col items-center justify-center rounded-xl border border-soft px-2 py-2 text-center gap-2',
         'transition-[box-shadow,background-color] duration-aura-base ease-aura',
         'w-full',
         !isCurrent && 'bg-card/85 opacity-95',

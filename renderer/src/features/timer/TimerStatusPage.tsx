@@ -393,11 +393,11 @@ export function TimerStatusPage() {
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
       <Card className={MEGA_SHELL_CARD_CN}>
         <CardContent className={`${MEGA_SHELL_CONTENT_CN} aura-content-fade-in`}>
-          <div className="grid h-full min-h-0 flex-1 grid-cols-1 divide-y divide-[var(--aura-border-soft)] overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,1.48fr)_minmax(0,1fr)] lg:divide-x lg:divide-y-0">
+          <div className="grid h-full min-h-0 flex-1 grid-cols-1 divide-y divide-soft overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,1.48fr)_minmax(0,1fr)] lg:divide-x lg:divide-y-0">
 
             {/* Баннер локального режима */}
             {!ipc ? (
-              <div className="col-span-full border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 py-2 text-xs text-[var(--aura-text-muted)]">
+              <div className="col-span-full border-b border-soft bg-control px-3 py-2 text-xs text-dim">
                 Локальный режим: таймер и задачи работают без Electron, но без трея и фоновой синхронизации.
               </div>
             ) : null}
@@ -418,9 +418,9 @@ export function TimerStatusPage() {
                       <div key={key} className="flex flex-col gap-2.5">
                         {/* Разделитель группы */}
                         <div className="flex items-center gap-3">
-                          <div className="h-px min-w-0 flex-1 bg-[var(--aura-border-soft)]" aria-hidden />
+                          <div className="h-px min-w-0 flex-1 bg-soft" aria-hidden />
                           <p className={cn(MEGA_PANEL_MICRO_TITLE_CN, 'shrink-0')}>{title}</p>
-                          <div className="h-px min-w-0 flex-1 bg-[var(--aura-border-soft)]" aria-hidden />
+                          <div className="h-px min-w-0 flex-1 bg-soft" aria-hidden />
                         </div>
 
                         {byGroup[key].length === 0 ? (
@@ -441,7 +441,7 @@ export function TimerStatusPage() {
                                     'overflow-hidden rounded-lg border bg-transparent aura-tx-colors cursor-pointer',
                                     selected
                                       ? 'border-primary/45 bg-primary/6'
-                                      : 'border-[var(--aura-border-soft)] hover:bg-[var(--aura-action-hover-bg)]',
+                                      : 'border-soft hover:bg-hover',
                                     dayLocked && 'pointer-events-none opacity-55'
                                   )}
                                   onClick={() => {
@@ -458,8 +458,8 @@ export function TimerStatusPage() {
                                     className={cn('rounded-none border-0 bg-transparent shadow-none pointer-events-none', 'hover:border-0 hover:bg-transparent hover:shadow-none', 'aura-tx-surface', dayLocked && 'opacity-65')}
                                     onEdit={undefined}
                                   />
-                                  <div className="space-y-1.5 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-2.5 py-2 sm:px-3">
-                                    <div className="text-[var(--aura-text-subtle)] flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide">
+                                  <div className="space-y-1.5 border-t border-soft bg-panel px-2.5 py-2 sm:px-3">
+                                    <div className="text-subtle flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide">
                                       <span>Цель за день</span>
                                       <span className="tabular-nums text-foreground">{hasTarget ? `${dailyPct}%` : '—'}</span>
                                     </div>
@@ -468,10 +468,10 @@ export function TimerStatusPage() {
                                         className="[&_[data-slot=progress-indicator]]:transition-transform [&_[data-slot=progress-indicator]]:duration-aura-glide [&_[data-slot=progress-indicator]]:ease-aura"
                                         style={{ ['--row-accent' as string]: rowAccent } as CSSProperties}
                                       >
-                                        <Progress value={dailyPct} className="h-1.5 bg-[var(--aura-surface-control)] [&_[data-slot=progress-indicator]]:bg-[var(--row-accent)]" />
+                                        <Progress value={dailyPct} className="h-1.5 bg-control [&_[data-slot=progress-indicator]]:bg-[var(--row-accent)]" />
                                       </div>
                                     ) : (
-                                      <p className="text-[var(--aura-text-subtle)] text-xs leading-snug">Цель не задана в CFG</p>
+                                      <p className="text-subtle text-xs leading-snug">Цель не задана в CFG</p>
                                     )}
                                   </div>
                                 </li>
@@ -502,8 +502,8 @@ export function TimerStatusPage() {
               <div className={cn(MEGA_PANEL_INSET_CN, 'gap-3')}>
                 {/* Полоса соотношения фокус/эскапизм/наполнение */}
                 <div className="flex shrink-0 flex-col items-center gap-2 text-center">
-                  <div className="flex w-full max-w-md flex-col gap-1.5 rounded-lg border border-[var(--aura-border-soft)]/60 bg-[var(--aura-surface-control)]/60 px-2 py-1.5">
-                    <div className="bg-[var(--aura-surface-panel)] h-1.5 w-full overflow-hidden rounded-full" role="img" aria-label="Соотношение времени: фокус, эскапизм, наполнение">
+                  <div className="flex w-full max-w-md flex-col gap-1.5 rounded-lg border border-soft/60 bg-control/60 px-2 py-1.5">
+                    <div className="bg-panel h-1.5 w-full overflow-hidden rounded-full" role="img" aria-label="Соотношение времени: фокус, эскапизм, наполнение">
                       {timerShare.totalSec > 0 ? (
                         <div className="flex h-full w-full">
                           <span className="h-full" style={{ width: `${timerShare.focusPct}%`,   background: GROUP_ACCENT_BY_KEY.tasks   }} title={`Фокус: ${Math.round(timerShare.focusPct)}%`} />
@@ -511,10 +511,10 @@ export function TimerStatusPage() {
                           <span className="h-full" style={{ width: `${timerShare.fillingPct}%`, background: GROUP_ACCENT_BY_KEY.filling }} title={`Наполнение: ${Math.round(timerShare.fillingPct)}%`} />
                         </div>
                       ) : (
-                        <div className="bg-[var(--aura-border-soft)]/40 h-full w-full" />
+                        <div className="bg-soft/40 h-full w-full" />
                       )}
                     </div>
-                    <p className="text-[var(--aura-text-subtle)] text-center text-xs leading-none tabular-nums">
+                    <p className="text-subtle text-center text-xs leading-none tabular-nums">
                       {timerShare.totalSec > 0
                         ? `${Math.round(timerShare.focusPct)} / ${Math.round(timerShare.escapePct)} / ${Math.round(timerShare.fillingPct)}`
                         : '0 / 0 / 0'}
@@ -534,9 +534,9 @@ export function TimerStatusPage() {
                     type="button"
                     onClick={() => setSessionHeroExpanded(true)}
                     className={cn(
-                      'text-foreground flex w-full min-w-0 shrink-0 items-center gap-3 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 py-2.5 text-left shadow-sm',
+                      'text-foreground flex w-full min-w-0 shrink-0 items-center gap-3 rounded-lg border border-soft bg-control px-3 py-2.5 text-left shadow-sm',
                       'motion-safe:transition-[transform,box-shadow,opacity] motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]',
-                      'hover:bg-[var(--aura-action-hover-bg)] focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
+                      'hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
                       'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.99] motion-safe:duration-300'
                     )}
                   >

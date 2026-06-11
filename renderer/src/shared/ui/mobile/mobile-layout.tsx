@@ -63,7 +63,7 @@ export function MobileSectionTabs<T extends string>({
         className
       )}
     >
-      <div className="grid min-h-[3.25rem] grid-flow-col auto-cols-fr gap-1 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-1 shadow-sm">
+      <div className="grid min-h-[3.25rem] grid-flow-col auto-cols-fr gap-1 rounded-lg border border-soft bg-panel p-1 shadow-sm">
         {sections.map((section) => {
           const active = section.id === value;
           const DisplayIcon = locked || section.locked ? Lock : section.Icon;
@@ -77,7 +77,7 @@ export function MobileSectionTabs<T extends string>({
                 'focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
                 active
                   ? 'bg-primary/10 text-primary shadow-none'
-                  : 'text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground active:bg-[var(--aura-action-active-bg)]'
+                  : 'text-subtle hover:bg-hover hover:text-foreground active:bg-active'
               )}
               aria-current={active ? 'page' : undefined}
             >
@@ -173,7 +173,7 @@ export function MobilePanelHeader({
   return (
     <div className={cn('mb-3 flex min-h-11 items-center justify-between gap-3', className)}>
       <div className="flex min-w-0 items-center gap-2">
-        {locked ? <Lock className="size-4 shrink-0 text-[var(--aura-text-subtle)]" aria-hidden /> : null}
+        {locked ? <Lock className="size-4 shrink-0 text-subtle" aria-hidden /> : null}
         <h2 className="min-w-0 truncate text-base font-semibold leading-tight text-foreground">{title}</h2>
       </div>
       {right ? <div className="flex shrink-0 items-center gap-2">{right}</div> : null}

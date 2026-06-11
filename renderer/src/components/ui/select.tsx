@@ -48,7 +48,7 @@ function SelectTrigger({
       data-size={size}
       data-content-align={contentAlign}
       className={cn(
-        "text-foreground flex w-fit items-center justify-between gap-1.5 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] py-2 pl-2.5 pr-2 text-sm whitespace-nowrap shadow-none aura-tx-colors outline-none select-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-[var(--aura-text-disabled)] data-[size=default]:h-9 sm:data-[size=default]:h-8 data-[size=sm]:h-8 sm:data-[size=sm]:h-7 data-[size=sm]:rounded-lg *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "text-foreground flex w-fit items-center justify-between gap-1.5 rounded-lg border border-soft bg-control py-2 pl-2.5 pr-2 text-sm whitespace-nowrap shadow-none aura-tx-colors outline-none select-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-faint data-[size=default]:h-9 sm:data-[size=default]:h-8 data-[size=sm]:h-8 sm:data-[size=sm]:h-7 data-[size=sm]:rounded-lg *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         contentAlign === "center" &&
           "*:data-[slot=select-value]:items-center *:data-[slot=select-value]:justify-center *:data-[slot=select-value]:text-center",
         contentAlign === "start" &&
@@ -78,7 +78,7 @@ function SelectContent({
         data-slot="select-content"
         data-align-trigger={position === "item-aligned"}
         className={cn(
-          "relative z-50 max-h-(--radix-select-content-available-height) min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] text-card-foreground shadow-md ring-1 ring-foreground/5 backdrop-blur-sm",
+          "relative z-50 max-h-(--radix-select-content-available-height) min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg border border-soft bg-panel text-card-foreground shadow-md ring-1 ring-foreground/5 backdrop-blur-sm",
           "duration-aura-fast ease-aura data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
@@ -112,7 +112,7 @@ function SelectLabel({
     <SelectPrimitive.Label
       data-slot="select-label"
       className={cn(
-        "px-2 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--aura-text-muted)]",
+        "px-2 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-dim",
         className
       )}
       {...props}

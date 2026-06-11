@@ -477,14 +477,14 @@ export function DatabaseManagementDialog({
         scroll="content"
         className="flex h-[min(92svh,52rem)] flex-col gap-0 overflow-hidden p-0"
       >
-        <DialogHeader className="shrink-0 border-b border-[var(--aura-border-soft)] px-4 py-3 sm:px-5">
+        <DialogHeader className="shrink-0 border-b border-soft px-4 py-3 sm:px-5">
           <div className="flex min-w-0 items-start gap-3 pr-10">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-primary">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-soft bg-control text-primary">
               <Database className="size-4" />
             </div>
             <div className="min-w-0">
               <DialogTitle className="text-left text-sm font-semibold leading-tight">Управление базой данных</DialogTitle>
-              <DialogDescription className="mt-1 text-left text-xs leading-snug text-[var(--aura-text-muted)]">
+              <DialogDescription className="mt-1 text-left text-xs leading-snug text-dim">
                 Экспорт, импорт и просмотр структуры текущего файла.
               </DialogDescription>
             </div>
@@ -493,9 +493,9 @@ export function DatabaseManagementDialog({
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-4 py-3 sm:px-5">
           <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1.55fr)_minmax(0,0.7fr)_minmax(0,0.7fr)]">
-            <section className="min-w-0 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
+            <section className="min-w-0 rounded-lg border border-soft bg-panel px-3 py-2.5">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-caption font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">Файл базы</p>
+                <p className="text-caption font-semibold uppercase tracking-wide text-dim">Файл базы</p>
                 <Button variant="ghost" size="icon-xs" className="shrink-0" onClick={() => void copyPath()} disabled={!stats?.path} title="Скопировать путь">
                   <Copy className="size-3" />
                 </Button>
@@ -503,43 +503,43 @@ export function DatabaseManagementDialog({
               <button
                 type="button"
                 onClick={openDatabaseFolder}
-                className="mt-1 block max-w-full truncate text-left text-xs text-foreground hover:underline disabled:pointer-events-none disabled:text-[var(--aura-text-disabled)]"
+                className="mt-1 block max-w-full truncate text-left text-xs text-foreground hover:underline disabled:pointer-events-none disabled:text-faint"
                 title={stats?.path || 'Путь не найден'}
                 disabled={!stats?.path}
               >
                 {stats?.path || 'Путь не найден'}
               </button>
             </section>
-            <section className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
-              <p className="text-caption font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">Размер</p>
+            <section className="rounded-lg border border-soft bg-panel px-3 py-2.5">
+              <p className="text-caption font-semibold uppercase tracking-wide text-dim">Размер</p>
               <p className="mt-1 text-base font-semibold tabular-nums text-foreground">{stats?.fileSizeFormatted ?? '—'}</p>
             </section>
-            <section className="rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
-              <p className="text-caption font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">Записи</p>
+            <section className="rounded-lg border border-soft bg-panel px-3 py-2.5">
+              <p className="text-caption font-semibold uppercase tracking-wide text-dim">Записи</p>
               <p className="mt-1 text-base font-semibold tabular-nums text-foreground">{(stats?.totalRecords ?? 0).toLocaleString('ru-RU')}</p>
             </section>
           </div>
 
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[var(--aura-text-muted)]" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-dim" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Найти таблицу: cfg_tasks, diary, nutrition..."
-              className="h-9 rounded-lg border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] pl-9 text-sm shadow-none"
+              className="h-9 rounded-lg border-soft bg-control pl-9 text-sm shadow-none"
             />
           </div>
 
-          <ScrollArea className="min-h-0 flex-1 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)]">
+          <ScrollArea className="min-h-0 flex-1 rounded-lg border border-soft bg-panel">
             <div className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-2">
               {tableGroups.map((group) => (
-                <section key={group.key} className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)] bg-card">
-                  <header className="border-b border-[var(--aura-border-soft)] px-3 py-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">{group.title}</p>
+                <section key={group.key} className="overflow-hidden rounded-lg border border-soft bg-card">
+                  <header className="border-b border-soft px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-dim">{group.title}</p>
                   </header>
-                  <div className="divide-y divide-[var(--aura-border-soft)]">
+                  <div className="divide-y divide-soft">
                     {group.items.length === 0 ? (
-                      <p className="px-3 py-2 text-xs text-[var(--aura-text-muted)]">
+                      <p className="px-3 py-2 text-xs text-dim">
                         {normalizedSearch ? 'Нет совпадений по фильтру' : 'Нет таблиц'}
                       </p>
                     ) : (
@@ -550,12 +550,12 @@ export function DatabaseManagementDialog({
                           <div key={table.name} className="flex items-center justify-between gap-3 px-3 py-2">
                             <div className="min-w-0 flex-1">
                               <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
-                                <Icon className="size-3.5 shrink-0 text-[var(--aura-text-muted)]" />
+                                <Icon className="size-3.5 shrink-0 text-dim" />
                                 <span className="truncate">{meta?.label ?? table.name}</span>
                               </p>
-                              <p className="truncate text-caption text-[var(--aura-text-muted)]">{table.name}</p>
+                              <p className="truncate text-caption text-dim">{table.name}</p>
                             </div>
-                            <span className="shrink-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-1.5 py-0.5 text-xs tabular-nums text-foreground">
+                            <span className="shrink-0 rounded-md border border-soft bg-control px-1.5 py-0.5 text-xs tabular-nums text-foreground">
                               {table.rowCount.toLocaleString('ru-RU')}
                             </span>
                           </div>
@@ -576,7 +576,7 @@ export function DatabaseManagementDialog({
           ) : null}
         </div>
 
-        <DialogFooter variant="flush" className="border-t border-[var(--aura-border-soft)] px-4 py-3 sm:px-5">
+        <DialogFooter variant="flush" className="border-t border-soft px-4 py-3 sm:px-5">
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <Button

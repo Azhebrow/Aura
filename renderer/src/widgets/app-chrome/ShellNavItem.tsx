@@ -44,10 +44,10 @@ export function ShellNavItem({ icon: Icon, iconNode, accentColor, children, isAc
         accentColor
           ? isActive
             ? 'bg-[color-mix(in_oklab,var(--shell-nav-accent)_10%,transparent)] text-foreground'
-            : 'text-[var(--aura-text-subtle)] hover:bg-[color-mix(in_oklab,var(--shell-nav-accent)_7%,transparent)] hover:text-foreground active:scale-[0.98]'
+            : 'text-subtle hover:bg-[color-mix(in_oklab,var(--shell-nav-accent)_7%,transparent)] hover:text-foreground active:scale-[0.98]'
           : isActive
             ? 'bg-primary/10 text-primary'
-            : 'text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground active:scale-[0.98]',
+            : 'text-subtle hover:bg-hover hover:text-foreground active:scale-[0.98]',
         className
       )}
       aria-current={isActive ? 'page' : undefined}

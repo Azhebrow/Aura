@@ -16,7 +16,7 @@ export function EmptyState({ title, hint, icon: Icon = Info, action, tone = 'neu
   return (
     <div
       className={cn(
-        'aura-surface-control mb-2 w-full rounded-xl border border-dashed text-[var(--aura-text-muted)] last:mb-0',
+        'aura-surface-control mb-2 w-full rounded-xl border border-dashed text-dim last:mb-0',
         tone === 'success' && 'border-semantic-success/35 bg-semantic-success/8',
         tone === 'warning' && 'border-semantic-warning/35 bg-semantic-warning/8',
         compact ? 'px-3 py-2.5' : 'px-4 py-3',

@@ -54,25 +54,25 @@ export function FinanceSettingsCard() {
   return (
     <SettingsSectionCard title="Настройки финансов" leadingIcon={PiggyBank}>
       {/* Валюта */}
-      <div className="w-full overflow-hidden rounded-xl border border-[var(--aura-border-soft)]">
+      <div className="w-full overflow-hidden rounded-xl border border-soft">
         {/* Превью выбранной валюты */}
-        <div className="flex items-center gap-3 border-b border-[var(--aura-border-soft)] px-4 py-3">
+        <div className="flex items-center gap-3 border-b border-soft px-4 py-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_oklab,var(--primary)_10%,transparent)]">
             <span className="text-lg font-bold leading-none text-[var(--primary)]">{selected.symbol}</span>
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold leading-snug">{selected.label}</p>
-            <p className="text-xs text-[var(--aura-text-muted)]">{selected.code}</p>
+            <p className="text-xs text-dim">{selected.code}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-1 text-[var(--aura-text-subtle)]">
+          <div className="flex shrink-0 items-center gap-1 text-subtle">
             <Coins className="size-3.5" />
           </div>
         </div>
 
         {/* Строки настроек */}
-        <div className="divide-y divide-[var(--aura-border-soft)]/60">
+        <div className="divide-y divide-soft/60">
           <div className="flex min-h-12 items-center gap-3 px-4">
-            <TrendingUp className="size-3.5 shrink-0 text-[var(--aura-text-subtle)]" />
+            <TrendingUp className="size-3.5 shrink-0 text-subtle" />
             <span className="min-w-0 flex-1 text-sm font-medium">Валюта отображения</span>
             <Select
               value={currency}
@@ -84,7 +84,7 @@ export function FinanceSettingsCard() {
               <SelectTrigger
                 id="settings-currency"
                 contentAlign="start"
-                className="h-8 w-auto min-w-[9rem] border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] text-xs"
+                className="h-8 w-auto min-w-[9rem] border-soft bg-control text-xs"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -94,7 +94,7 @@ export function FinanceSettingsCard() {
                     <span className="flex items-center gap-2">
                       <span className="w-5 text-center font-semibold text-[var(--primary)]">{o.symbol}</span>
                       <span>{o.label}</span>
-                      <span className="text-[var(--aura-text-muted)]">{o.code}</span>
+                      <span className="text-dim">{o.code}</span>
                     </span>
                   </SelectItem>
                 ))}

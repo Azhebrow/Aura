@@ -66,7 +66,7 @@ export function StatsOverviewPage() {
   );
 
   const dataContent = (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--aura-surface-panel)]/25">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel/25">
       <ModeSwitchHeader
         value={desktopView}
         onValueChange={setDesktopView}
@@ -134,8 +134,8 @@ export function StatsOverviewPage() {
                 value={mobileSection}
                 onChange={setMobileSection}
               />
-              <div className="hidden h-full min-h-0 flex-1 grid-cols-[15rem_minmax(0,1fr)] divide-x divide-[var(--aura-border-soft)] overflow-hidden aura-content-fade-in lg:grid xl:grid-cols-[16rem_minmax(0,1fr)]">
-                <aside className="flex min-h-0 flex-col overflow-hidden bg-[var(--aura-surface-panel)]">
+              <div className="hidden h-full min-h-0 flex-1 grid-cols-[15rem_minmax(0,1fr)] divide-x divide-soft overflow-hidden aura-content-fade-in lg:grid xl:grid-cols-[16rem_minmax(0,1fr)]">
+                <aside className="flex min-h-0 flex-col overflow-hidden bg-panel">
                   {filtersContent}
                 </aside>
                 {dataContent}

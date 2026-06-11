@@ -86,7 +86,7 @@ export function useTimerSession(db: AuraDatabase | null, dateString: string, day
       }
 
       if (Math.max(0, Math.floor(m.elapsedTime)) < 60) {
-        console.log('[useTimerSession] Сессия меньше 60 секунд не сохраняется');
+        // Сессия меньше 60 секунд не сохраняется
         pushToMain(next);
         return next;
       }

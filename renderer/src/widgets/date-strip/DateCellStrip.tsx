@@ -187,7 +187,7 @@ export function DateCellStrip() {
   return (
     <div
       ref={wrapRef}
-      className="flex min-w-0 max-w-full flex-1 items-stretch gap-0.5 rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-0.5 sm:gap-1"
+      className="flex min-w-0 max-w-full flex-1 items-stretch gap-0.5 rounded-xl border border-soft bg-panel p-0.5 sm:gap-1"
     >
       <Button
         type="button"

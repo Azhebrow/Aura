@@ -48,8 +48,8 @@ function RitualChecklistRow({
       }}
       className={cn(
         'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--ritual-color)]/35',
-        'group grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-[var(--aura-border-soft)] px-2.5 py-2 text-left aura-tx-colors',
-        'bg-transparent hover:bg-[var(--aura-action-hover-bg)]',
+        'group grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-soft px-2.5 py-2 text-left aura-tx-colors',
+        'bg-transparent hover:bg-hover',
         checked && 'opacity-75'
       )}
       style={{ ['--ritual-color' as string]: color }}
@@ -65,7 +65,7 @@ function RitualChecklistRow({
         <span
           className={cn(
             'block truncate text-sm font-semibold leading-tight text-foreground',
-            checked && 'text-[var(--aura-text-subtle)] line-through decoration-[var(--ritual-color)]/55 decoration-1'
+            checked && 'text-subtle line-through decoration-[var(--ritual-color)]/55 decoration-1'
           )}
         >
           {title}
@@ -73,8 +73,8 @@ function RitualChecklistRow({
         {description ? (
           <span
             className={cn(
-              'mt-0.5 block truncate text-xs leading-snug text-[var(--aura-text-muted)]',
-              checked && 'text-[var(--aura-text-disabled)] line-through decoration-[var(--ritual-color)]/45'
+              'mt-0.5 block truncate text-xs leading-snug text-dim',
+              checked && 'text-faint line-through decoration-[var(--ritual-color)]/45'
             )}
           >
             {description}
@@ -86,8 +86,8 @@ function RitualChecklistRow({
         onCheckedChange={(c) => onCheckedChange(c === true)}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          'size-7 rounded-lg border border-[var(--aura-border-soft)] bg-transparent shadow-none after:hidden',
-          'hover:bg-[var(--aura-action-hover-bg)]',
+          'size-7 rounded-lg border border-soft bg-transparent shadow-none after:hidden',
+          'hover:bg-hover',
           'data-checked:border-transparent data-checked:bg-[var(--ritual-color)] data-checked:text-white data-checked:shadow-none [&_[data-slot=checkbox-indicator]>svg]:size-4'
         )}
         aria-label={title}

@@ -37,7 +37,7 @@ export function CfgPresetProductsPanel({
   return (
     <div className="flex flex-col gap-3">
       {/* Header strip */}
-      <div className="border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] flex items-center justify-between rounded-md border px-3 py-2">
+      <div className="border-soft bg-control flex items-center justify-between rounded-md border px-3 py-2">
         <p className="text-muted-foreground text-xs">Добавьте продукты и укажите порции или граммовку.</p>
         <Button
           type="button"

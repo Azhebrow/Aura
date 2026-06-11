@@ -465,7 +465,7 @@ export function GoalsManagementPanel() {
                 <>
                   {/* Goal card — same visual language as NutritionDaySummaryBar */}
                   <div
-                    className="relative z-20 shrink-0 overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs"
+                    className="relative z-20 shrink-0 overflow-hidden rounded-xl border border-soft bg-card shadow-xs"
                     style={{ '--goal-tint': currentGoalHeroTint } as React.CSSProperties}
                   >
                     {/* Main row: icon + title/meta + edit toggle */}
@@ -487,7 +487,7 @@ export function GoalsManagementPanel() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-nano font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">
+                        <p className="text-nano font-semibold uppercase tracking-wide text-dim">
                           {(goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0) === 1
                             ? '1 этап'
                             : `${goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0} этапов`}
@@ -509,7 +509,7 @@ export function GoalsManagementPanel() {
                           {String(currentGoal.title ?? currentGoal.id)}
                         </p>
                         {currentGoal.description ? (
-                          <p className="mt-1 text-xs leading-relaxed text-[var(--aura-text-subtle)]">
+                          <p className="mt-1 text-xs leading-relaxed text-subtle">
                             {String(currentGoal.description)}
                           </p>
                         ) : null}
@@ -541,7 +541,7 @@ export function GoalsManagementPanel() {
                         pct = p && p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
                       }
                       return (
-                        <div className="h-[3px] w-full bg-[var(--aura-surface-control)]">
+                        <div className="h-[3px] w-full bg-control">
                           <div
                             className="h-full transition-[width] duration-[400ms] ease-out"
                             style={{ width: `${pct}%`, backgroundColor: currentGoalHeroTint, opacity: 0.85 }}
@@ -552,7 +552,7 @@ export function GoalsManagementPanel() {
 
                     {/* Bottom zone: nav dots + edit toolbar / archive info */}
                     {(filteredGoals.length > 1 || editMode || mode === 'archive') ? (
-                      <div className="flex min-h-9 items-center gap-0.5 border-t border-[var(--aura-border-soft)] px-1">
+                      <div className="flex min-h-9 items-center gap-0.5 border-t border-soft px-1">
                         {filteredGoals.length > 1 ? (
                           <Button type="button" variant="ghost" size="icon"
                             className={cn('text-muted-foreground hover:text-foreground', GOALS_RITUALS_ICON_BTN_CN)}
@@ -672,19 +672,19 @@ export function GoalsManagementPanel() {
                         <div
                           key={sid}
                           className={cn(
-                            'overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs',
+                            'overflow-hidden rounded-xl border border-soft bg-card shadow-xs',
                             stageClasses.opacity
                           )}
                         >
                           {/* Stage header */}
-                          <div className="flex items-center gap-2 border-b border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-3 py-2.5">
+                          <div className="flex items-center gap-2 border-b border-soft bg-panel px-3 py-2.5">
                             {/* Number badge */}
                             <div
                               className={cn(
                                 'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-micro font-bold leading-none tracking-wide',
-                                stageState === 'completed' && 'bg-[var(--aura-surface-control)] text-[var(--aura-text-disabled)]',
-                                stageState === 'frozen' && 'bg-[var(--aura-surface-control)] text-[var(--aura-text-disabled)]',
-                                stageState === 'active' && 'bg-[var(--aura-surface-control)] text-[var(--aura-text-muted)]',
+                                stageState === 'completed' && 'bg-control text-faint',
+                                stageState === 'frozen' && 'bg-control text-faint',
+                                stageState === 'active' && 'bg-control text-dim',
                               )}
                               style={stageState === 'current' ? { backgroundColor: goalTint, color: 'white' } : undefined}
                             >
@@ -745,16 +745,16 @@ export function GoalsManagementPanel() {
                               const pct = stageP.percent;
                               return (
                                 <div className="px-3 py-3 space-y-2">
-                                  <div className="flex items-center justify-between text-xs text-[var(--aura-text-muted)]">
+                                  <div className="flex items-center justify-between text-xs text-dim">
                                     <span>Накоплено</span>
                                     {threshold > 0 ? (
                                       <span className="tabular-nums font-medium">{formatHoursMinutes(Math.min(secs, threshold * 3600))} / {threshold}ч</span>
                                     ) : (
-                                      <span className="text-[var(--aura-text-disabled)]">Порог не задан</span>
+                                      <span className="text-faint">Порог не задан</span>
                                     )}
                                   </div>
                                   {threshold > 0 ? (
-                                    <div className="h-2 overflow-hidden rounded-full bg-[var(--aura-surface-control)]">
+                                    <div className="h-2 overflow-hidden rounded-full bg-control">
                                       <div
                                         className="h-full rounded-full aura-tx-width"
                                         style={{ width: `${Math.min(100, pct)}%`, backgroundColor: stageState === 'frozen' ? 'var(--muted-foreground)' : goalTint }}
@@ -767,7 +767,7 @@ export function GoalsManagementPanel() {
 
                             {/* Task list (standard goals only) */}
                             {!isCurrentGoalTimeline && tasks.length > 0 ? (
-                              <div className="divide-y divide-[var(--aura-border-soft)]">
+                              <div className="divide-y divide-soft">
                                 {tasks.map((t, ti) => {
                                   const tid = String(t.id);
                                   const tt = String(t.task_type ?? 'checkbox') === 'number' ? 'number' : 'checkbox';
@@ -784,7 +784,7 @@ export function GoalsManagementPanel() {
                                     firstIncompleteTask.sid === sid &&
                                     firstIncompleteTask.tid === tid;
 
-                                  const taskRowBg = 'hover:bg-[var(--aura-action-hover-bg)]';
+                                  const taskRowBg = 'hover:bg-hover';
                                   return (
                                     <div
                                       key={tid}
@@ -817,7 +817,7 @@ export function GoalsManagementPanel() {
                                                   'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] aura-tx-colors',
                                                   Number(raw?.completed) === 1
                                                     ? 'border-transparent text-white'
-                                                    : 'border-[var(--aura-border-soft)] bg-transparent text-transparent',
+                                                    : 'border-soft bg-transparent text-transparent',
                                                 )}
                                                 style={Number(raw?.completed) === 1 ? { backgroundColor: taskTint } : undefined}
                                               >
@@ -826,14 +826,14 @@ export function GoalsManagementPanel() {
                                               <span className="min-w-0 flex-1">
                                                 <span className={cn(
                                                   'block text-sm font-medium leading-snug',
-                                                  Number(raw?.completed) === 1 && 'text-[var(--aura-text-disabled)] line-through'
+                                                  Number(raw?.completed) === 1 && 'text-faint line-through'
                                                 )}>
                                                   {String(t.title ?? t.id)}
                                                 </span>
                                                 {t.description ? (
                                                   <span className={cn(
                                                     'mt-0.5 block whitespace-pre-wrap text-xs leading-relaxed',
-                                                    Number(raw?.completed) === 1 ? 'text-[var(--aura-text-disabled)] line-through' : 'text-[var(--aura-text-subtle)]'
+                                                    Number(raw?.completed) === 1 ? 'text-faint line-through' : 'text-subtle'
                                                   )}>
                                                     {String(t.description)}
                                                   </span>
@@ -865,7 +865,7 @@ export function GoalsManagementPanel() {
                                         ) : (
                                           <div className="space-y-1.5">
                                             <div className="flex items-start justify-between gap-2">
-                                              <span className={cn('text-sm font-medium leading-snug', isTaskDone && 'text-[var(--aura-text-disabled)] line-through')}>
+                                              <span className={cn('text-sm font-medium leading-snug', isTaskDone && 'text-faint line-through')}>
                                                 {String(t.title ?? t.id)}
                                               </span>
                                               {editMode ? (
@@ -893,7 +893,7 @@ export function GoalsManagementPanel() {
                                             {t.description ? (
                                               <p className={cn(
                                                 'whitespace-pre-wrap text-xs leading-relaxed',
-                                                Number(raw?.completed) === 1 ? 'text-[var(--aura-text-disabled)] line-through' : 'text-[var(--aura-text-subtle)]'
+                                                Number(raw?.completed) === 1 ? 'text-faint line-through' : 'text-subtle'
                                               )}>
                                                 {String(t.description)}
                                               </p>
@@ -903,7 +903,7 @@ export function GoalsManagementPanel() {
                                                 <button
                                                   type="button"
                                                   className={cn(
-                                                    'rounded px-0.5 py-0.5 text-left text-sm aura-tx-colors hover:bg-[var(--aura-action-hover-bg)]',
+                                                    'rounded px-0.5 py-0.5 text-left text-sm aura-tx-colors hover:bg-hover',
                                                     RAW_BUTTON_FOCUS_CN
                                                   )}
                                                   onClick={() =>
@@ -911,7 +911,7 @@ export function GoalsManagementPanel() {
                                                   }
                                                 >
                                                   <span className="text-foreground font-medium tabular-nums">{currentVal}</span>
-                                                  <span className="text-[var(--aura-text-muted)] text-xs"> / {targetLabel}</span>
+                                                  <span className="text-dim text-xs"> / {targetLabel}</span>
                                                 </button>
                                               ) : (
                                                 <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
@@ -919,7 +919,7 @@ export function GoalsManagementPanel() {
                                                     autoFocus
                                                     value={editDraft}
                                                     inputMode="decimal"
-                                                    className="h-8 w-full max-w-[8rem] rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-2 text-sm shadow-xs [appearance:textfield] focus-visible:ring-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                                    className="h-8 w-full max-w-[8rem] rounded-md border border-soft bg-control px-2 text-sm shadow-xs [appearance:textfield] focus-visible:ring-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                                     onChange={(e) =>
                                                       setEditingTaskValues((prev) => ({
                                                         ...prev,
@@ -958,12 +958,12 @@ export function GoalsManagementPanel() {
                                                       }
                                                     }}
                                                   />
-                                                  <span className="text-[var(--aura-text-muted)] text-xs tabular-nums">{targetLabel}</span>
+                                                  <span className="text-dim text-xs tabular-nums">{targetLabel}</span>
                                                 </div>
                                               )}
                                               {/* Progress bar for number task */}
                                               {targetVal > 0 && (
-                                                <div className="h-1 overflow-hidden rounded-full bg-[var(--aura-surface-panel)]">
+                                                <div className="h-1 overflow-hidden rounded-full bg-panel">
                                                   <div
                                                     className="h-full rounded-full aura-tx-width"
                                                     style={{ width: `${Math.min(100, pct)}%`, backgroundColor: taskTint }}
@@ -988,7 +988,7 @@ export function GoalsManagementPanel() {
                             ) : null}
 
                             {editMode && !isCurrentGoalTimeline ? (
-                              <div className="border-t border-[var(--aura-border-soft)] px-3 py-2">
+                              <div className="border-t border-soft px-3 py-2">
                                 <AddListButton
                                   label="Добавить задачу"
                                   onClick={() => (setTaskStageId(sid), setTaskDialog({ open: true, editId: null }))}

@@ -26,14 +26,14 @@ export function AddListButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'h-9 w-full justify-center gap-2 rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)]/40 text-sm font-medium text-[var(--aura-text-muted)] shadow-none overflow-visible',
-        'hover:border-[var(--aura-border-soft)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground',
+        'h-9 w-full justify-center gap-2 rounded-xl border border-soft bg-control/40 text-sm font-medium text-dim shadow-none overflow-visible',
+        'hover:border-soft hover:bg-hover hover:text-foreground',
         'focus-visible:ring-2 focus-visible:ring-ring/40',
         'disabled:pointer-events-none disabled:opacity-40',
         className
       )}
     >
-      <Plus className="size-4 shrink-0 text-[var(--aura-text-muted)] group-hover/button:text-foreground" strokeWidth={2} />
+      <Plus className="size-4 shrink-0 text-dim group-hover/button:text-foreground" strokeWidth={2} />
       <span className="truncate">{displayLabel}</span>
     </Button>
   );

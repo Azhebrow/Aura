@@ -60,30 +60,30 @@ function FieldRow({ field }: { field: SettingsReference['fields'][number] }) {
       className={cn(
         'rounded-md transition-all duration-200 cursor-pointer select-none overflow-hidden',
         open
-          ? cn(m?.bg ?? 'bg-muted/20', m?.border ? `border ${m.border}` : 'border border-[var(--aura-border-soft)]')
-          : 'border border-transparent hover:bg-[var(--aura-surface-item)] hover:border-[var(--aura-border-soft)]'
+          ? cn(m?.bg ?? 'bg-muted/20', m?.border ? `border ${m.border}` : 'border border-soft')
+          : 'border border-transparent hover:bg-item hover:border-soft'
       )}
       onClick={() => setOpen(p => !p)}
     >
       {/* Compact main row */}
       <div className="flex items-center gap-2 px-2 py-1">
-        <Icon className={cn('size-3 shrink-0 transition-colors', open ? (m?.color ?? 'text-muted-foreground') : 'text-[var(--aura-text-subtle)]')} aria-hidden />
+        <Icon className={cn('size-3 shrink-0 transition-colors', open ? (m?.color ?? 'text-muted-foreground') : 'text-subtle')} aria-hidden />
         <span className={cn('flex-1 min-w-0 truncate text-xs font-medium transition-colors', open ? 'text-foreground' : 'text-foreground/75')}>
           {field.name}
         </span>
         <div className="flex items-center gap-1 shrink-0">
           {field.required && <span className={cn('font-bold transition-colors', open ? 'text-primary' : 'text-primary/60')}>*</span>}
-          <span className={cn('text-micro font-bold uppercase tracking-wider transition-colors', open ? (m?.color ?? 'text-muted-foreground') : 'text-[var(--aura-text-subtle)]')}>
+          <span className={cn('text-micro font-bold uppercase tracking-wider transition-colors', open ? (m?.color ?? 'text-muted-foreground') : 'text-subtle')}>
             {m?.label ?? field.type}
           </span>
-          <ChevronDown className={cn('size-3 shrink-0 text-[var(--aura-text-subtle)] transition-transform duration-200 ml-0.5', open && 'rotate-180')} />
+          <ChevronDown className={cn('size-3 shrink-0 text-subtle transition-transform duration-200 ml-0.5', open && 'rotate-180')} />
         </div>
       </div>
 
       {/* Expanded description */}
       <div className={cn('grid transition-all duration-200', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
         <div className="overflow-hidden">
-          <p className="px-2 pb-2 pt-0.5 text-caption leading-relaxed text-[var(--aura-text-muted)]">
+          <p className="px-2 pb-2 pt-0.5 text-caption leading-relaxed text-dim">
             {field.description}
             {field.required && <span className="ml-1.5 font-semibold text-primary/60">· обязательное</span>}
           </p>
@@ -98,16 +98,16 @@ function FieldRow({ field }: { field: SettingsReference['fields'][number] }) {
 function TaskDetail({ guide }: { guide: TaskTypeGuide }) {
   return (
     <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2 text-xs">
-      <div className="rounded-md bg-[var(--aura-surface-raised)] px-2.5 py-2">
-        <p className="text-micro font-bold uppercase tracking-widest text-[var(--aura-text-muted)] mb-1">Как выполнять</p>
+      <div className="rounded-md bg-raised px-2.5 py-2">
+        <p className="text-micro font-bold uppercase tracking-widest text-dim mb-1">Как выполнять</p>
         <p className="leading-relaxed text-foreground/75">{guide.howToComplete}</p>
       </div>
-      <div className="rounded-md bg-[var(--aura-surface-raised)] px-2.5 py-2">
-        <p className="text-micro font-bold uppercase tracking-widest text-[var(--aura-text-muted)] mb-1">Пример</p>
+      <div className="rounded-md bg-raised px-2.5 py-2">
+        <p className="text-micro font-bold uppercase tracking-widest text-dim mb-1">Пример</p>
         <p className="leading-relaxed text-foreground/75">{guide.example}</p>
       </div>
       {guide.note && (
-        <p className="sm:col-span-2 text-[var(--aura-text-subtle)] italic leading-relaxed">{guide.note}</p>
+        <p className="sm:col-span-2 text-subtle italic leading-relaxed">{guide.note}</p>
       )}
     </div>
   );
@@ -117,7 +117,7 @@ function TaskDetail({ guide }: { guide: TaskTypeGuide }) {
 
 function SLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-micro font-bold uppercase tracking-[0.15em] text-[var(--aura-text-muted)] mb-2">
+    <p className="text-micro font-bold uppercase tracking-[0.15em] text-dim mb-2">
       {children}
     </p>
   );
@@ -145,25 +145,25 @@ export function SettingsReferenceBlock({
     : reference.fields;
 
   return (
-    <div className="rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] overflow-hidden text-xs">
+    <div className="rounded-xl border border-soft bg-panel overflow-hidden text-xs">
 
       {/* ── Шапка ── */}
-      <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-[var(--aura-border-soft)] bg-[color-mix(in_oklab,var(--aura-surface-raised)_50%,transparent)]">
+      <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-soft bg-[color-mix(in_oklab,var(--aura-surface-raised)_50%,transparent)]">
         <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
           <reference.icon className="size-3.5 text-primary" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-sm font-semibold text-foreground">{reference.title}</span>
-            <span className="shrink-0 rounded border border-[var(--aura-border-soft)] bg-[var(--aura-surface-item)] px-1.5 py-px text-micro font-bold uppercase tracking-wider text-[var(--aura-text-subtle)]">
+            <span className="shrink-0 rounded border border-soft bg-item px-1.5 py-px text-micro font-bold uppercase tracking-wider text-subtle">
               справочник
             </span>
           </div>
-          <p className="text-[var(--aura-text-muted)] leading-snug text-caption">{reference.definition}</p>
+          <p className="text-dim leading-snug text-caption">{reference.definition}</p>
         </div>
       </div>
 
-      <div className="divide-y divide-[var(--aura-border-soft)]">
+      <div className="divide-y divide-soft">
 
         {/* ── Где используется ── */}
         {reference.usedOn.length > 0 && (
@@ -173,15 +173,15 @@ export function SettingsReferenceBlock({
               {reference.usedOn.map((u, i) =>
                 u.isNavLink && u.sectionId ? (
                   <button key={i} type="button" onClick={() => onNavigate?.(u.sectionId!)}
-                    className="inline-flex items-center gap-1 text-[var(--aura-text-muted)] hover:text-foreground aura-tx-colors">
+                    className="inline-flex items-center gap-1 text-dim hover:text-foreground aura-tx-colors">
                     <span>{u.page}</span>
-                    <span className="text-[var(--aura-text-disabled)]">›</span>
+                    <span className="text-faint">›</span>
                     <span className="font-medium text-primary/80 hover:text-primary">{u.section}</span>
                   </button>
                 ) : (
-                  <span key={i} className="inline-flex items-center gap-1 text-[var(--aura-text-muted)]">
+                  <span key={i} className="inline-flex items-center gap-1 text-dim">
                     <span>{u.page}</span>
-                    <span className="text-[var(--aura-text-disabled)]">›</span>
+                    <span className="text-faint">›</span>
                     <span>{u.section}</span>
                   </span>
                 )
@@ -195,7 +195,7 @@ export function SettingsReferenceBlock({
           <div className="px-3.5 py-3">
             <div className="flex items-center justify-between mb-2">
               <SLabel>Поля</SLabel>
-              <span className="text-micro font-bold text-[var(--aura-text-subtle)] -mt-2">{fields.length} полей · нажмите для описания</span>
+              <span className="text-micro font-bold text-subtle -mt-2">{fields.length} полей · нажмите для описания</span>
             </div>
             <div className="flex flex-col gap-0.5">
               {fields.map((f) => (
@@ -221,7 +221,7 @@ export function SettingsReferenceBlock({
                       'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
                       isOpen
                         ? 'border-primary/30 bg-primary/10 text-primary'
-                        : 'border-[var(--aura-border-soft)] bg-[var(--aura-surface-item)] text-[var(--aura-text-subtle)] hover:border-[var(--aura-border-strong)] hover:text-foreground'
+                        : 'border-soft bg-item text-subtle hover:border-strong hover:text-foreground'
                     )}>
                     {Icon && <Icon className={cn('size-3 shrink-0', isOpen ? 'text-primary' : (m?.color ?? ''))} aria-hidden />}
                     {t.name}
@@ -234,9 +234,9 @@ export function SettingsReferenceBlock({
                 const Icon = m?.icon;
                 return (
                   <span key={t.type} title={t.unavailableReason}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--aura-border-soft)] px-2 py-1 text-xs opacity-35">
-                    {Icon && <Icon className="size-3 shrink-0 text-[var(--aura-text-disabled)]" aria-hidden />}
-                    <span className="line-through text-[var(--aura-text-disabled)]">{t.name}</span>
+                    className="inline-flex items-center gap-1.5 rounded-md border border-soft px-2 py-1 text-xs opacity-35">
+                    {Icon && <Icon className="size-3 shrink-0 text-faint" aria-hidden />}
+                    <span className="line-through text-faint">{t.name}</span>
                   </span>
                 );
               })}
@@ -245,7 +245,7 @@ export function SettingsReferenceBlock({
               const guide = available.find(t => t.type === openTaskType);
               return guide ? (
                 <div>
-                  <p className="mt-2.5 text-[var(--aura-text-muted)] leading-relaxed">{guide.description}</p>
+                  <p className="mt-2.5 text-dim leading-relaxed">{guide.description}</p>
                   <TaskDetail guide={guide} />
                 </div>
               ) : null;
@@ -263,7 +263,7 @@ export function SettingsReferenceBlock({
                   <span className="mt-[5px] size-1 shrink-0 rounded-full bg-primary/70" />
                   <div className="min-w-0">
                     <span className="font-semibold text-foreground">{imp.title}</span>
-                    <span className="text-[var(--aura-text-subtle)] mx-1.5">·</span>
+                    <span className="text-subtle mx-1.5">·</span>
                     <span className="text-foreground/70">{imp.description}</span>
                   </div>
                 </div>
@@ -281,9 +281,9 @@ export function SettingsReferenceBlock({
                 const ref = SETTINGS_REFERENCES[rel.sectionId];
                 return (
                   <button key={i} type="button" onClick={() => onNavigate?.(rel.sectionId)} title={rel.reason}
-                    className="inline-flex items-center gap-1 text-[var(--aura-text-muted)] hover:text-foreground aura-tx-colors">
+                    className="inline-flex items-center gap-1 text-dim hover:text-foreground aura-tx-colors">
                     <span className="font-medium">{ref?.title ?? rel.sectionId}</span>
-                    <span className="text-[var(--aura-text-disabled)]">→</span>
+                    <span className="text-faint">→</span>
                   </button>
                 );
               })}
@@ -301,15 +301,15 @@ export function SettingsReferenceBlock({
                 return (
                   <div key={i}>
                     <button type="button" onClick={() => setOpenFuncIdx(p => p === i ? null : i)}
-                      className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-[var(--aura-action-hover-bg)]">
+                      className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-hover">
                       <span className="font-medium text-foreground">{func.name}</span>
-                      <ChevronDown className={cn('size-3.5 shrink-0 text-[var(--aura-text-subtle)] transition-transform duration-150', isOpen && 'rotate-180')} />
+                      <ChevronDown className={cn('size-3.5 shrink-0 text-subtle transition-transform duration-150', isOpen && 'rotate-180')} />
                     </button>
                     <div className={cn('grid transition-all duration-200', isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
                       <div className="overflow-hidden">
-                        <div className="mx-2 mb-1.5 mt-0.5 rounded-md bg-[var(--aura-surface-raised)] px-3 py-2.5">
+                        <div className="mx-2 mb-1.5 mt-0.5 rounded-md bg-raised px-3 py-2.5">
                           <p className="leading-relaxed text-foreground/75 mb-2">{func.description}</p>
-                          <p className="text-micro font-bold uppercase tracking-widest text-[var(--aura-text-muted)] mb-1">Пример</p>
+                          <p className="text-micro font-bold uppercase tracking-widest text-dim mb-1">Пример</p>
                           <p className="text-caption text-foreground/70 leading-relaxed">{func.example}</p>
                         </div>
                       </div>

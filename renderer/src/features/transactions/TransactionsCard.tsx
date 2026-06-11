@@ -101,7 +101,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                     return (
                       <div
                         key={acc.id}
-                        className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-transparent"
+                        className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-soft bg-transparent"
                         style={{ '--acc-color': acc.color } as React.CSSProperties}
                       >
                         <div className="flex min-w-0 flex-col gap-1.5 px-2.5 py-2.5">
@@ -111,7 +111,7 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                                 ? <AuraThemedIcon name={acc.icon} size={14} tint={acc.color} />
                                 : <Wallet className="size-3.5" style={{ color: acc.color }} />}
                             </span>
-                            <p className="min-w-0 truncate text-[0.7rem] font-semibold leading-none text-[var(--aura-text-muted)]">{acc.title}</p>
+                            <p className="min-w-0 truncate text-[0.7rem] font-semibold leading-none text-dim">{acc.title}</p>
                           </div>
                           <p
                             className="min-w-0 truncate text-xs font-semibold leading-tight text-foreground tabular-nums"
@@ -119,12 +119,12 @@ export function TransactionsCard({ cardClassName, contentClassName }: Transactio
                           >
                             {formatAmount(acc.balance, currency)}
                             {hasTarget ? (
-                              <span className="text-[var(--aura-text-disabled)]"> / {formatAmount(acc.target, currency)}</span>
+                              <span className="text-faint"> / {formatAmount(acc.target, currency)}</span>
                             ) : null}
                           </p>
                         </div>
                         {isSavings && (
-                          <div className="h-[2px] w-full bg-[var(--aura-border-soft)]/60">
+                          <div className="h-[2px] w-full bg-soft/60">
                             <div
                               className="h-full transition-all duration-[400ms] ease-out"
                               style={{ width: `${hasTarget ? pct : 0}%`, backgroundColor: acc.color, opacity: 0.75 }}

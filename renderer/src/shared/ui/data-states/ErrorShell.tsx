@@ -19,7 +19,7 @@ export function ErrorShell({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-aura-sm rounded-lg border border-dashed border-[var(--aura-border-soft)] bg-transparent p-aura-lg text-center',
+        'flex flex-col items-center justify-center gap-aura-sm rounded-lg border border-dashed border-soft bg-transparent p-aura-lg text-center',
         className
       )}
     >

@@ -6,7 +6,7 @@ export function DateStrip() {
   const { dateString, addDays, canGoNext } = useSelectedDate();
 
   return (
-    <div className="flex max-w-md flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-1 py-0.5">
+    <div className="flex max-w-md flex-1 items-center justify-center gap-1 rounded-lg border border-soft bg-panel px-1 py-0.5">
       <Button
         type="button"
         variant="ghost"

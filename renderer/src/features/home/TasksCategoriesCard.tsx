@@ -57,8 +57,8 @@ function CategorySection({
   return (
     <section
       className={cn(
-        'flex min-h-max flex-col overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] shadow-sm [@container(min-width:720px)]:min-h-0 [@container(min-width:720px)]:rounded-none [@container(min-width:720px)]:border-0 [@container(min-width:720px)]:bg-transparent [@container(min-width:720px)]:shadow-none',
-        idx !== 3 && '[@container(min-width:720px)]:border-r [@container(min-width:720px)]:border-[var(--aura-border-soft)]/60',
+        'flex min-h-max flex-col overflow-hidden rounded-xl border border-soft bg-panel shadow-sm [@container(min-width:720px)]:min-h-0 [@container(min-width:720px)]:rounded-none [@container(min-width:720px)]:border-0 [@container(min-width:720px)]:bg-transparent [@container(min-width:720px)]:shadow-none',
+        idx !== 3 && '[@container(min-width:720px)]:border-r [@container(min-width:720px)]:border-soft/60',
         dayLocked && 'pointer-events-none opacity-50'
       )}
     >
@@ -72,14 +72,14 @@ function CategorySection({
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg sm:size-9 sm:rounded-xl"
             style={{ background: `color-mix(in oklab, ${accent} 16%, transparent)` }} aria-hidden>
             {dayLocked
-              ? <Lock size={12} className="text-[var(--aura-text-muted)]" />
+              ? <Lock size={12} className="text-dim" />
               : <ColoredAuraIcon name={headerIcon} size={14} tint={accent} />}
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="min-w-0 truncate text-sm font-black leading-none sm:text-base" style={{ color: accent }}>
               {label}
             </h3>
-            <p className="mt-1 text-[0.65rem] font-semibold leading-none text-[var(--aura-text-muted)] sm:text-caption">
+            <p className="mt-1 text-[0.65rem] font-semibold leading-none text-dim sm:text-caption">
               {tasks.length ? formatTaskCountRu(tasks.length) : 'Нет задач'}
             </p>
           </div>
@@ -97,10 +97,10 @@ function CategorySection({
       {/* Task list */}
       {tasks.length === 0 ? (
         <div className="flex h-11 items-center justify-center">
-          <span className="text-xs text-[var(--aura-text-disabled)]">—</span>
+          <span className="text-xs text-faint">—</span>
         </div>
       ) : (
-        <ul className="flex min-h-0 flex-1 flex-col divide-y divide-[var(--aura-border-soft)]/40 overflow-y-auto overscroll-y-contain">
+        <ul className="flex min-h-0 flex-1 flex-col divide-y divide-soft/40 overflow-y-auto overscroll-y-contain">
           {tasks.map((t) => {
             const taskId = String(t.id);
             return (

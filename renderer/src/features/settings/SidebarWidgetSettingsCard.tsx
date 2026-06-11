@@ -42,7 +42,7 @@ function MetricPill({ metricKey, checked, onChange }: { metricKey: SidebarMetric
         'focus-visible:ring-2 focus-visible:ring-ring/60',
         checked
           ? 'border-primary/25 bg-primary/10 text-foreground'
-          : 'border-[var(--aura-border-soft)] bg-transparent text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground',
+          : 'border-soft bg-transparent text-subtle hover:bg-hover hover:text-foreground',
       )}
     >
       <Icon className={cn('size-3.5 shrink-0', checked ? 'text-primary' : 'opacity-40')} aria-hidden />
@@ -84,7 +84,7 @@ export function SidebarWidgetSettingsCard() {
     <SettingsSectionCard title="Виджет боковой панели" leadingIcon={PanelLeft} contentClassName="gap-3">
       <div className="flex items-center justify-between gap-3">
         <p className="aura-label">Показатели</p>
-        <span className="text-caption font-medium text-[var(--aura-text-subtle)]">{enabledMetrics.length}/{SIDEBAR_CORE_METRICS.length}</span>
+        <span className="text-caption font-medium text-subtle">{enabledMetrics.length}/{SIDEBAR_CORE_METRICS.length}</span>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {SIDEBAR_CORE_METRICS.map((key) => (
@@ -101,7 +101,7 @@ export function SidebarWidgetSettingsCard() {
           />
         ))}
       </div>
-      <p className="text-caption font-medium leading-relaxed text-[var(--aura-text-subtle)]">
+      <p className="text-caption font-medium leading-relaxed text-subtle">
         Виджет автоматически скрывается при низкой высоте окна, чтобы пункты меню оставались доступными.
       </p>
     </SettingsSectionCard>

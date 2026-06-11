@@ -25,7 +25,7 @@ type MacroItem = {
 
 function FlushBar({ value, color, className }: { value: number; color: string; className?: string }) {
   return (
-    <div className={cn('h-1 w-full bg-[var(--aura-surface-panel)]', className)}>
+    <div className={cn('h-1 w-full bg-panel', className)}>
       <div
         className="h-full opacity-75 transition-all duration-[400ms] ease-out"
         style={{ width: `${Math.max(0, Math.min(100, value))}%`, backgroundColor: color }}
@@ -48,7 +48,7 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
   ];
 
   return (
-    <div className={cn('overflow-hidden rounded-xl border border-[var(--aura-border-soft)] bg-card shadow-xs', className)}>
+    <div className={cn('overflow-hidden rounded-xl border border-soft bg-card shadow-xs', className)}>
       {/* Calories row */}
       <div
         className="flex items-center justify-between gap-3 px-3 py-2.5"
@@ -59,24 +59,24 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
             <Flame className="size-4" strokeWidth={1.75} aria-hidden />
           </div>
           <div className="min-w-0">
-            <p className="text-nano font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">
+            <p className="text-nano font-semibold uppercase tracking-wide text-dim">
               {t('macros.calories')}
             </p>
             <p className="text-base font-semibold tabular-nums tracking-tight text-foreground">
               {Math.round(totals.calories)}
               {kcalHas ? (
-                <span className="text-xs font-normal text-[var(--aura-text-subtle)]">
+                <span className="text-xs font-normal text-subtle">
                   {' '}/ {Math.round(targets.calories)}
                 </span>
               ) : null}
-              <span className="ml-1 text-nano font-normal normal-case text-[var(--aura-text-subtle)]">
+              <span className="ml-1 text-nano font-normal normal-case text-subtle">
                 {t('macros.kcal')}
               </span>
             </p>
           </div>
         </div>
         {kcalHas ? (
-          <span className="shrink-0 text-xs tabular-nums text-[var(--aura-text-muted)]">{kcalPct}%</span>
+          <span className="shrink-0 text-xs tabular-nums text-dim">{kcalPct}%</span>
         ) : null}
       </div>
 
@@ -88,7 +88,7 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
       />
 
       {/* Macros — 3-column grid */}
-      <div className="grid grid-cols-3 divide-x divide-[var(--aura-border-soft)] border-t border-[var(--aura-border-soft)]">
+      <div className="grid grid-cols-3 divide-x divide-soft border-t border-soft">
         {macros.map(({ Icon, label, current, target, color }) => {
           const hasT = target > 0;
           const p = hasT ? pct(current, target) : current > 0 ? 100 : 0;
@@ -102,17 +102,17 @@ export function NutritionDaySummaryBar({ totals, targets, className }: Props) {
                 <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--macro-color)_25%,transparent)] bg-[color-mix(in_oklab,var(--macro-color)_12%,transparent)] text-[var(--macro-color)]">
                   <Icon className="size-3" strokeWidth={1.75} aria-hidden />
                 </div>
-                <span className="truncate text-nano font-semibold uppercase tracking-wide text-[var(--aura-text-muted)]">
+                <span className="truncate text-nano font-semibold uppercase tracking-wide text-dim">
                   {label}
                 </span>
               </div>
               <p className="text-sm font-semibold tabular-nums text-foreground">
                 {Math.round(current)}
-                <span className="text-nano font-normal text-[var(--aura-text-subtle)]">
+                <span className="text-nano font-normal text-subtle">
                   {hasT ? ` / ${Math.round(target)} г` : ' г'}
                 </span>
               </p>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--aura-surface-control)]">
+              <div className="h-1 w-full overflow-hidden rounded-full bg-control">
                 <div
                   className="h-full rounded-full opacity-75 transition-all duration-[400ms] ease-out"
                   style={{ width: `${p}%`, backgroundColor: color }}

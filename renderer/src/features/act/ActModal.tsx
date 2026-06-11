@@ -79,7 +79,7 @@ export function ActModal({
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="h-8 w-8 shrink-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] p-0 text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground"
+                  className="h-8 w-8 shrink-0 rounded-md border border-soft bg-control p-0 text-dim hover:bg-hover hover:text-foreground"
                 >
                   <XIcon className="size-4" />
                   <span className="sr-only">{t('action.close')}</span>
@@ -98,7 +98,7 @@ export function ActModal({
 }
 
 export function ActTableBox({ children }: { children: ReactNode }) {
-  return <div className="overflow-hidden rounded-lg border border-[var(--aura-border-soft)]">{children}</div>;
+  return <div className="overflow-hidden rounded-lg border border-soft">{children}</div>;
 }
 
 type ActFieldProps = {
@@ -112,11 +112,11 @@ export function ActField({ id, label, children, className }: ActFieldProps) {
   return (
     <div
       className={cn(
-        'grid grid-cols-1 border-b border-[var(--aura-border-soft)] last:border-b-0 sm:grid-cols-[minmax(9rem,28%)_1fr] sm:divide-x sm:divide-[var(--aura-border-soft)]',
+        'grid grid-cols-1 border-b border-soft last:border-b-0 sm:grid-cols-[minmax(9rem,28%)_1fr] sm:divide-x sm:divide-soft',
         className
       )}
     >
-      <div className="flex items-center justify-center bg-[var(--aura-surface-panel)] px-2 py-2 text-center sm:min-h-9 sm:px-3">
+      <div className="flex items-center justify-center bg-panel px-2 py-2 text-center sm:min-h-9 sm:px-3">
         <label
           htmlFor={id}
           className="text-foreground cursor-default text-xs font-semibold leading-snug break-words"
@@ -276,7 +276,7 @@ export function ActAffixValueField({
         disabled={disabled}
         onClick={start}
         className={cn(
-          'flex h-9 w-full min-w-0 items-center justify-center rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 text-center text-sm text-foreground shadow-xs aura-tx-colors hover:bg-[var(--aura-action-hover-bg)]',
+          'flex h-9 w-full min-w-0 items-center justify-center rounded-md border border-soft bg-control px-3 text-center text-sm text-foreground shadow-xs aura-tx-colors hover:bg-hover',
           disabled && 'disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50'
         )}
       >
@@ -327,7 +327,7 @@ export function ActAffixValueField({
         }
       }}
       className={cn(
-        'h-9 w-full min-w-0 rounded-md border border-[var(--aura-border-soft)] bg-[var(--aura-surface-control)] px-3 text-center text-sm shadow-xs',
+        'h-9 w-full min-w-0 rounded-md border border-soft bg-control px-3 text-center text-sm shadow-xs',
         (inputKind === 'number' || inputKind === 'integer') && 'tabular-nums'
       )}
     />
@@ -354,7 +354,7 @@ export function ActModalFooter({
   const { t } = useTranslation('common');
   const displayCancelLabel = cancelLabel ?? t('action.cancel');
   return (
-    <div data-modal-footer="true" className="grid shrink-0 grid-cols-2 gap-2 border-t border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] px-4 py-3 sm:px-5">
+    <div data-modal-footer="true" className="grid shrink-0 grid-cols-2 gap-2 border-t border-soft bg-panel px-4 py-3 sm:px-5">
       <Button data-modal-cancel="true" type="button" variant="outline" className="h-10 w-full rounded-md" onClick={onCancel}>
         {displayCancelLabel}
       </Button>

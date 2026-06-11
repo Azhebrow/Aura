@@ -166,7 +166,7 @@ export function HomeOverviewPage() {
             <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
               <MegaPanelHeader title="Прогресс" />
               <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
-                <CategoryProgressCard contentClassName="min-h-0 flex-1 rounded-lg border border-[var(--aura-border-soft)] bg-[var(--aura-surface-panel)] p-2 shadow-sm" />
+                <CategoryProgressCard contentClassName="min-h-0 flex-1 rounded-lg border border-soft bg-panel p-2 shadow-sm" />
               </div>
             </section>
           ),
@@ -175,7 +175,7 @@ export function HomeOverviewPage() {
   ].filter(Boolean) as Array<{ id: 'tasks' | 'tx' | 'plans' | 'chart'; label: string; Icon: typeof ListTodo; content: ReactNode }>, [showTasks, showTx, showPlans, showChart]);
 
   const desktopGrid = (sampleRows = false) => (
-    <div className="flex min-h-0 flex-1 flex-col divide-y divide-[var(--aura-border-soft)] h-full">
+    <div className="flex min-h-0 flex-1 flex-col divide-y divide-soft h-full">
       {showTasks ? (
         <section
           className={cn(
@@ -194,8 +194,8 @@ export function HomeOverviewPage() {
           <div
             className={cn(
               'flex min-h-0 flex-1 h-full overflow-hidden',
-              visibleBottomPanels === 1 && 'flex-col divide-y divide-[var(--aura-border-soft)]',
-              visibleBottomPanels >= 2 && 'flex-row divide-x divide-[var(--aura-border-soft)]'
+              visibleBottomPanels === 1 && 'flex-col divide-y divide-soft',
+              visibleBottomPanels >= 2 && 'flex-row divide-x divide-soft'
             )}
           >
             {showTx ? (

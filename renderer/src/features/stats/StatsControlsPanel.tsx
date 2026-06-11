@@ -66,10 +66,10 @@ function daysBetween(start: string, end: string): number {
   return Math.round((new Date(`${end}T00:00:00`).getTime() - new Date(`${start}T00:00:00`).getTime()) / 86400000);
 }
 
-const LBL = 'text-[var(--aura-text-muted)] text-caption font-medium uppercase tracking-wider';
-const GRID_SHELL = 'grid grid-cols-2 gap-1 rounded-md border border-[var(--aura-border-soft)] bg-transparent p-1';
-const INPUT_CN = 'h-8 w-full rounded-md border-[var(--aura-border-soft)] bg-transparent px-2 !text-xs shadow-none';
-const SEP = 'border-t border-[var(--aura-border-soft)]';
+const LBL = 'text-dim text-caption font-medium uppercase tracking-wider';
+const GRID_SHELL = 'grid grid-cols-2 gap-1 rounded-md border border-soft bg-transparent p-1';
+const INPUT_CN = 'h-8 w-full rounded-md border-soft bg-transparent px-2 !text-xs shadow-none';
+const SEP = 'border-t border-soft';
 
 function Chip({
   active, onClick, icon: Icon, label,
@@ -84,7 +84,7 @@ function Chip({
         'flex h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded-sm px-2 text-xs font-normal leading-none aura-tx-colors',
         active
           ? 'bg-primary/15 text-primary ring-1 ring-primary/25 font-medium'
-          : 'text-[var(--aura-text-muted)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
+          : 'text-dim hover:bg-hover hover:text-foreground'
       )}
     >
       {Icon && <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={1.75} />}
@@ -95,9 +95,9 @@ function Chip({
 
 function DateField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <label className="relative flex h-8 w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border border-[var(--aura-border-soft)] bg-transparent px-2 text-xs shadow-none aura-tx-colors hover:bg-[var(--aura-action-hover-bg)] focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/60">
+    <label className="relative flex h-8 w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border border-soft bg-transparent px-2 text-xs shadow-none aura-tx-colors hover:bg-hover focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/60">
       <span className="pointer-events-none flex min-w-0 items-center justify-center gap-1.5 text-foreground">
-        <Calendar className="size-3.5 shrink-0 text-[var(--aura-text-muted)]" aria-hidden />
+        <Calendar className="size-3.5 shrink-0 text-dim" aria-hidden />
         <span className="tabular-nums">{value}</span>
       </span>
       <Input
@@ -164,7 +164,7 @@ export function StatsControlsPanel({ state, onChange, seriesKeys, meta }: Props)
       <div className="space-y-1 pb-2.5">
         <p className={LBL}>Режим</p>
         <Select value={state.mode} onValueChange={(v) => onChange({ mode: v as StatsMode, selectedSeriesKeys: null })}>
-          <SelectTrigger className="h-8 w-full rounded-md border-[var(--aura-border-soft)] bg-transparent text-xs shadow-none">
+          <SelectTrigger className="h-8 w-full rounded-md border-soft bg-transparent text-xs shadow-none">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -214,7 +214,7 @@ export function StatsControlsPanel({ state, onChange, seriesKeys, meta }: Props)
           ))}
         </div>
         {activeAgg && (
-          <p className="text-[var(--aura-text-muted)] px-0.5 text-xs leading-snug">{activeAgg.hint}</p>
+          <p className="text-dim px-0.5 text-xs leading-snug">{activeAgg.hint}</p>
         )}
       </div>
 
@@ -240,7 +240,7 @@ export function StatsControlsPanel({ state, onChange, seriesKeys, meta }: Props)
         <div className="flex flex-col items-stretch gap-0.5">
           <DateField value={state.startDate} onChange={onStartDate} />
           <div className="flex justify-center py-0.5">
-            <span className="text-[var(--aura-text-muted)] text-nano leading-none">↓</span>
+            <span className="text-dim text-nano leading-none">↓</span>
           </div>
           <DateField value={state.endDate} onChange={onEndDate} />
         </div>
@@ -255,8 +255,8 @@ export function StatsControlsPanel({ state, onChange, seriesKeys, meta }: Props)
               <span className="ml-1 font-normal opacity-50 tabular-nums">{selectedCount}/{seriesKeys.length}</span>
             </p>
             <div className="flex gap-2">
-              <button type="button" className="text-xs text-[var(--aura-text-subtle)] hover:text-foreground hover:underline underline-offset-2" onClick={() => onChange({ selectedSeriesKeys: null })}>все</button>
-              <button type="button" className="text-xs text-[var(--aura-text-subtle)] hover:text-foreground hover:underline underline-offset-2" onClick={() => onChange({ selectedSeriesKeys: [] })}>снять</button>
+              <button type="button" className="text-xs text-subtle hover:text-foreground hover:underline underline-offset-2" onClick={() => onChange({ selectedSeriesKeys: null })}>все</button>
+              <button type="button" className="text-xs text-subtle hover:text-foreground hover:underline underline-offset-2" onClick={() => onChange({ selectedSeriesKeys: [] })}>снять</button>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-0.5">
@@ -272,7 +272,7 @@ export function StatsControlsPanel({ state, onChange, seriesKeys, meta }: Props)
                     'flex h-9 min-w-0 items-center gap-1.5 rounded-md px-2 text-left aura-tx-colors',
                     active
                       ? 'bg-[color-mix(in_srgb,var(--series-tint,var(--primary))_12%,transparent)] text-[var(--series-tint,var(--foreground))] ring-1 ring-[color-mix(in_srgb,var(--series-tint,var(--primary))_34%,transparent)]'
-                      : 'text-[var(--aura-text-subtle)] hover:bg-[var(--aura-action-hover-bg)] hover:text-foreground'
+                      : 'text-subtle hover:bg-hover hover:text-foreground'
                   )}
                   style={{ '--series-tint': tint } as CSSProperties}
                 >

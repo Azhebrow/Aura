@@ -121,15 +121,14 @@ function TabsContent({
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Content>) {
   const animationContext = useTabsAnimation();
-  const isActive = value === (props as any).value || true;
 
+  // Radix монтирует только активную панель (без forceMount), поэтому контент
+  // всегда «входит» — exit-анимации здесь неприменимы.
   let animationClass = '';
-  if (animationContext?.direction) {
-    if (animationContext.direction === 'right') {
-      animationClass = isActive ? 'aura-tabs-slide-enter-right' : 'aura-tabs-slide-exit-left';
-    } else if (animationContext.direction === 'left') {
-      animationClass = isActive ? 'aura-tabs-slide-enter-left' : 'aura-tabs-slide-exit-right';
-    }
+  if (animationContext?.direction === 'right') {
+    animationClass = 'aura-tabs-slide-enter-right';
+  } else if (animationContext?.direction === 'left') {
+    animationClass = 'aura-tabs-slide-enter-left';
   }
 
   return (

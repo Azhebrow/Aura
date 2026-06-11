@@ -177,10 +177,10 @@ export function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | 
   if (parts.length === 0) return undefined;
 
   return (
-    <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-caption font-medium leading-snug text-[var(--aura-text-subtle)]">
+    <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-caption font-medium leading-snug text-subtle">
       {parts.map((part, idx) => (
         <span key={idx} className="inline-flex min-w-0 items-center gap-1">
-          {idx > 0 ? <span className="text-[var(--aura-text-disabled)]" aria-hidden>·</span> : null}
+          {idx > 0 ? <span className="text-faint" aria-hidden>·</span> : null}
           <span className="truncate">{part}</span>
         </span>
       ))}
