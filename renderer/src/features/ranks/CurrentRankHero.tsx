@@ -3,6 +3,7 @@
 
 import type { CSSProperties } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { Caption } from '@/shared/ui/caption';
 import { formatRankPoints, rankAuraHsl, rankImageSrc, type RankTier } from '@/shared/config/ranks-model';
 import { RankImage } from './RankImage';
 
@@ -50,7 +51,7 @@ export function CurrentRankHero({ current, actualCurrent, next, points, pct, nee
 
         {/* Информация о ранге */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-3 sm:gap-4 xl:justify-center">
-          <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Текущий ранг</p>
+          <Caption>Текущий ранг</Caption>
           <h2 className="font-heading text-balance text-lg font-semibold tracking-tight text-foreground sm:text-2xl xl:text-3xl">
             {current.name}
           </h2>
@@ -70,14 +71,14 @@ export function CurrentRankHero({ current, actualCurrent, next, points, pct, nee
           {/* Карточки: накоплено / до следующего */}
           <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
             <div className="rounded-lg border border-soft bg-panel px-3 py-2.5 sm:px-4 sm:py-3">
-              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Накоплено очков</p>
+              <Caption>Накоплено очков</Caption>
               <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">{formatRankPoints(points)}</p>
               <p className="text-muted-foreground mt-1 text-xs tabular-nums">на {dateString}</p>
             </div>
             <div className="rounded-lg border border-soft bg-panel px-3 py-2.5 sm:px-4 sm:py-3">
               {next ? (
                 <>
-                  <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">До «{next.name}»</p>
+                  <Caption>До «{next.name}»</Caption>
                   <p className="mt-1 text-base font-semibold tabular-nums text-foreground sm:text-lg">
                     ещё <span className="text-primary">{formatRankPoints(needed)}</span>
                   </p>
@@ -85,7 +86,7 @@ export function CurrentRankHero({ current, actualCurrent, next, points, pct, nee
                 </>
               ) : (
                 <>
-                  <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Вершина</p>
+                  <Caption>Вершина</Caption>
                   <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">Максимальный ранг</p>
                   <p className="text-muted-foreground mt-1 text-xs">Вы прошли весь путь лестницы.</p>
                 </>

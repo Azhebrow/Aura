@@ -3,6 +3,7 @@
 
 import { Check, Moon, Sun, SunDim } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Caption } from '@/shared/ui/caption';
 import { Slider } from '@/components/ui/slider';
 import {
   Select,
@@ -42,7 +43,7 @@ export function StepAppearance({ state, onAccent, onTheme, onFontFamily, onAppSc
 
       {/* Выбор темы */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Тема</p>
+        <Caption>Тема</Caption>
         <div className="grid grid-cols-3 gap-2.5">
           {THEMES.map(({ value, label, icon: Icon }) => (
             <button
@@ -72,7 +73,7 @@ export function StepAppearance({ state, onAccent, onTheme, onFontFamily, onAppSc
       <div className="space-y-3 rounded-2xl border border-border/60 bg-background/35 p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Шрифт</p>
+            <Caption>Шрифт</Caption>
             <p className="mt-1 text-xs text-muted-foreground">Выберите характер интерфейса: нейтральный, мягкий или выразительный.</p>
           </div>
           <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
@@ -108,7 +109,7 @@ export function StepAppearance({ state, onAccent, onTheme, onFontFamily, onAppSc
       <div className="space-y-3 rounded-2xl border border-border/60 bg-background/35 p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Масштаб интерфейса</p>
+            <Caption>Масштаб интерфейса</Caption>
             <p className="mt-1 text-xs text-muted-foreground">Можно сделать AURA компактнее или просторнее сразу.</p>
           </div>
           <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold tabular-nums text-primary">
@@ -131,7 +132,7 @@ export function StepAppearance({ state, onAccent, onTheme, onFontFamily, onAppSc
 
       {/* Акцентный цвет */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Акцентный цвет</p>
+        <Caption>Акцентный цвет</Caption>
         <div className="grid grid-cols-7 gap-1.5">
           {ACCENT_PRESETS.map(({ value, label, hsl }) => (
             <button
