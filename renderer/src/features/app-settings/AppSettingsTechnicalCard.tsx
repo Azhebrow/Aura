@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Database, FolderOpen, Wrench } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Coffee, Database, FolderOpen, Timer, Watch, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import { SettingsSectionCard } from '@/widgets/settings/SettingsSectionCard';
 import { DatabaseManagementDialog } from '@/features/app-settings/DatabaseManagementDialog';
+import { formatAmbientTrackName } from '@/features/timer/use-ambient-audio';
 
 
 function mergeSave(db: AuraDatabase, patch: AuraRow) {
@@ -35,16 +35,7 @@ function safeGetAmbientRows(db: AuraDatabase): AuraRow[] {
   }
 }
 
-function CompactField({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <Label className="text-caption font-semibold text-subtle">{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-const SECTION_CN = 'overflow-hidden rounded-lg border border-soft/50 divide-y divide-soft/40';
+const SECTION_CN = 'overflow-hidden rounded-xl border border-soft/70 bg-card/60 divide-y divide-soft/55';
 
 export function AppSettingsTechnicalCard() {
   const { db, ready } = useAuraDb();
@@ -73,27 +64,34 @@ if (!ready || !db) {
 
   return (
     <SettingsSectionCard title="Данные" leadingIcon={Database} contentClassName="gap-3">
-      {/* База и режим */}
-      <div className="flex flex-col gap-2">
-        <p className="aura-label">База и режим</p>
-        <div className={SECTION_CN}>
-          <div className="flex min-h-10 items-center gap-2.5 px-3 py-2">
-            <Database className="size-3.5 shrink-0 text-subtle" />
-            <span className="flex-1 text-xs font-medium text-foreground">Управление базой</span>
+      <div className={SECTION_CN}>
+          <div className="flex min-h-14 items-center gap-2.5 px-3 py-2.5">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-control/60 text-subtle">
+              <Database className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold leading-tight text-foreground">Управление базой</p>
+              <p className="mt-0.5 truncate text-xs text-dim">Импорт, экспорт и резервные копии</p>
+            </div>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 shrink-0"
+              className="h-8 shrink-0 bg-background/70"
               onClick={() => setDatabaseDialogOpen(true)}
             >
               <FolderOpen className="size-3.5" />
               Открыть
             </Button>
           </div>
-          <div className="flex h-10 items-center gap-2.5 px-3">
-            <Wrench className="size-3.5 shrink-0 text-subtle" />
-            <span className="flex-1 text-xs font-medium text-foreground">Вкладка разработчика</span>
+          <div className="flex min-h-14 items-center gap-2.5 px-3 py-2.5">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-control/60 text-subtle">
+              <Wrench className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold leading-tight text-foreground">Вкладка разработчика</p>
+              <p className="mt-0.5 truncate text-xs text-dim">Дополнительная диагностика приложения</p>
+            </div>
             <Switch
               className="shrink-0"
               checked={devtoolsTab}
@@ -105,7 +103,6 @@ if (!ready || !db) {
               aria-label="Вкладка разработчика"
             />
           </div>
-        </div>
       </div>
 
       <DatabaseManagementDialog db={db} open={databaseDialogOpen} onOpenChange={setDatabaseDialogOpen} />
@@ -152,25 +149,59 @@ export function TimerBgSettingsCard() {
         <SelectItem value="__none__" className="text-xs">Не задано</SelectItem>
         {ambientRows.map((r) => (
           <SelectItem key={String(r.id)} value={String(r.id)} className="text-xs">
-            {String(r.name ?? r.title ?? r.id)}
+            {formatAmbientTrackName(String(r.name ?? r.title ?? r.file_name ?? r.id))}
           </SelectItem>
         ))}
       </SelectContent>
     </Select>
   );
 
+  const selectedTrackName = (id: string) => {
+    const row = ambientRows.find((r) => String(r.id) === id);
+    return row ? formatAmbientTrackName(String(row.name ?? row.title ?? row.file_name ?? row.id)) : 'Не задано';
+  };
+
+  const modes = [
+    {
+      id: 'ambient_default_timer',
+      label: 'Таймер',
+      Icon: Timer,
+      value: ambientDefaultTimer,
+      setValue: setAmbientDefaultTimer,
+    },
+    {
+      id: 'ambient_default_stopwatch',
+      label: 'Секундомер',
+      Icon: Watch,
+      value: ambientDefaultStopwatch,
+      setValue: setAmbientDefaultStopwatch,
+    },
+    {
+      id: 'ambient_default_break',
+      label: 'Перерыв',
+      Icon: Coffee,
+      value: ambientDefaultBreak,
+      setValue: setAmbientDefaultBreak,
+    },
+  ];
+
   return (
-    <SettingsSectionCard title="Фон таймера">
-      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
-        <CompactField label="Таймер">
-          {ambientSelectProps(ambientDefaultTimer, setAmbientDefaultTimer, 'ambient_default_timer')}
-        </CompactField>
-        <CompactField label="Секундомер">
-          {ambientSelectProps(ambientDefaultStopwatch, setAmbientDefaultStopwatch, 'ambient_default_stopwatch')}
-        </CompactField>
-        <CompactField label="Перерыв">
-          {ambientSelectProps(ambientDefaultBreak, setAmbientDefaultBreak, 'ambient_default_break')}
-        </CompactField>
+    <SettingsSectionCard title="Фон таймера" contentClassName="gap-2">
+      <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-3">
+        {modes.map(({ id, label, Icon, value, setValue }) => (
+          <div key={id} className="flex min-w-0 flex-col gap-2 rounded-lg border border-soft/70 bg-control/25 p-2.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-panel text-subtle">
+                <Icon className="size-4" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-foreground">{label}</p>
+                <p className="truncate text-xs text-dim">{selectedTrackName(value)}</p>
+              </div>
+            </div>
+            {ambientSelectProps(value, setValue, id)}
+          </div>
+        ))}
       </div>
     </SettingsSectionCard>
   );

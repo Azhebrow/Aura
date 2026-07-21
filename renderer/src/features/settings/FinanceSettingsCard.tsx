@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Coins, PiggyBank, TrendingUp } from 'lucide-react';
+import { PiggyBank } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
@@ -53,55 +53,40 @@ export function FinanceSettingsCard() {
 
   return (
     <SettingsSectionCard title="Настройки финансов" leadingIcon={PiggyBank}>
-      {/* Валюта */}
-      <div className="w-full overflow-hidden rounded-xl border border-soft">
-        {/* Превью выбранной валюты */}
-        <div className="flex items-center gap-3 border-b border-soft px-4 py-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_oklab,var(--primary)_10%,transparent)]">
-            <span className="text-lg font-bold leading-none text-[var(--primary)]">{selected.symbol}</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold leading-snug">{selected.label}</p>
-            <p className="text-xs text-dim">{selected.code}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1 text-subtle">
-            <Coins className="size-3.5" />
-          </div>
+      <div className="flex min-h-10 items-center gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-control text-sm font-semibold text-[var(--primary)]">
+          {selected.symbol}
         </div>
-
-        {/* Строки настроек */}
-        <div className="divide-y divide-soft/60">
-          <div className="flex min-h-12 items-center gap-3 px-4">
-            <TrendingUp className="size-3.5 shrink-0 text-subtle" />
-            <span className="min-w-0 flex-1 text-sm font-medium">Валюта отображения</span>
-            <Select
-              value={currency}
-              onValueChange={(v) => {
-                setCurrency(v);
-                mergeSave(db, { currency: v });
-              }}
-            >
-              <SelectTrigger
-                id="settings-currency"
-                contentAlign="start"
-                className="h-8 w-auto min-w-[9rem] border-soft bg-control text-xs"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end">
-                {CURRENCY_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
-                    <span className="flex items-center gap-2">
-                      <span className="w-5 text-center font-semibold text-[var(--primary)]">{o.symbol}</span>
-                      <span>{o.label}</span>
-                      <span className="text-dim">{o.code}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">Валюта отображения</p>
+          <p className="truncate text-xs text-dim">{selected.label} · {selected.code}</p>
         </div>
+        <Select
+          value={currency}
+          onValueChange={(v) => {
+            setCurrency(v);
+            mergeSave(db, { currency: v });
+          }}
+        >
+          <SelectTrigger
+            id="settings-currency"
+            contentAlign="start"
+            className="h-8 w-auto min-w-[7rem] border-soft bg-control text-xs"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="end">
+            {CURRENCY_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">
+                <span className="flex items-center gap-2">
+                  <span className="w-5 text-center font-semibold text-[var(--primary)]">{o.symbol}</span>
+                  <span>{o.label}</span>
+                  <span className="text-dim">{o.code}</span>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </SettingsSectionCard>
   );

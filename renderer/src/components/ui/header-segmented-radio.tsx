@@ -41,8 +41,8 @@ export function UniversalRadioGroup<T extends string>({
       aria-label={ariaLabel}
       className={cn(
         isHeader
-          ? 'rounded-none border-0 bg-transparent p-0'
-          : 'rounded-lg border border-soft bg-control p-1',
+          ? 'aura-header-radio-group rounded-none border-0 bg-transparent p-0'
+          : 'rounded-lg border border-soft bg-control/35 p-1',
         fullWidth && orientation === 'horizontal'
           ? cn('flex w-full min-w-0 flex-1 items-center', isHeader ? 'gap-1.5 px-2 py-1.5 sm:px-3' : 'gap-0.5')
           : orientation === 'horizontal'
@@ -66,6 +66,7 @@ export function UniversalRadioGroup<T extends string>({
             variant={selected ? 'default' : 'ghost'}
             disabled={disabled}
             className={cn(
+              isHeader && 'aura-header-radio-button',
               'gap-1.5 text-xs font-medium leading-none active:!scale-100 active:!translate-y-0',
               isHeader ? 'min-h-8 px-2.5' : 'min-h-9 px-2.5',
               !(fullWidth && orientation === 'horizontal') && 'h-9',
@@ -78,11 +79,11 @@ export function UniversalRadioGroup<T extends string>({
               fullWidth && orientation === 'vertical' && 'w-full min-w-0 justify-start',
               isHeader
                 ? selected
-                  ? 'border border-primary/20 bg-primary/10 text-primary shadow-none hover:bg-primary/12'
-                  : 'border border-transparent bg-transparent text-subtle hover:border-border/50 hover:bg-muted/25 hover:text-foreground'
+                  ? 'border border-primary/20 bg-primary/8 text-primary shadow-none hover:bg-primary/10'
+                  : 'border border-transparent bg-transparent text-subtle hover:border-border/50 hover:bg-hover/70 hover:text-foreground'
                 : selected
-                  ? 'border border-transparent bg-primary text-primary-foreground hover:bg-primary/90'
-                  : 'border border-transparent text-subtle hover:bg-hover hover:text-foreground'
+                  ? 'border border-primary/20 bg-primary/8 text-foreground shadow-none hover:bg-primary/10'
+                  : 'border border-transparent text-subtle hover:bg-hover/70 hover:text-foreground'
             )}
             onClick={() => onValueChange(optionValue)}
           >

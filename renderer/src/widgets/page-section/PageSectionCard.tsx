@@ -38,14 +38,14 @@ export function PageSectionCard({
 }: Props) {
   return (
     <Card size="sm" className={cn('w-full min-w-0 shadow-sm', cardClassName)}>
-      <CardHeader className="pb-2">
+      <CardHeader className="aura-card-section-header pb-2">
         <CardTitle
           className={cn(
             'text-sm font-semibold leading-snug',
             Leading && 'flex min-w-0 flex-wrap items-center gap-2'
           )}
         >
-          {Leading ? <Leading className="text-muted-foreground size-4 shrink-0" aria-hidden /> : null}
+          {Leading ? <Leading className="aura-panel-icon text-muted-foreground size-4 shrink-0" aria-hidden /> : null}
           <span className="min-w-0 flex-1">{title}</span>
         </CardTitle>
         {description != null && description !== '' ? (

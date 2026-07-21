@@ -21,10 +21,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AddListButton } from '@/components/ui/add-list-button';
-import { IconWithBadge } from '@/components/ui/icon-with-badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ActComposer } from '@/features/act-system';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
 import { useBootstrapData, clearBootstrapDataCache } from '@/shared/hooks/use-bootstrap-data';
@@ -40,11 +40,13 @@ import { cn } from '@/lib/utils';
 import type { AuraDatabase, AuraRow } from '@/types/aura';
 import {
   LIST_SCROLL_CONTAINER_CN,
+  MEGA_PANEL_INSET_CN,
 } from '@/shared/ui/mega-section-layout';
 import { ModeSwitchHeader } from '@/shared/ui/mode-switch-header';
 import { LoadingShell } from '@/shared/ui/data-states';
 import { ANIM } from '@/shared/lib/animation-classes';
 import { todayIsoDate } from '@/shared/lib/dates';
+import { STORAGE_KEYS } from '@/shared/config/storage-keys';
 import {
   type GoalsMode,
   type GoalsDbApi,
@@ -63,8 +65,22 @@ import {
   getStageStateClasses,
 } from './rituals-utils';
 
-const GOAL_TASK_ROW_CN = 'flex items-start gap-2.5 px-3 py-2.5 aura-tx-colors';
+function readStoredGoalsMode(): GoalsMode {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.RITUALS_GOALS_MODE);
+    return raw === 'archive' ? 'archive' : 'active';
+  } catch {
+    return 'active';
+  }
+}
 
+function readStoredGoalId(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.RITUALS_SELECTED_GOAL_ID);
+  } catch {
+    return null;
+  }
+}
 
 function bootstrapToSortedMap(
   raw: Record<string, AuraRow[]> | undefined,
@@ -85,9 +101,10 @@ export function GoalsManagementPanel() {
   // Single reactive tick — listens to 'goals' events dispatched by refresh().
   const dataTick = useAuraDataRefresh({ types: ['goals'] });
 
-  const [mode, setMode] = useState<GoalsMode>('active');
+  const [mode, setMode] = useState<GoalsMode>(readStoredGoalsMode);
   const [editMode, setEditMode] = useState(false);
   const [goalIndex, setGoalIndex] = useState(0);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(readStoredGoalId);
   const [goalDialog, setGoalDialog] = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null });
   const [stageDialog, setStageDialog] = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null });
   const [taskDialog, setTaskDialog] = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null });
@@ -101,8 +118,23 @@ export function GoalsManagementPanel() {
     goalProgressRows?: AuraRow[];
   }>('rituals', bootstrapParams, [dataTick], { enabled: Boolean(db), keepStaleOnError: true });
   const waitForBootstrap = detectAuraDataSourceMode() === 'web-mini-api' && ritualsBootstrap == null;
+  const goalsFallbackTick = ritualsBootstrap?.goals ? 0 : dataTick;
+  const stagesFallbackTick = ritualsBootstrap?.stagesByGoal ? 0 : dataTick;
+  const tasksFallbackTick = ritualsBootstrap?.tasksByStage ? 0 : dataTick;
+  const progressFallbackTick = ritualsBootstrap?.goalProgressRows ? 0 : dataTick;
 
   const canManage = Boolean(dbx?.getAllGoals && dbx?.getStagesByGoal && dbx?.getTasksByStage);
+  const setStoredMode = useCallback((next: GoalsMode) => {
+    setMode(next);
+    try { localStorage.setItem(STORAGE_KEYS.RITUALS_GOALS_MODE, next); } catch { /* ignore */ }
+  }, []);
+  const setStoredGoalId = useCallback((next: string | null) => {
+    setSelectedGoalId(next);
+    try {
+      if (next) localStorage.setItem(STORAGE_KEYS.RITUALS_SELECTED_GOAL_ID, next);
+      else localStorage.removeItem(STORAGE_KEYS.RITUALS_SELECTED_GOAL_ID);
+    } catch { /* ignore */ }
+  }, []);
 
   const [pickerTasks, setPickerTasks] = useState<PickerTask[]>([]);
   useEffect(() => {
@@ -116,7 +148,7 @@ export function GoalsManagementPanel() {
     }
     if (waitForBootstrap) return [] as AuraRow[];
     return (dbx.getAllGoals() ?? []).sort((a, b) => Number(a.level ?? 0) - Number(b.level ?? 0));
-  }, [dbx, ritualsBootstrap?.goals, waitForBootstrap, dataTick]);
+  }, [dbx, ritualsBootstrap?.goals, waitForBootstrap, goalsFallbackTick]);
 
   const stagesByGoal = useMemo(() => {
     const fromBootstrap = bootstrapToSortedMap(ritualsBootstrap?.stagesByGoal, 'order_index');
@@ -128,7 +160,7 @@ export function GoalsManagementPanel() {
       out.set(gid, (dbx.getStagesByGoal(gid) ?? []).sort((a, b) => Number(a.order_index ?? 0) - Number(b.order_index ?? 0)));
     }
     return out;
-  }, [dbx, goals, ritualsBootstrap?.stagesByGoal, waitForBootstrap, dataTick]);
+  }, [dbx, goals, ritualsBootstrap?.stagesByGoal, waitForBootstrap, stagesFallbackTick]);
 
   const tasksByStage = useMemo(() => {
     const fromBootstrap = bootstrapToSortedMap(ritualsBootstrap?.tasksByStage, 'order_index');
@@ -142,7 +174,7 @@ export function GoalsManagementPanel() {
       }
     }
     return out;
-  }, [dbx, ritualsBootstrap?.tasksByStage, stagesByGoal, waitForBootstrap, dataTick]);
+  }, [dbx, ritualsBootstrap?.tasksByStage, stagesByGoal, waitForBootstrap, tasksFallbackTick]);
 
   const goalTaskProgressById = useMemo(() => {
     const out = new Map<string, AuraRow | null | undefined>();
@@ -165,7 +197,7 @@ export function GoalsManagementPanel() {
       out.set(taskId, row);
     }
     return out;
-  }, [dbx, ritualsBootstrap?.goalProgressRows, waitForBootstrap, dataTick]);
+  }, [dbx, ritualsBootstrap?.goalProgressRows, waitForBootstrap, progressFallbackTick]);
 
   // Accumulated timer seconds per timeline goal (goalId → seconds since start_date)
   const timelineAccumSeconds = useMemo(() => {
@@ -179,7 +211,7 @@ export function GoalsManagementPanel() {
       out.set(String(g.id), dbx.getTaskTimerTotalSince(taskId, startDate));
     }
     return out;
-  }, [dbx, goals, dataTick]);
+  }, [dbx, goals, progressFallbackTick]);
 
   // Per-stage percents for timeline goals (stageId → percent 0–100)
   const timelineStagePercents = useMemo(() => {
@@ -287,17 +319,28 @@ export function GoalsManagementPanel() {
   const filteredGoals = useMemo(
     () =>
       goals.filter((g) => {
-        const p = goalProgress.get(String(g.id));
         const hasAt = g.completed_at != null && String(g.completed_at) !== '';
-        if (mode === 'active') return !hasAt || (p?.percent ?? 0) < 100;
-        return hasAt && (p?.percent ?? 0) === 100;
+        if (mode === 'active') return !hasAt;
+        return hasAt;
       }),
-    [goals, goalProgress, mode]
+    [goals, mode]
   );
 
   useEffect(() => {
-    if (goalIndex >= filteredGoals.length) setGoalIndex(0);
-  }, [filteredGoals.length, goalIndex]);
+    if (!filteredGoals.length) {
+      setGoalIndex(0);
+      return;
+    }
+    const storedIndex = selectedGoalId ? filteredGoals.findIndex((goal) => String(goal.id) === selectedGoalId) : -1;
+    if (storedIndex >= 0 && storedIndex !== goalIndex) {
+      setGoalIndex(storedIndex);
+      return;
+    }
+    if (goalIndex >= filteredGoals.length) {
+      setGoalIndex(0);
+      setStoredGoalId(String(filteredGoals[0].id));
+    }
+  }, [filteredGoals, goalIndex, selectedGoalId, setStoredGoalId]);
 
   // Clears all cache layers and fires the 'goals' event.
   // The useAuraDataRefresh subscription (dataTick) handles the re-render.
@@ -309,41 +352,49 @@ export function GoalsManagementPanel() {
     dispatchAuraDataChanged(detail);
   }, []);
 
-  const currentGoal = filteredGoals[goalIndex] ?? null;
+  const currentGoal = useMemo(() => filteredGoals[goalIndex] ?? null, [filteredGoals, goalIndex]);
   const currentGoalId = currentGoal ? String(currentGoal.id) : null;
+  useEffect(() => {
+    if (currentGoalId && currentGoalId !== selectedGoalId) setStoredGoalId(currentGoalId);
+  }, [currentGoalId, selectedGoalId, setStoredGoalId]);
   const canDeleteCurrentGoal = goals.length > 1;
   const isCurrentGoalTimeline = currentGoal ? String(currentGoal.goal_type ?? 'standard') === 'timeline' : false;
   const currentGoalHeroTint =
     currentGoal && typeof currentGoal.color === 'string' && currentGoal.color.trim()
       ? String(currentGoal.color)
       : 'var(--primary)';
-  const currentStages = currentGoalId ? (stagesByGoal.get(currentGoalId) ?? []) : [];
+  const currentStages = useMemo(
+    () => (currentGoalId ? (stagesByGoal.get(currentGoalId) ?? []) : []),
+    [currentGoalId, stagesByGoal]
+  );
   const currentGoalTasks = useMemo(
     () => currentStages.flatMap((st) => tasksByStage.get(String(st.id)) ?? []),
     [currentStages, tasksByStage]
   );
-  const stageProgressList = currentStages.map((stage) => stageProgress.get(String(stage.id)) ?? { completed: 0, total: 0, percent: 0 });
-  const contiguousCompletedStageIndex = (() => {
+  const currentGoalPct = useMemo(() => {
+    if (!currentGoal) return 0;
+    if (String(currentGoal.goal_type ?? 'standard') === 'timeline') {
+      const lastStage = currentStages[currentStages.length - 1];
+      const totalHours = lastStage ? Number(lastStage.threshold_hours ?? 0) : 0;
+      const secs = timelineAccumSeconds.get(String(currentGoal.id)) ?? 0;
+      return totalHours > 0 ? Math.min(100, (secs / (totalHours * 3600)) * 100) : 0;
+    }
+    const p = goalProgress.get(String(currentGoal.id));
+    return p && p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+  }, [currentGoal, currentStages, goalProgress, timelineAccumSeconds]);
+  const stageProgressList = useMemo(
+    () => currentStages.map((stage) => stageProgress.get(String(stage.id)) ?? { completed: 0, total: 0, percent: 0 }),
+    [currentStages, stageProgress]
+  );
+  const contiguousCompletedStageIndex = useMemo(() => {
     let idx = -1;
     for (let i = 0; i < stageProgressList.length; i += 1) {
       if (stageProgressList[i].percent === 100) idx = i;
       else break;
     }
     return idx;
-  })();
+  }, [stageProgressList]);
   const nextStageIndex = contiguousCompletedStageIndex + 1 < currentStages.length ? contiguousCompletedStageIndex + 1 : -1;
-
-  useEffect(() => {
-    if (!currentGoalId) return;
-    const stat = goalProgress.get(currentGoalId);
-    if (!stat || stat.total <= 0 || stat.completed !== stat.total) return;
-    const hasStamp = asIsoDate(currentGoal?.completed_at);
-    if (hasStamp) return;
-    const completedAt = todayIsoDate();
-    if (dbx.setGoalCompletedAt) dbx.setGoalCompletedAt(currentGoalId, completedAt);
-    else dbx.updateGoal?.(currentGoalId, { completed_at: completedAt });
-    refresh();
-  }, [currentGoalId, currentGoal?.completed_at, goalProgress, dbx, refresh]);
 
   useEffect(() => {
     if (!currentStages.length) return;
@@ -361,13 +412,20 @@ export function GoalsManagementPanel() {
     if (changed) refresh();
   }, [currentStages, stageProgress, dbx, refresh]);
 
-  const goalInitial = goalDialog.editId ? goals.find((g) => String(g.id) === goalDialog.editId) : null;
-  const stageInitial = stageDialog.editId
-    ? [...stagesByGoal.values()].flat().find((s) => String(s.id) === stageDialog.editId)
-    : null;
-  const taskInitial = taskDialog.editId
-    ? [...tasksByStage.values()].flat().find((t) => String(t.id) === taskDialog.editId)
-    : null;
+  const allStages = useMemo(() => [...stagesByGoal.values()].flat(), [stagesByGoal]);
+  const allTasks = useMemo(() => [...tasksByStage.values()].flat(), [tasksByStage]);
+  const goalInitial = useMemo(
+    () => (goalDialog.editId ? goals.find((g) => String(g.id) === goalDialog.editId) ?? null : null),
+    [goalDialog.editId, goals]
+  );
+  const stageInitial = useMemo(
+    () => (stageDialog.editId ? allStages.find((s) => String(s.id) === stageDialog.editId) ?? null : null),
+    [allStages, stageDialog.editId]
+  );
+  const taskInitial = useMemo(
+    () => (taskDialog.editId ? allTasks.find((t) => String(t.id) === taskDialog.editId) ?? null : null),
+    [allTasks, taskDialog.editId]
+  );
 
   const goalsScrollRef = useRef<HTMLDivElement>(null);
   const [stagesScrolled, setStagesScrolled] = useState(false);
@@ -384,7 +442,7 @@ export function GoalsManagementPanel() {
       }
     }
     return null;
-  }, [dbx, currentStages, tasksByStage, goalTaskProgressById, dataTick]);
+  }, [dbx, currentStages, tasksByStage, goalTaskProgressById]);
 
   const firstIncompleteScrollKey = firstIncompleteTask ? `${firstIncompleteTask.sid}:${firstIncompleteTask.tid}` : '';
 
@@ -410,15 +468,9 @@ export function GoalsManagementPanel() {
   }, [currentGoalId, goalIndex, firstIncompleteScrollKey, filteredGoals.length]);
 
   const resumeArchivedGoal = useCallback(() => {
-    if (!currentGoalId || currentGoalTasks.length === 0) return;
-    if (!window.confirm('Сбросить прогресс текущей цели за выбранный день и вернуть её в активные?')) return;
+    if (!currentGoalId) return;
     for (const task of currentGoalTasks) {
       const tid = String(task.id);
-      const isNumber = String(task.task_type ?? 'checkbox') === 'number';
-      dbx.saveGoalTaskProgress?.(tid, GOALS_GLOBAL_SCOPE_DATE, {
-        completed: 0,
-        current_value: isNumber ? 0 : null,
-      });
       if (dbx.setTaskCompletedAt) dbx.setTaskCompletedAt(tid, null);
       else dbx.updateTask?.(tid, { completed_at: null });
     }
@@ -430,7 +482,123 @@ export function GoalsManagementPanel() {
     if (dbx.setGoalCompletedAt) dbx.setGoalCompletedAt(currentGoalId, null);
     else dbx.updateGoal?.(currentGoalId, { completed_at: null });
     refresh();
-  }, [currentGoalId, currentGoalTasks, currentStages, dbx]);
+  }, [currentGoalId, currentGoalTasks, currentStages, dbx, refresh]);
+
+  const completeCurrentGoal = useCallback(() => {
+    if (!currentGoalId) return;
+    const completedAt = todayIsoDate();
+    if (dbx.setGoalCompletedAt) dbx.setGoalCompletedAt(currentGoalId, completedAt);
+    else dbx.updateGoal?.(currentGoalId, { completed_at: completedAt });
+    refresh();
+  }, [currentGoalId, dbx, refresh]);
+
+  const goalEditPanel = currentGoal && editMode ? (
+    <div className="mt-2 flex shrink-0 items-center justify-center gap-1 rounded-lg border border-soft bg-panel/35 px-2 py-1.5" role="toolbar" aria-label="Действия с целью">
+      {dbx.moveGoal && goalIndex > 0 ? (
+        <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
+          aria-label="Поднять цель" onClick={() => (dbx.moveGoal?.(String(currentGoal.id), 'up'), refresh())}>
+          <ChevronUp className="size-4" />
+        </Button>
+      ) : null}
+      {dbx.moveGoal && goalIndex < filteredGoals.length - 1 ? (
+        <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
+          aria-label="Опустить цель" onClick={() => (dbx.moveGoal?.(String(currentGoal.id), 'down'), refresh())}>
+          <ChevronDown className="size-4" />
+        </Button>
+      ) : null}
+      <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
+        aria-label="Изменить цель" onClick={() => setGoalDialog({ open: true, editId: String(currentGoal.id) })}>
+        <Pencil className="size-4" />
+      </Button>
+      <Button type="button" size="icon" variant="ghost"
+        className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)}
+        aria-label="Удалить цель" disabled={!canDeleteCurrentGoal}
+        title={canDeleteCurrentGoal ? 'Удалить цель' : 'Нельзя удалить последнюю цель'}
+        onClick={() => { if (!canDeleteCurrentGoal) return; dbx.deleteGoal?.(String(currentGoal.id)); refresh(); }}>
+        <Trash2 className="size-4" />
+      </Button>
+      <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
+        onClick={() => setGoalDialog({ open: true, editId: null })} aria-label="Новая цель">
+        <Plus className="size-4" />
+      </Button>
+    </div>
+  ) : null;
+
+  const canCompleteCurrentGoal = mode === 'active' && currentGoalPct >= 100;
+
+  const goalNavPanel = currentGoal && (filteredGoals.length > 1 || mode === 'archive' || canCompleteCurrentGoal) ? (
+    <div className="mt-2 flex shrink-0 flex-col gap-1.5">
+      {filteredGoals.length > 1 ? (
+        <div className="flex shrink-0 items-center justify-center gap-1.5">
+          <button
+            type="button"
+            aria-label="Предыдущая цель"
+            onClick={() => setGoalIndex((p) => {
+              const next = (p - 1 + filteredGoals.length) % filteredGoals.length;
+              setStoredGoalId(String(filteredGoals[next]?.id ?? ''));
+              return next;
+            })}
+            className={cn(
+              'text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-md hover:bg-hover aura-tx-colors',
+              RAW_BUTTON_FOCUS_CN
+            )}
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+          </button>
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
+            {filteredGoals.map((g, i) => (
+              <button
+                key={String(g.id)}
+                type="button"
+                aria-label={`Перейти к цели ${i + 1}: ${String(g.title ?? g.id)}`}
+                className={cn('flex h-7 flex-1 max-w-10 items-center justify-center px-1 cursor-pointer', RAW_BUTTON_FOCUS_CN)}
+                onClick={() => {
+                  setGoalIndex(i);
+                  setStoredGoalId(String(g.id));
+                }}
+              >
+                <span className={cn('block h-1 w-full rounded-full bg-border aura-tx-colors', i === goalIndex && 'bg-foreground')} aria-hidden />
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            aria-label="Следующая цель"
+            onClick={() => setGoalIndex((p) => {
+              const next = (p + 1) % filteredGoals.length;
+              setStoredGoalId(String(filteredGoals[next]?.id ?? ''));
+              return next;
+            })}
+            className={cn(
+              'text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-md hover:bg-hover aura-tx-colors',
+              RAW_BUTTON_FOCUS_CN
+            )}
+          >
+            <ChevronRight className="size-4" aria-hidden />
+          </button>
+        </div>
+      ) : null}
+
+      {mode === 'archive' ? (
+        <div className="flex shrink-0 flex-wrap items-center justify-center gap-2">
+          <p className="text-muted-foreground text-xs">
+            Завершено: <span className="text-foreground">{formatRuDate(currentGoal.completed_at)}</span>
+          </p>
+          <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={resumeArchivedGoal}>
+            Вернуть в активные
+          </Button>
+        </div>
+      ) : null}
+      {canCompleteCurrentGoal ? (
+        <div className="flex shrink-0 items-center justify-center">
+          <Button type="button" size="sm" variant="outline" className="h-7 px-2.5 text-xs" onClick={completeCurrentGoal}>
+            <Check className="mr-1 size-3.5" />
+            Завершить
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  ) : null;
 
   return (
     <>
@@ -438,7 +606,7 @@ export function GoalsManagementPanel() {
         <div className="hidden lg:block">
           <ModeSwitchHeader
             value={mode}
-            onValueChange={setMode}
+            onValueChange={setStoredMode}
             ariaLabel="Режим отображения целей"
             options={[
               { value: 'active', label: 'Активные', Icon: Target },
@@ -447,7 +615,7 @@ export function GoalsManagementPanel() {
           />
         </div>
         <div
-          className={cn('min-h-0 flex flex-1 flex-col overflow-hidden px-2.5 pt-2 sm:px-4 sm:pt-3', ANIM.enterFade)}
+          className={cn(MEGA_PANEL_INSET_CN, 'pt-2', ANIM.enterFade)}
         >
           {!db ? (
             <LoadingShell />
@@ -463,178 +631,81 @@ export function GoalsManagementPanel() {
             <div className="relative flex min-h-0 flex-1 flex-col">
               {currentGoal ? (
                 <>
-                  {/* Goal card — same visual language as NutritionDaySummaryBar */}
+                  {/* Goal row */}
                   <div
-                    className="relative z-20 shrink-0 overflow-hidden rounded-xl border border-soft bg-card shadow-xs"
+                    className="aura-operator-panel relative z-20 shrink-0 overflow-hidden rounded-xl border border-soft bg-transparent"
                     style={{ '--goal-tint': currentGoalHeroTint } as React.CSSProperties}
                   >
-                    {/* Main row: icon + title/meta + edit toggle */}
-                    <div className="flex items-center gap-3 px-3 py-2.5">
-                      <div
-                        className="flex size-8 shrink-0 items-center justify-center rounded-md border"
-                        style={{
-                          borderColor: `color-mix(in oklab, ${currentGoalHeroTint} 25%, transparent)`,
-                          backgroundColor: `color-mix(in oklab, ${currentGoalHeroTint} 12%, transparent)`,
-                          color: currentGoalHeroTint,
-                        }}
-                      >
-                        {typeof currentGoal.icon === 'string' && currentGoal.icon ? (
-                          <AuraThemedIcon name={currentGoal.icon} className="size-4" tint={currentGoalHeroTint} />
-                        ) : isCurrentGoalTimeline ? (
-                          <Clock className="size-4" strokeWidth={1.75} />
-                        ) : (
-                          <Target className="size-4" strokeWidth={1.75} />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-nano font-semibold uppercase tracking-wide text-dim">
-                          {(goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0) === 1
-                            ? '1 этап'
-                            : `${goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0} этапов`}
-                          <span className="mx-1 opacity-40">·</span>
-                          {(() => {
-                            if (isCurrentGoalTimeline) {
-                              const secs = timelineAccumSeconds.get(String(currentGoal.id)) ?? 0;
-                              const lastStage = currentStages[currentStages.length - 1];
-                              const totalHours = lastStage ? Number(lastStage.threshold_hours ?? 0) : 0;
-                              if (!totalHours) return formatHoursMinutes(secs);
-                              return `${formatHoursMinutes(secs)} / ${totalHours}ч`;
-                            }
-                            const p = goalProgress.get(String(currentGoal.id));
-                            if (!p || p.total === 0) return 'нет задач';
-                            return p.completed === p.total ? `все ${p.total}` : `${p.completed} / ${p.total}`;
-                          })()}
-                        </p>
-                        <p className="truncate text-sm font-semibold leading-tight text-foreground">
-                          {String(currentGoal.title ?? currentGoal.id)}
-                        </p>
-                        {currentGoal.description ? (
-                          <p className="mt-1 text-xs leading-relaxed text-subtle">
-                            {String(currentGoal.description)}
+                    <div
+                      className="aura-data-fill pointer-events-none absolute inset-y-0 left-0 w-full"
+                      aria-hidden
+                      style={{
+                        width: `${currentGoalPct}%`,
+                        background: `color-mix(in oklab, ${currentGoalHeroTint} 24%, transparent)`,
+                      }}
+                    />
+                    <div className="relative z-10 grid min-h-[3.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span
+                          className="aura-icon-plate flex size-8 shrink-0 items-center justify-center rounded-lg border"
+                          style={{ '--aura-list-icon-tint': currentGoalHeroTint } as React.CSSProperties}
+                          aria-hidden
+                        >
+                          {typeof currentGoal.icon === 'string' && currentGoal.icon ? (
+                            <AuraThemedIcon name={currentGoal.icon} size={16} tint={currentGoalHeroTint} />
+                          ) : isCurrentGoalTimeline ? (
+                            <Clock className="size-4" style={{ color: currentGoalHeroTint }} />
+                          ) : (
+                            <Target className="size-4" style={{ color: currentGoalHeroTint }} />
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold leading-tight text-foreground">
+                            {String(currentGoal.title ?? currentGoal.id)}
                           </p>
-                        ) : null}
+                          <p className="mt-1 truncate text-caption font-medium text-dim">
+                            {(goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0) === 1
+                              ? '1 этап'
+                              : `${goalDetails.get(String(currentGoal.id))?.stagesTotal ?? 0} этапов`}
+                            <span className="mx-1 opacity-40">·</span>
+                            {(() => {
+                              if (isCurrentGoalTimeline) {
+                                const secs = timelineAccumSeconds.get(String(currentGoal.id)) ?? 0;
+                                const lastStage = currentStages[currentStages.length - 1];
+                                const totalHours = lastStage ? Number(lastStage.threshold_hours ?? 0) : 0;
+                                if (!totalHours) return formatHoursMinutes(secs);
+                                return `${formatHoursMinutes(secs)} / ${totalHours}ч`;
+                              }
+                              const p = goalProgress.get(String(currentGoal.id));
+                              if (!p || p.total === 0) return 'нет задач';
+                              return p.completed === p.total ? `все ${p.total}` : `${p.completed} / ${p.total}`;
+                            })()}
+                          </p>
+                        </div>
                       </div>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant={editMode ? 'secondary' : 'ghost'}
-                        className={GOALS_RITUALS_ICON_BTN_CN}
-                        onClick={() => setEditMode((v) => !v)}
-                        aria-pressed={editMode}
-                        aria-label={editMode ? 'Режим просмотра' : 'Режим редактирования'}
-                        title={editMode ? 'Просмотр' : 'Редактирование'}
-                      >
-                        {editMode ? <Eye className="size-4" /> : <Pencil className="size-4" />}
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <div className="min-w-[2.75rem] text-right">
+                          <p className="aura-operator-kpi text-sm font-semibold tabular-nums leading-none" style={{ color: currentGoalHeroTint }}>
+                            {Math.round(currentGoalPct)}%
+                          </p>
+                          <p className="mt-1 text-nano font-medium leading-none text-faint">цель</p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant={editMode ? 'secondary' : 'ghost'}
+                          className={cn(GOALS_RITUALS_ICON_BTN_CN, 'size-7')}
+                          onClick={() => setEditMode((v) => !v)}
+                          aria-pressed={editMode}
+                          aria-label={editMode ? 'Режим просмотра' : 'Режим редактирования'}
+                          title={editMode ? 'Просмотр' : 'Редактирование'}
+                        >
+                          {editMode ? <Eye className="size-4" /> : <Pencil className="size-4" />}
+                        </Button>
+                      </div>
                     </div>
-
-                    {/* Full-width flush progress bar — edge-to-edge, single bar */}
-                    {(() => {
-                      let pct: number;
-                      if (isCurrentGoalTimeline) {
-                        const lastStage = currentStages[currentStages.length - 1];
-                        const totalHours = lastStage ? Number(lastStage.threshold_hours ?? 0) : 0;
-                        const secs = timelineAccumSeconds.get(String(currentGoal.id)) ?? 0;
-                        pct = totalHours > 0 ? Math.min(100, (secs / (totalHours * 3600)) * 100) : 0;
-                      } else {
-                        const p = goalProgress.get(String(currentGoal.id));
-                        pct = p && p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
-                      }
-                      return (
-                        <div className="h-[3px] w-full bg-control">
-                          <div
-                            className="h-full transition-[width] duration-[400ms] ease-out"
-                            style={{ width: `${pct}%`, backgroundColor: currentGoalHeroTint, opacity: 0.85 }}
-                          />
-                        </div>
-                      );
-                    })()}
-
-                    {/* Bottom zone: nav dots + edit toolbar / archive info */}
-                    {(filteredGoals.length > 1 || editMode || mode === 'archive') ? (
-                      <div className="flex min-h-9 items-center gap-0.5 border-t border-soft px-1">
-                        {filteredGoals.length > 1 ? (
-                          <Button type="button" variant="ghost" size="icon"
-                            className={cn('text-muted-foreground hover:text-foreground', GOALS_RITUALS_ICON_BTN_CN)}
-                            disabled={filteredGoals.length <= 1}
-                            onClick={() => setGoalIndex((p) => (p - 1 + filteredGoals.length) % filteredGoals.length)}
-                            aria-label="Предыдущая цель">
-                            <ChevronLeft className="size-4" />
-                          </Button>
-                        ) : (
-                          <span className="size-8 shrink-0" aria-hidden />
-                        )}
-
-                        <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5">
-                          {filteredGoals.length > 1 ? (
-                            <nav className="flex max-w-full justify-center gap-1.5 overflow-x-auto px-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                              aria-label="Выбор цели">
-                              {filteredGoals.map((g, i) => (
-                                <button key={String(g.id)} type="button" onClick={() => setGoalIndex(i)}
-                                  className={cn(RAW_BUTTON_FOCUS_CN, 'h-1.5 shrink-0 rounded-full transition-[width,background-color,opacity]',
-                                    i === goalIndex ? 'w-5 bg-foreground/70' : 'w-1.5 bg-muted-foreground/30 opacity-90 hover:bg-muted-foreground/50')}
-                                  aria-label={`Цель ${i + 1}: ${String(g.title ?? g.id)}`}
-                                  aria-current={i === goalIndex ? true : undefined} />
-                              ))}
-                            </nav>
-                          ) : null}
-                          {mode === 'archive' ? (
-                            <div className="flex items-center gap-2">
-                              <p className="text-muted-foreground text-xs">
-                                Завершено: <span className="text-foreground">{formatRuDate(currentGoal.completed_at)}</span>
-                              </p>
-                              <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={resumeArchivedGoal}>
-                                Возобновить
-                              </Button>
-                            </div>
-                          ) : null}
-                          {editMode ? (
-                            <div className="flex shrink-0 flex-wrap items-center justify-center gap-0.5" role="toolbar" aria-label="Действия с целью">
-                              {dbx.moveGoal && goalIndex > 0 ? (
-                                <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
-                                  aria-label="Поднять цель" onClick={() => (dbx.moveGoal?.(String(currentGoal.id), 'up'), refresh())}>
-                                  <ChevronUp className="size-4" />
-                                </Button>
-                              ) : null}
-                              {dbx.moveGoal && goalIndex < filteredGoals.length - 1 ? (
-                                <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
-                                  aria-label="Опустить цель" onClick={() => (dbx.moveGoal?.(String(currentGoal.id), 'down'), refresh())}>
-                                  <ChevronDown className="size-4" />
-                                </Button>
-                              ) : null}
-                              <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
-                                aria-label="Изменить цель" onClick={() => setGoalDialog({ open: true, editId: String(currentGoal.id) })}>
-                                <Pencil className="size-4" />
-                              </Button>
-                              <Button type="button" size="icon" variant="ghost"
-                                className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)}
-                                aria-label="Удалить цель" disabled={!canDeleteCurrentGoal}
-                                title={canDeleteCurrentGoal ? 'Удалить цель' : 'Нельзя удалить последнюю цель'}
-                                onClick={() => { if (!canDeleteCurrentGoal) return; if (!window.confirm('Удалить цель?')) return; dbx.deleteGoal?.(String(currentGoal.id)); refresh(); }}>
-                                <Trash2 className="size-4" />
-                              </Button>
-                              <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN}
-                                onClick={() => setGoalDialog({ open: true, editId: null })} aria-label="Новая цель">
-                                <Plus className="size-4" />
-                              </Button>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        {filteredGoals.length > 1 ? (
-                          <Button type="button" variant="ghost" size="icon"
-                            className={cn('text-muted-foreground hover:text-foreground', GOALS_RITUALS_ICON_BTN_CN)}
-                            disabled={filteredGoals.length <= 1}
-                            onClick={() => setGoalIndex((p) => (p + 1) % filteredGoals.length)}
-                            aria-label="Следующая цель">
-                            <ChevronRight className="size-4" />
-                          </Button>
-                        ) : (
-                          <span className="size-8 shrink-0" aria-hidden />
-                        )}
-                      </div>
-                    ) : null}
                   </div>
+                  {goalEditPanel}
 
                   <div
                     ref={goalsScrollRef}
@@ -668,55 +739,57 @@ export function GoalsManagementPanel() {
                           ? String(currentGoal.color)
                           : 'var(--primary)';
                       const taskTint = stageState === 'frozen' ? 'var(--muted-foreground)' : goalTint;
+                      const timelineStageLabel = (() => {
+                        if (!isCurrentGoalTimeline) return '';
+                        const threshold = Number(s.threshold_hours ?? 0);
+                        if (!threshold) return 'порог не задан';
+                        const previousThreshold = i > 0 ? Number(currentStages[i - 1]?.threshold_hours ?? 0) : 0;
+                        const from = formatHoursMinutes(previousThreshold * 3600);
+                        const to = formatHoursMinutes(threshold * 3600);
+                        if (stageState === 'completed') return 'выполнено';
+                        if (stageState === 'current') return `${from}–${to} · в процессе`;
+                        return `${from}–${to}`;
+                      })();
                       return (
                         <div
                           key={sid}
                           className={cn(
-                            'overflow-hidden rounded-xl border border-soft bg-card shadow-xs',
-                            stageClasses.opacity
+                            'aura-operator-panel overflow-hidden rounded-xl border border-soft bg-card shadow-xs',
+                            !editMode && stageClasses.opacity
                           )}
                         >
                           {/* Stage header */}
-                          <div className="flex items-center gap-2 border-b border-soft bg-panel px-3 py-2.5">
-                            {/* Number badge */}
+                          <div className="aura-operator-header relative grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 overflow-hidden border-b border-soft bg-panel px-3 py-2.5">
                             <div
-                              className={cn(
-                                'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-micro font-bold leading-none tracking-wide',
-                                stageState === 'completed' && 'bg-control text-faint',
-                                stageState === 'frozen' && 'bg-control text-faint',
-                                stageState === 'active' && 'bg-control text-dim',
-                              )}
-                              style={stageState === 'current' ? { backgroundColor: goalTint, color: 'white' } : undefined}
-                            >
-                              {stageState === 'completed' ? (
-                                <Check className="size-2.5" strokeWidth={3.5} />
-                              ) : (
-                                stageOrderRoman(i)
-                              )}
-                            </div>
-                            <div className={cn('min-w-0 flex-1')}>
-                              <span className={cn('truncate text-sm font-semibold block', stageClasses.title)}>
-                                {String(s.title ?? s.id)}
-                              </span>
+                              className="aura-data-fill pointer-events-none absolute inset-y-0 left-0"
+                              aria-hidden
+                              style={{
+                                width: `${Math.max(0, Math.min(100, stageP.percent))}%`,
+                                background: `color-mix(in oklab, ${taskTint} 24%, transparent)`,
+                              }}
+                            />
+                            <div className="relative z-10 min-w-0">
+                              <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span className={cn('aura-operator-kpi shrink-0 text-xs font-semibold tabular-nums', stageClasses.meta)}>
+                                  {stageState === 'completed' ? 'Выполнено' : `Этап ${stageOrderRoman(i)}`}
+                                </span>
+                                <span className={cn('min-w-0 text-sm font-semibold', stageClasses.title)}>
+                                  {String(s.title ?? s.id)}
+                                </span>
+                                {(isCurrentGoalTimeline ? timelineStageLabel : stageP.total === 0 ? '' : `${stageP.completed}/${stageP.total}`) ? (
+                                  <span className={cn('aura-operator-kpi shrink-0 text-xs tabular-nums', stageClasses.meta)}>
+                                    {isCurrentGoalTimeline ? timelineStageLabel : `${stageP.completed}/${stageP.total}`}
+                                  </span>
+                                ) : null}
+                              </div>
                               {s.description ? (
-                                <p className={cn('mt-0.5 text-xs leading-relaxed', stageClasses.title)}>
+                                <p className={cn('mt-1 text-xs leading-relaxed', stageClasses.title)}>
                                   {String(s.description)}
                                 </p>
                               ) : null}
                             </div>
-                            <span className={cn('shrink-0 text-xs tabular-nums', stageClasses.meta)}>
-                              {isCurrentGoalTimeline
-                                ? (() => {
-                                    const threshold = Number(s.threshold_hours ?? 0);
-                                    if (!threshold) return '';
-                                    const secs = timelineAccumSeconds.get(currentGoalId ?? '') ?? 0;
-                                    const displaySecs = Math.min(secs, threshold * 3600);
-                                    return `${formatHoursMinutes(displaySecs)} / ${threshold}ч`;
-                                  })()
-                                : stageP.total === 0 ? '' : `${stageP.completed}/${stageP.total}`}
-                            </span>
                             {editMode ? (
-                              <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0')} role="toolbar" aria-label="Действия с этапом">
+                              <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'relative z-10 shrink-0')} role="toolbar" aria-label="Действия с этапом">
                                 {dbx.moveStage && i > 0 ? (
                                   <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Поднять этап"
                                     onClick={() => (dbx.moveStage?.(sid, 'up'), refresh())}
@@ -732,38 +805,11 @@ export function GoalsManagementPanel() {
                                 ><Pencil className="size-4" /></Button>
                                 <Button type="button" size="icon" variant="ghost"
                                   className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)} aria-label="Удалить этап"
-                                  onClick={() => window.confirm('Удалить этап?') && (dbx.deleteStage?.(sid), refresh())}
+                                  onClick={() => { dbx.deleteStage?.(sid); refresh(); }}
                                 ><Trash2 className="size-4" /></Button>
                               </div>
                             ) : null}
                           </div>
-
-                            {/* Timeline stage body: hour progress */}
-                            {isCurrentGoalTimeline ? (() => {
-                              const threshold = Number(s.threshold_hours ?? 0);
-                              const secs = timelineAccumSeconds.get(currentGoalId ?? '') ?? 0;
-                              const pct = stageP.percent;
-                              return (
-                                <div className="px-3 py-3 space-y-2">
-                                  <div className="flex items-center justify-between text-xs text-dim">
-                                    <span>Накоплено</span>
-                                    {threshold > 0 ? (
-                                      <span className="tabular-nums font-medium">{formatHoursMinutes(Math.min(secs, threshold * 3600))} / {threshold}ч</span>
-                                    ) : (
-                                      <span className="text-faint">Порог не задан</span>
-                                    )}
-                                  </div>
-                                  {threshold > 0 ? (
-                                    <div className="h-2 overflow-hidden rounded-full bg-control">
-                                      <div
-                                        className="h-full rounded-full aura-tx-width"
-                                        style={{ width: `${Math.min(100, pct)}%`, backgroundColor: stageState === 'frozen' ? 'var(--muted-foreground)' : goalTint }}
-                                      />
-                                    </div>
-                                  ) : null}
-                                </div>
-                              );
-                            })() : null}
 
                             {/* Task list (standard goals only) */}
                             {!isCurrentGoalTimeline && tasks.length > 0 ? (
@@ -784,195 +830,156 @@ export function GoalsManagementPanel() {
                                     firstIncompleteTask.sid === sid &&
                                     firstIncompleteTask.tid === tid;
 
-                                  const taskRowBg = 'hover:bg-hover';
+                                  const title = String(t.title ?? t.id);
+                                  const description = t.description ? String(t.description) : '';
+                                  const checked = Number(raw?.completed) === 1;
+                                  const moveUp = editMode && dbx.moveTask && ti > 0 ? () => (dbx.moveTask?.(tid, 'up'), refresh()) : undefined;
+                                  const moveDown = editMode && dbx.moveTask && ti < tasks.length - 1 ? () => (dbx.moveTask?.(tid, 'down'), refresh()) : undefined;
+                                  const actions = [
+                                    moveUp ? { key: 'up', label: 'Переместить вверх', icon: <ChevronUp className="size-4" />, onClick: moveUp } : null,
+                                    moveDown ? { key: 'down', label: 'Переместить вниз', icon: <ChevronDown className="size-4" />, onClick: moveDown } : null,
+                                    editMode ? { key: 'edit', label: 'Изменить задачу', icon: <Pencil className="size-4" />, onClick: () => setTaskDialog({ open: true, editId: tid }) } : null,
+                                    editMode ? { key: 'delete', label: 'Удалить задачу', icon: <Trash2 className="size-4" />, onClick: () => { dbx.deleteTask?.(tid); refresh(); }, danger: true } : null,
+                                  ].filter((action): action is NonNullable<typeof action> => action != null);
+                                  const onRowActivate = () => {
+                                    if (tt === 'checkbox') {
+                                      dbx.saveGoalTaskProgress?.(tid, GOALS_GLOBAL_SCOPE_DATE, { completed: checked ? 0 : 1 });
+                                      refresh();
+                                      return;
+                                    }
+                                    setEditingTaskValues((prev) => ({ ...prev, [tid]: String(currentVal) }));
+                                  };
+
                                   return (
                                     <div
                                       key={tid}
-                                      className={cn(GOAL_TASK_ROW_CN, taskRowBg)}
+                                      className="px-2 py-1.5 aura-tx-colors hover:bg-hover"
                                       data-goal-scroll-target={isScrollFocus ? '1' : undefined}
                                     >
-                                      <IconWithBadge
-                                        iconName={typeof t.icon === 'string' ? t.icon : null}
-                                        tint={taskTint}
-                                        size="sm"
-                                        className="mt-0.5 shrink-0"
-                                      />
-                                      <div className="min-w-0 flex-1">
-                                        {tt === 'checkbox' ? (
-                                          <div className="flex items-start gap-2">
-                                            <button
-                                              type="button"
-                                              className={cn(
-                                                'flex min-w-0 flex-1 items-start gap-2.5 rounded-md py-0.5 text-left outline-none',
-                                                RAW_BUTTON_FOCUS_CN
-                                              )}
-                                              onClick={() => {
-                                                const checked = Number(raw?.completed) === 1;
-                                                dbx.saveGoalTaskProgress?.(tid, GOALS_GLOBAL_SCOPE_DATE, { completed: checked ? 0 : 1 });
-                                                refresh();
-                                              }}
-                                            >
-                                              <span
-                                                className={cn(
-                                                  'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] aura-tx-colors',
-                                                  Number(raw?.completed) === 1
-                                                    ? 'border-transparent text-white'
-                                                    : 'border-soft bg-transparent text-transparent',
-                                                )}
-                                                style={Number(raw?.completed) === 1 ? { backgroundColor: taskTint } : undefined}
-                                              >
-                                                <Check className="size-2.5" strokeWidth={3} />
-                                              </span>
-                                              <span className="min-w-0 flex-1">
-                                                <span className={cn(
-                                                  'block text-sm font-medium leading-snug',
-                                                  Number(raw?.completed) === 1 && 'text-faint line-through'
-                                                )}>
-                                                  {String(t.title ?? t.id)}
-                                                </span>
-                                                {t.description ? (
-                                                  <span className={cn(
-                                                    'mt-0.5 block whitespace-pre-wrap text-xs leading-relaxed',
-                                                    Number(raw?.completed) === 1 ? 'text-faint line-through' : 'text-subtle'
-                                                  )}>
-                                                    {String(t.description)}
-                                                  </span>
-                                                ) : null}
-                                              </span>
-                                            </button>
-                                            {editMode ? (
-                                              <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0 justify-end pt-0.5')} role="toolbar" aria-label="Действия с задачей">
-                                                {dbx.moveTask && ti > 0 ? (
-                                                  <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Поднять задачу"
-                                                    onClick={() => (dbx.moveTask?.(tid, 'up'), refresh())}
-                                                  ><ChevronUp className="size-4" /></Button>
-                                                ) : null}
-                                                {dbx.moveTask && ti < tasks.length - 1 ? (
-                                                  <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Опустить задачу"
-                                                    onClick={() => (dbx.moveTask?.(tid, 'down'), refresh())}
-                                                  ><ChevronDown className="size-4" /></Button>
-                                                ) : null}
-                                                <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Изменить задачу"
-                                                  onClick={() => setTaskDialog({ open: true, editId: tid })}
-                                                ><Pencil className="size-4" /></Button>
-                                                <Button type="button" size="icon" variant="ghost"
-                                                  className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)} aria-label="Удалить задачу"
-                                                  onClick={() => window.confirm('Удалить задачу?') && (dbx.deleteTask?.(tid), refresh())}
-                                                ><Trash2 className="size-4" /></Button>
-                                              </div>
+                                      <div
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-pressed={tt === 'checkbox' ? checked : undefined}
+                                        onClick={onRowActivate}
+                                        onKeyDown={(event) => {
+                                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                                          event.preventDefault();
+                                          onRowActivate();
+                                        }}
+                                        className={cn(
+                                          'aura-operator-row group relative grid min-h-11 w-full min-w-0 overflow-hidden rounded-lg border border-soft/70 bg-card/80 shadow-xs aura-tx-surface',
+                                          actions.length > 0
+                                            ? 'grid-cols-[minmax(0,1fr)_auto]'
+                                            : 'grid-cols-[minmax(0,1fr)]',
+                                          'cursor-pointer hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+                                          isTaskDone && 'border-soft/50 bg-panel/45'
+                                        )}
+                                      >
+                                        {tt === 'number' && targetVal > 0 ? (
+                                          <span
+                                            className="aura-data-fill pointer-events-none absolute inset-y-0 left-0"
+                                            aria-hidden
+                                            style={{
+                                              width: `${Math.max(0, Math.min(100, pct))}%`,
+                                              background: `color-mix(in oklab, ${taskTint} 22%, transparent)`,
+                                            }}
+                                          />
+                                        ) : null}
+                                        <div className="relative z-10 flex min-w-0 items-center gap-2.5 px-2.5 py-2 text-left">
+                                          <div className={cn('flex min-w-0 flex-1 items-baseline gap-1.5 text-sm leading-snug', checked && 'line-through text-faint')}>
+                                            <span className="min-w-0 truncate font-semibold text-foreground">{title}</span>
+                                            {description ? (
+                                              <span className="min-w-0 shrink truncate text-xs text-subtle">{description}</span>
+                                            ) : null}
+                                            {tt === 'number' && targetVal > 0 ? (
+                                              <span className="shrink-0 text-xs font-medium tabular-nums text-dim">{pct}%</span>
                                             ) : null}
                                           </div>
-                                        ) : (
-                                          <div className="space-y-1.5">
-                                            <div className="flex items-start justify-between gap-2">
-                                              <span className={cn('text-sm font-medium leading-snug', isTaskDone && 'text-faint line-through')}>
-                                                {String(t.title ?? t.id)}
-                                              </span>
-                                              {editMode ? (
-                                                <div className={cn(GOALS_RITUALS_TOOLBAR_ROW_CN, 'shrink-0 justify-end')} role="toolbar" aria-label="Действия с задачей">
-                                                  {dbx.moveTask && ti > 0 ? (
-                                                    <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Поднять задачу"
-                                                      onClick={() => (dbx.moveTask?.(tid, 'up'), refresh())}
-                                                    ><ChevronUp className="size-4" /></Button>
-                                                  ) : null}
-                                                  {dbx.moveTask && ti < tasks.length - 1 ? (
-                                                    <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Опустить задачу"
-                                                      onClick={() => (dbx.moveTask?.(tid, 'down'), refresh())}
-                                                    ><ChevronDown className="size-4" /></Button>
-                                                  ) : null}
-                                                  <Button type="button" size="icon" variant="ghost" className={GOALS_RITUALS_ICON_BTN_CN} aria-label="Изменить задачу"
-                                                    onClick={() => setTaskDialog({ open: true, editId: tid })}
-                                                  ><Pencil className="size-4" /></Button>
-                                                  <Button type="button" size="icon" variant="ghost"
-                                                    className={cn('text-destructive hover:text-destructive', GOALS_RITUALS_ICON_BTN_CN)} aria-label="Удалить задачу"
-                                                    onClick={() => window.confirm('Удалить задачу?') && (dbx.deleteTask?.(tid), refresh())}
-                                                  ><Trash2 className="size-4" /></Button>
-                                                </div>
-                                              ) : null}
-                                            </div>
-                                            {t.description ? (
-                                              <p className={cn(
-                                                'whitespace-pre-wrap text-xs leading-relaxed',
-                                                Number(raw?.completed) === 1 ? 'text-faint line-through' : 'text-subtle'
-                                              )}>
-                                                {String(t.description)}
-                                              </p>
-                                            ) : null}
-                                            <div className="space-y-1">
-                                              {editDraft == null ? (
-                                                <button
-                                                  type="button"
-                                                  className={cn(
-                                                    'rounded px-0.5 py-0.5 text-left text-sm aura-tx-colors hover:bg-hover',
-                                                    RAW_BUTTON_FOCUS_CN
-                                                  )}
-                                                  onClick={() =>
-                                                    setEditingTaskValues((prev) => ({ ...prev, [tid]: String(currentVal) }))
+                                          <div className="flex shrink-0 items-center justify-end text-right text-xs font-semibold tabular-nums text-dim">
+                                            {tt === 'checkbox' ? (
+                                              <Checkbox
+                                                checked={checked}
+                                                onCheckedChange={(next) => {
+                                                  dbx.saveGoalTaskProgress?.(tid, GOALS_GLOBAL_SCOPE_DATE, { completed: next === true ? 1 : 0 });
+                                                  refresh();
+                                                }}
+                                                onClick={(event) => event.stopPropagation()}
+                                                aria-label={title}
+                                                className="size-7 rounded-lg border-soft bg-control/70 shadow-none"
+                                              />
+                                            ) : editDraft == null ? (
+                                              <span>{`${currentVal} / ${targetLabel}`}</span>
+                                            ) : (
+                                              <span className="flex items-center gap-1">
+                                                <Input
+                                                  autoFocus
+                                                  value={editDraft}
+                                                  inputMode="decimal"
+                                                  className="h-7 w-20 border-0 bg-control/70 px-2 text-right text-xs shadow-none focus-visible:ring-1"
+                                                  onClick={(e) => e.stopPropagation()}
+                                                  onChange={(e) =>
+                                                    setEditingTaskValues((prev) => ({
+                                                      ...prev,
+                                                      [tid]: (() => {
+                                                        const normalized = e.target.value.replace(',', '.');
+                                                        const cleaned = normalized.replace(/[^0-9.]/g, '');
+                                                        const dotIndex = cleaned.indexOf('.');
+                                                        if (dotIndex === -1) return cleaned;
+                                                        return `${cleaned.slice(0, dotIndex)}.${cleaned
+                                                          .slice(dotIndex + 1)
+                                                          .replace(/\./g, '')}`;
+                                                      })(),
+                                                    }))
                                                   }
-                                                >
-                                                  <span className="text-foreground font-medium tabular-nums">{currentVal}</span>
-                                                  <span className="text-dim text-xs"> / {targetLabel}</span>
-                                                </button>
-                                              ) : (
-                                                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-                                                  <Input
-                                                    autoFocus
-                                                    value={editDraft}
-                                                    inputMode="decimal"
-                                                    className="h-8 w-full max-w-[8rem] rounded-md border border-soft bg-control px-2 text-sm shadow-xs [appearance:textfield] focus-visible:ring-2 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                                    onChange={(e) =>
-                                                      setEditingTaskValues((prev) => ({
-                                                        ...prev,
-                                                        [tid]: (() => {
-                                                          const normalized = e.target.value.replace(',', '.');
-                                                          const cleaned = normalized.replace(/[^0-9.]/g, '');
-                                                          const dotIndex = cleaned.indexOf('.');
-                                                          if (dotIndex === -1) return cleaned;
-                                                          return `${cleaned.slice(0, dotIndex)}.${cleaned
-                                                            .slice(dotIndex + 1)
-                                                            .replace(/\./g, '')}`;
-                                                        })(),
-                                                      }))
-                                                    }
-                                                    onBlur={() => {
-                                                      dbx.saveGoalTaskProgress?.(tid, GOALS_GLOBAL_SCOPE_DATE, {
-                                                        current_value: Number(editDraft || 0),
-                                                      });
+                                                  onBlur={() => {
+                                                    dbx.saveGoalTaskProgress?.(tid, GOALS_GLOBAL_SCOPE_DATE, {
+                                                      current_value: Number(editDraft || 0),
+                                                    });
+                                                    setEditingTaskValues((prev) => {
+                                                      const next = { ...prev };
+                                                      delete next[tid];
+                                                      return next;
+                                                    });
+                                                    refresh();
+                                                  }}
+                                                  onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+                                                    if (e.key === 'Escape') {
                                                       setEditingTaskValues((prev) => {
                                                         const next = { ...prev };
                                                         delete next[tid];
                                                         return next;
                                                       });
-                                                      refresh();
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                      if (e.key === 'Enter') {
-                                                        (e.currentTarget as HTMLInputElement).blur();
-                                                      }
-                                                      if (e.key === 'Escape') {
-                                                        setEditingTaskValues((prev) => {
-                                                          const next = { ...prev };
-                                                          delete next[tid];
-                                                          return next;
-                                                        });
-                                                      }
-                                                    }}
-                                                  />
-                                                  <span className="text-dim text-xs tabular-nums">{targetLabel}</span>
-                                                </div>
-                                              )}
-                                              {/* Progress bar for number task */}
-                                              {targetVal > 0 && (
-                                                <div className="h-1 overflow-hidden rounded-full bg-panel">
-                                                  <div
-                                                    className="h-full rounded-full aura-tx-width"
-                                                    style={{ width: `${Math.min(100, pct)}%`, backgroundColor: taskTint }}
-                                                  />
-                                                </div>
-                                              )}
-                                            </div>
+                                                    }
+                                                  }}
+                                                />
+                                                <span className="text-xs text-dim">/ {targetLabel}</span>
+                                              </span>
+                                            )}
                                           </div>
-                                        )}
+                                        </div>
+                                        {actions.length > 0 ? (
+                                          <div className="relative z-10 flex h-11 shrink-0 items-center gap-1 px-1.5 opacity-75 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                                            {actions.map((action) => (
+                                              <button
+                                                key={action.key}
+                                                type="button"
+                                                className={cn(
+                                                  'flex size-8 shrink-0 items-center justify-center rounded-lg text-dim aura-tx-interactive',
+                                                  'bg-control/35 hover:bg-control hover:text-foreground active:scale-95',
+                                                  action.danger && 'hover:bg-destructive/10 hover:text-destructive'
+                                                )}
+                                                aria-label={action.label}
+                                                onClick={(event) => {
+                                                  event.stopPropagation();
+                                                  action.onClick();
+                                                }}
+                                              >
+                                                {action.icon}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        ) : null}
                                       </div>
                                     </div>
                                   );
@@ -989,9 +996,12 @@ export function GoalsManagementPanel() {
 
                             {editMode && !isCurrentGoalTimeline ? (
                               <div className="border-t border-soft px-3 py-2">
-                                <AddListButton
-                                  label="Добавить задачу"
-                                  onClick={() => (setTaskStageId(sid), setTaskDialog({ open: true, editId: null }))}
+                                <ActComposer
+                                  config={{
+                                    placeholder: 'Добавить задачу',
+                                    submitLabel: 'Добавить задачу',
+                                    onSubmit: () => (setTaskStageId(sid), setTaskDialog({ open: true, editId: null })),
+                                  }}
                                 />
                               </div>
                             ) : null}
@@ -1006,10 +1016,17 @@ export function GoalsManagementPanel() {
                       />
                     ) : null}
                     {editMode ? (
-                      <AddListButton label="Добавить этап" onClick={() => setStageDialog({ open: true, editId: null })} />
+                      <ActComposer
+                        config={{
+                          placeholder: 'Добавить этап',
+                          submitLabel: 'Добавить этап',
+                          onSubmit: () => setStageDialog({ open: true, editId: null }),
+                        }}
+                      />
                     ) : null}
                     </div>
                   </div>
+                  {goalNavPanel}
                 </>
               ) : null}
             </div>
@@ -1023,10 +1040,11 @@ export function GoalsManagementPanel() {
         title={goalDialog.editId ? 'Редактирование цели' : 'Новая цель'}
         supportsColor
         showGoalTypeFields
+        showDescriptionField={false}
         pickerTasks={pickerTasks}
         initial={{
           title: String(goalInitial?.title ?? ''),
-          description: String(goalInitial?.description ?? ''),
+          description: '',
           icon: String(goalInitial?.icon ?? ''),
           color: String(goalInitial?.color ?? 'var(--primary)'),
           completedAt: asIsoDate(goalInitial?.completed_at),
@@ -1038,7 +1056,6 @@ export function GoalsManagementPanel() {
           if (goalDialog.editId) {
             dbx.updateGoal?.(goalDialog.editId, {
               title: v.title,
-              description: v.description,
               icon: v.icon,
               color: v.color,
               completed_at: v.completedAt,
@@ -1050,7 +1067,6 @@ export function GoalsManagementPanel() {
             dbx.addGoal?.({
               id: idOrCreate('goal'),
               title: v.title || 'Новая цель',
-              description: v.description,
               icon: v.icon,
               color: v.color,
               completed_at: v.completedAt,
@@ -1069,11 +1085,12 @@ export function GoalsManagementPanel() {
         onOpenChange={(open) => setStageDialog((s) => ({ ...s, open }))}
         title={stageDialog.editId ? 'Редактирование этапа' : 'Новый этап'}
         supportsColor={false}
+        supportsIcon={false}
         showThresholdHoursField={isCurrentGoalTimeline}
         initial={{
           title: String(stageInitial?.title ?? ''),
           description: String(stageInitial?.description ?? ''),
-          icon: String(stageInitial?.icon ?? ''),
+          icon: '',
           color: '',
           completedAt: asIsoDate(stageInitial?.completed_at),
           thresholdHours: stageInitial?.threshold_hours != null ? Number(stageInitial.threshold_hours) : null,
@@ -1084,7 +1101,6 @@ export function GoalsManagementPanel() {
             dbx.updateStage?.(stageDialog.editId, {
               title: v.title,
               description: v.description,
-              icon: v.icon,
               completed_at: v.completedAt,
               ...(isCurrentGoalTimeline ? { threshold_hours: v.thresholdHours ?? null } : {}),
             });
@@ -1094,7 +1110,6 @@ export function GoalsManagementPanel() {
               goal_id: currentGoalId,
               title: v.title || 'Новый этап',
               description: v.description,
-              icon: v.icon,
               completed_at: v.completedAt,
               order_index: currentStages.length,
               ...(isCurrentGoalTimeline ? { threshold_hours: v.thresholdHours ?? null } : {}),
@@ -1113,7 +1128,6 @@ export function GoalsManagementPanel() {
           taskType: String(taskInitial?.task_type ?? 'checkbox') === 'number' ? 'number' : 'checkbox',
           targetValue: String(Number(taskInitial?.target_value ?? 0)),
           unit: String(taskInitial?.unit ?? ''),
-          icon: String(taskInitial?.icon ?? ''),
         }}
         onSubmit={(v) => {
           const targetStageId = taskDialog.editId
@@ -1127,7 +1141,6 @@ export function GoalsManagementPanel() {
               task_type: v.taskType,
               target_value: v.taskType === 'number' ? v.targetValue : null,
               unit: v.taskType === 'number' ? v.unit : null,
-              icon: v.icon,
             });
           } else {
             dbx.addTask?.({
@@ -1138,7 +1151,6 @@ export function GoalsManagementPanel() {
               task_type: v.taskType,
               target_value: v.taskType === 'number' ? v.targetValue : null,
               unit: v.taskType === 'number' ? v.unit : null,
-              icon: v.icon,
               order_index: (tasksByStage.get(targetStageId) ?? []).length,
             });
           }

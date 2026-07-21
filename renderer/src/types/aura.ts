@@ -23,9 +23,9 @@ export interface AuraDatabase {
   create: (tableName: string, data: AuraRow) => boolean;
   delete: (tableName: string, id: string) => boolean;
   update: (tableName: string, id: string, data: AuraRow) => void;
-  addTransaction: (transaction: AuraRow) => void;
-  updateTransaction: (transactionId: string, data: AuraRow) => void;
-  deleteTransaction: (transactionId: string) => void;
+  addTransaction: (transaction: AuraRow) => boolean | void;
+  updateTransaction: (transactionId: string, data: AuraRow) => boolean | void;
+  deleteTransaction: (transactionId: string) => boolean | void;
   getDailyPlans: (date: string) => AuraRow[];
   addDailyPlan: (plan: AuraRow) => void;
   getRitualsMorning: (date: string) => AuraRow[];
@@ -62,7 +62,7 @@ export interface AuraDatabase {
   updateTimerSession: (sessionId: string, data: AuraRow) => void;
   deleteTimerSession: (id: string) => void;
   saveAppSettings: (settings: AuraRow) => void;
-  /** Запись прогресса задачи дня в `act_tasks` (как `Database.saveTaskProgress`). */
+  /** Запись прогресса задачи дня в `act_task_progress` (как `Database.saveTaskProgress`). */
   saveTaskProgress: (taskId: string, date: string, data: AuraRow) => void;
   /** Строки act_daily_points за период. */
   getDailyPointsBetween: (startDate: string, endDate: string) => AuraRow[];

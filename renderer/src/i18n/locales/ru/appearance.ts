@@ -11,7 +11,7 @@ export default {
   },
   theme: {
     light: 'Светлая',
-    dim: 'Тихая',
+    tinted: 'Тонированная',
     dark: 'Тёмная',
   },
   accent: {

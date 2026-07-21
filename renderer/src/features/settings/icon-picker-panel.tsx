@@ -1,56 +1,5 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition, startTransition } from 'react';
-import {
-  Activity,
-  AlertTriangle,
-  ArrowRight,
-  Bell,
-  Bird,
-  Bike,
-  Box,
-  Building2,
-  Calendar,
-  Camera,
-  ChartNoAxesCombined,
-  CircleHelp,
-  Cloud,
-  Cog,
-  Compass,
-  Cpu,
-  CreditCard,
-  FileText,
-  Flame,
-  Gamepad2,
-  Globe,
-  HeartPulse,
-  Home,
-  Image,
-  LayoutGrid,
-  Leaf,
-  Mail,
-  Music2,
-  Palette,
-  Pencil,
-  PcCase,
-  Pi,
-  Search,
-  Shield,
-  ShoppingCart,
-  Smile,
-  Snowflake,
-  Sparkles,
-  Stethoscope,
-  Tag,
-  Text,
-  Timer,
-  Briefcase,
-  UserRound,
-  Users,
-  Wallet,
-  Waves,
-  Wifi,
-  Wrench,
-  type LucideIcon,
-} from 'lucide-react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState, startTransition } from 'react';
+import { LayoutGrid, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import { loadIconsManifest } from '@/features/settings/load-icons-manifest';
@@ -61,76 +10,10 @@ type Props = {
   onPick: (iconName: string) => void;
 };
 
-const CELL_MIN_WIDTH_PX = 52;
+const CELL_MIN_WIDTH_PX = 58;
 const GRID_GAP_PX = 6;
-const ROW_HEIGHT_PX = 58;
-const OVERSCAN_ROWS = 3;
-
-const GROUP_ICON_MAP: Record<string, LucideIcon> = {
-  accessibility: CircleHelp,
-  account: UserRound,
-  action: Sparkles,
-  alert: AlertTriangle,
-  animals: Bird,
-  arrows: ArrowRight,
-  audio: Music2,
-  brands: Tag,
-  buildings: Building2,
-  charts: ChartNoAxesCombined,
-  communication: Globe,
-  connectivity: Wifi,
-  controls: Cog,
-  currency: Wallet,
-  cursors: Pencil,
-  data: Cpu,
-  date: Calendar,
-  design: Palette,
-  development: Wrench,
-  devices: PcCase,
-  editing: FileText,
-  emoji: Smile,
-  emotion: Smile,
-  files: FileText,
-  finance: CreditCard,
-  'food-beverage': Flame,
-  'food beverage': Flame,
-  gaming: Gamepad2,
-  health: HeartPulse,
-  home: Home,
-  interface: LayoutGrid,
-  layout: LayoutGrid,
-  mail: Mail,
-  math: Pi,
-  media: Image,
-  medical: Stethoscope,
-  multimedia: Music2,
-  nature: Leaf,
-  navigation: Compass,
-  network: Waves,
-  notifications: Bell,
-  people: Users,
-  photography: Camera,
-  photos: Image,
-  science: Activity,
-  seasons: Snowflake,
-  security: Shield,
-  shapes: Box,
-  shopping: ShoppingCart,
-  social: Users,
-  sports: Bike,
-  sustainability: Leaf,
-  text: Text,
-  time: Timer,
-  tools: Briefcase,
-  transport: Compass,
-  transportation: Compass,
-  travel: Compass,
-  ui: LayoutGrid,
-  user: UserRound,
-  users: Users,
-  weather: Cloud,
-  general: CircleHelp,
-};
+const ROW_HEIGHT_PX = 62;
+const OVERSCAN_ROWS = 2;
 
 const GROUP_LABELS: Record<string, string> = {
   accessibility: 'Доступность',
@@ -154,12 +37,12 @@ const GROUP_LABELS: Record<string, string> = {
   development: 'Разработка',
   devices: 'Устройства',
   editing: 'Редактор',
-  emoji: 'Эмодзи',
+  emoji: 'Эмоции',
   emotion: 'Эмоции',
   files: 'Файлы',
   finance: 'Финансы',
-  'food-beverage': 'Еда и напитки',
-  'food beverage': 'Еда и напитки',
+  'food-beverage': 'Еда',
+  'food beverage': 'Еда',
   gaming: 'Игры',
   health: 'Здоровье',
   home: 'Дом',
@@ -169,13 +52,13 @@ const GROUP_LABELS: Record<string, string> = {
   math: 'Математика',
   media: 'Медиа',
   medical: 'Медицина',
-  multimedia: 'Мультимедиа',
+  multimedia: 'Медиа',
   nature: 'Природа',
   navigation: 'Навигация',
   network: 'Сеть',
   notifications: 'Оповещения',
   people: 'Люди',
-  photography: 'Фотография',
+  photography: 'Фото',
   photos: 'Фото',
   science: 'Наука',
   seasons: 'Сезоны',
@@ -201,117 +84,86 @@ const GROUP_LABELS: Record<string, string> = {
 function groupLabel(group: string): string {
   const key = group.trim().toLowerCase();
   if (GROUP_LABELS[key]) return GROUP_LABELS[key];
-  return group.trim().replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function GroupIcon({ group, active, firstIconName }: { group: string; active: boolean; firstIconName?: string }) {
-  const key = group.trim().toLowerCase();
-  const LIcon = GROUP_ICON_MAP[key];
-  if (LIcon) {
-    return <LIcon className="size-3.5 shrink-0" />;
-  }
-  if (firstIconName) {
-    // Use currentColor via style so it reacts to active button text color
-    return (
-      <span
-        className="size-3.5 shrink-0 inline-block"
-        style={{
-          WebkitMaskImage: `url("icons/${firstIconName}.svg")`,
-          WebkitMaskSize: 'contain',
-          WebkitMaskRepeat: 'no-repeat',
-          WebkitMaskPosition: 'center',
-          backgroundColor: active ? 'var(--primary-foreground)' : 'var(--foreground)',
-        }}
-      />
-    );
-  }
-  return <CircleHelp className="size-3.5 shrink-0" />;
+  return group.trim().replace(/[_-]+/g, ' ');
 }
 
 export function IconPickerPanel({ current, onPick }: Props) {
   const [all, setAll] = useState<string[]>([]);
   const [groups, setGroups] = useState<string[]>([]);
-  const [groupsMap, setGroupsMap] = useState<Record<string, string[]>>({});
+  const [groupIndex, setGroupIndex] = useState<Record<string, Set<string>>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState<string>('all');
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const [viewportHeight, setViewportHeight] = useState(320);
-  const [viewportWidth, setViewportWidth] = useState(640);
   const scrollTopRef = useRef(0);
-  const [scrollTop, setScrollTop] = useState(0);
   const rafRef = useRef<number | null>(null);
-  const deferred = useDeferredValue(query);
-  // isPending=true во время тяжёлых переходов (смена группы, загрузка)
-  const [isPending, startGroupTransition] = useTransition();
+  const [viewportHeight, setViewportHeight] = useState(360);
+  const [viewportWidth, setViewportWidth] = useState(640);
+  const [scrollTop, setScrollTop] = useState(0);
+  const deferredQuery = useDeferredValue(query);
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
     setLoadError(null);
+
     loadIconsManifest()
       .then((manifest) => {
         if (cancelled) return;
-        // Оборачиваем в startTransition — React рендерит асинхронно,
-        // не блокируя UI. Скелетон остаётся пока рендер не завершится.
+        const nextIndex: Record<string, Set<string>> = {};
+        for (const group of manifest.groups) nextIndex[group] = new Set();
+        for (const icon of manifest.icons) {
+          for (const group of manifest.groupsMap[icon] ?? ['general']) {
+            (nextIndex[group] ??= new Set()).add(icon);
+          }
+        }
         startTransition(() => {
           setAll(manifest.icons);
           setGroups(manifest.groups);
-          setGroupsMap(manifest.groupsMap);
+          setGroupIndex(nextIndex);
           setIsLoading(false);
         });
       })
-      .catch((e) => {
+      .catch((error) => {
         if (cancelled) return;
-        setLoadError(e instanceof Error ? e.message : String(e));
+        setLoadError(error instanceof Error ? error.message : String(error));
         setIsLoading(false);
       });
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   const filtered = useMemo(() => {
-    const q = deferred.trim().toLowerCase();
-    let list = all;
-    if (activeGroup !== 'all') {
-      list = list.filter((id) => (groupsMap[id] ?? []).includes(activeGroup));
-    }
-    if (!q) return list;
-    return list.filter((id) => id.toLowerCase().includes(q));
-  }, [activeGroup, all, deferred, groupsMap]);
+    const q = deferredQuery.trim().toLowerCase();
+    const groupSet = activeGroup === 'all' ? null : groupIndex[activeGroup] ?? new Set<string>();
+    const base = groupSet ? all.filter((id) => groupSet.has(id)) : all;
+    if (!q) return base;
+    return base.filter((id) => id.includes(q));
+  }, [activeGroup, all, deferredQuery, groupIndex]);
 
   const columns = useMemo(() => {
     const width = Math.max(1, viewportWidth);
-    return Math.max(1, Math.floor((width + GRID_GAP_PX) / (CELL_MIN_WIDTH_PX + GRID_GAP_PX)));
+    return Math.max(3, Math.floor((width + GRID_GAP_PX) / (CELL_MIN_WIDTH_PX + GRID_GAP_PX)));
   }, [viewportWidth]);
 
-  const rowCount = useMemo(() => Math.ceil(filtered.length / columns), [filtered.length, columns]);
-  const startRow = useMemo(() => Math.max(0, Math.floor(scrollTop / ROW_HEIGHT_PX) - OVERSCAN_ROWS), [scrollTop]);
-  const endRow = useMemo(
-    () => Math.min(rowCount, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT_PX) + OVERSCAN_ROWS),
-    [rowCount, scrollTop, viewportHeight]
-  );
+  const rowCount = Math.ceil(filtered.length / columns);
+  const startRow = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT_PX) - OVERSCAN_ROWS);
+  const endRow = Math.min(rowCount, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT_PX) + OVERSCAN_ROWS);
   const startIndex = startRow * columns;
   const endIndex = Math.min(filtered.length, endRow * columns);
-  const visible = useMemo(() => filtered.slice(startIndex, endIndex), [filtered, startIndex, endIndex]);
+  const visible = filtered.slice(startIndex, endIndex);
   const offsetY = startRow * ROW_HEIGHT_PX;
   const totalHeight = rowCount * ROW_HEIGHT_PX;
 
-  const firstIconByGroup = useMemo(() => {
-    const map: Record<string, string | undefined> = {};
-    for (const id of all) {
-      for (const group of groupsMap[id] ?? []) {
-        if (!map[group]) map[group] = id;
-      }
-    }
-    return map;
-  }, [all, groupsMap]);
-
   useEffect(() => {
     const node = viewportRef.current;
-    if (!node) return;
+    if (!node || typeof ResizeObserver === 'undefined') return;
     const update = () => {
-      setViewportHeight(node.clientHeight || 320);
+      setViewportHeight(node.clientHeight || 360);
       setViewportWidth(node.clientWidth || 640);
     };
     update();
@@ -326,11 +178,10 @@ export function IconPickerPanel({ current, onPick }: Props) {
     node.scrollTop = 0;
     scrollTopRef.current = 0;
     setScrollTop(0);
-  }, [activeGroup, deferred]);
+  }, [activeGroup, deferredQuery]);
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const top = e.currentTarget.scrollTop;
-    scrollTopRef.current = top;
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    scrollTopRef.current = event.currentTarget.scrollTop;
     if (rafRef.current !== null) return;
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
@@ -338,102 +189,74 @@ export function IconPickerPanel({ current, onPick }: Props) {
     });
   };
 
-  const handleGroupClick = (g: string) => {
-    startGroupTransition(() => setActiveGroup(g));
+  const pickGroup = (group: string) => {
+    startTransition(() => setActiveGroup(group));
   };
 
-  const groupTabCn = (g: string, mobile?: boolean) => cn(
-    mobile
-      ? 'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium aura-tx-colors whitespace-nowrap'
-      : 'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium aura-tx-colors text-left',
-    activeGroup === g
-      ? 'bg-primary text-primary-foreground'
+  const groupButtonCn = (group: string) => cn(
+    'inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2.5 text-xs font-medium aura-tx-colors sm:w-full sm:justify-start',
+    activeGroup === group
+      ? 'bg-foreground text-background'
       : 'text-dim hover:bg-hover hover:text-foreground'
   );
 
   return (
-    <div className="flex h-[min(72vh,42rem)] min-h-[24rem] w-full min-w-0 flex-col gap-2 overflow-hidden">
-      {/* Поиск */}
-      <div className="relative shrink-0">
-        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Поиск иконки…"
-          className="h-9 pl-9 text-sm"
-          autoComplete="off"
-          spellCheck={false}
-        />
+    <div className="flex h-[min(74vh,42rem)] min-h-[24rem] w-full min-w-0 flex-col overflow-hidden">
+      <div className="flex shrink-0 items-center gap-2 border-b border-soft px-3 py-2">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Поиск"
+            className="h-8 rounded-md border-0 bg-control/45 pl-8 text-sm shadow-none focus-visible:bg-control/65 focus-visible:ring-1"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+        <span className="hidden shrink-0 text-xs tabular-nums text-faint sm:block">
+          {filtered.length}
+        </span>
       </div>
 
       {loadError ? (
-        <p className="text-destructive shrink-0 text-xs">{loadError}</p>
+        <p className="px-3 py-2 text-sm text-destructive">{loadError}</p>
       ) : isLoading ? (
-        /* Скелетон — показывается пока манифест грузится */
-        <div className="flex min-h-0 flex-1 flex-col gap-2 rounded-xl border border-soft p-2 animate-in fade-in duration-200">
-          <div className="bg-muted/60 h-3 w-40 animate-pulse rounded" />
-          <div className="grid flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-1.5 overflow-hidden">
-            {Array.from({ length: 48 }).map((_, idx) => (
-              <div key={idx} className="bg-muted/50 h-12 animate-pulse rounded-lg" style={{ animationDelay: `${(idx % 12) * 30}ms` }} />
-            ))}
-          </div>
+        <div className="grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(3.625rem,1fr))] gap-1.5 overflow-hidden p-3">
+          {Array.from({ length: 48 }).map((_, index) => (
+            <div key={index} className="h-14 rounded-lg bg-control/45 motion-safe:animate-pulse" />
+          ))}
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:grid sm:grid-cols-[10rem_minmax(0,1fr)] animate-in fade-in duration-200">
-          {/* Панель групп — shrink-0 на мобильном, боковая колонка на sm+ */}
-          <div className="flex shrink-0 min-h-0 flex-col overflow-hidden rounded-xl border border-soft sm:order-1 sm:shrink sm:flex-1">
-            {/* Мобильный горизонтальный скролл */}
-            <div className="flex min-w-0 overflow-x-auto p-1.5 sm:hidden" style={{ scrollbarWidth: 'none' }}>
-              <div className="flex gap-1">
-                <button type="button" onClick={() => handleGroupClick('all')} className={groupTabCn('all', true)}>
-                  <LayoutGrid className="size-3.5 shrink-0" />
-                  <span>Все</span>
-                </button>
-                {groups.map((group) => (
-                  <button key={group} type="button" onClick={() => handleGroupClick(group)} className={groupTabCn(group, true)}>
-                    <GroupIcon group={group} active={activeGroup === group} firstIconName={firstIconByGroup[group]} />
-                    <span>{groupLabel(group)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Desktop вертикальный список */}
-            <div className="hidden min-h-0 flex-1 flex-col overflow-y-auto p-1.5 sm:flex">
-              <button type="button" onClick={() => handleGroupClick('all')} className={groupTabCn('all')}>
-                <LayoutGrid className="size-3.5 shrink-0" />
-                <span>Все</span>
+        <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200 sm:grid-cols-[9rem_minmax(0,1fr)] sm:grid-rows-1">
+          <div className="min-w-0 border-b border-soft sm:border-b-0 sm:border-r">
+            <div className="flex gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none] sm:h-full sm:flex-col sm:overflow-y-auto sm:overflow-x-hidden sm:p-3 [&::-webkit-scrollbar]:hidden">
+              <button type="button" onClick={() => pickGroup('all')} className={groupButtonCn('all')}>
+                <LayoutGrid className="mr-1.5 size-3.5 shrink-0" />
+                Все
               </button>
               {groups.map((group) => (
-                <button key={group} type="button" onClick={() => handleGroupClick(group)} className={groupTabCn(group)}>
-                  <GroupIcon group={group} active={activeGroup === group} firstIconName={firstIconByGroup[group]} />
-                  <span>{groupLabel(group)}</span>
+                <button key={group} type="button" onClick={() => pickGroup(group)} className={groupButtonCn(group)}>
+                  <span className="truncate">{groupLabel(group)}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Сетка иконок — flex-1 чтобы заполнить остаток высоты */}
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-soft sm:order-2">
-            {/* Оверлей во время смены группы */}
-            {isPending && (
-              <div className="pointer-events-none absolute inset-0 z-10 bg-panel/35 animate-in fade-in duration-100" />
-            )}
+          <div className="min-h-0 min-w-0 overflow-hidden">
             {filtered.length === 0 ? (
-              <div className="text-muted-foreground flex h-full min-h-[11rem] items-center justify-center px-3 text-center text-sm">
-                Иконки не найдены
+              <div className="flex h-full min-h-[12rem] items-center justify-center px-3 text-center text-sm text-dim">
+                Ничего не найдено
               </div>
             ) : (
-              <div
-                ref={viewportRef}
-                className="h-full overflow-auto"
-                onScroll={handleScroll}
-              >
-                <div style={{ height: totalHeight }} className="relative p-1.5">
+              <div ref={viewportRef} className="h-full overflow-auto p-3 [scrollbar-gutter:stable]" onScroll={handleScroll}>
+                <div style={{ height: totalHeight }} className="relative">
                   <div
-                    className="grid gap-1.5"
+                    className="grid"
                     style={{
-                      transform: `translateY(${offsetY}px)`,
+                      gap: GRID_GAP_PX,
                       gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                      transform: `translate3d(0, ${offsetY}px, 0)`,
                       willChange: 'transform',
                     }}
                   >
@@ -447,13 +270,13 @@ export function IconPickerPanel({ current, onPick }: Props) {
                           aria-label={id}
                           onClick={() => onPick(id)}
                           className={cn(
-                            'flex h-[3.25rem] w-full items-center justify-center rounded-lg border aura-tx-colors',
+                            'flex h-14 items-center justify-center rounded-lg border border-transparent aura-tx-colors',
                             active
-                              ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
-                              : 'border-soft/60 bg-transparent hover:border-primary/30 hover:bg-hover'
+                              ? 'border-primary/35 bg-foreground text-background shadow-xs'
+                              : 'text-foreground hover:border-soft hover:bg-hover'
                           )}
                         >
-                          <AuraThemedIcon name={id} size={22} tint={active ? 'var(--primary)' : undefined} />
+                          <AuraThemedIcon name={id} size={23} tint={active ? 'var(--background)' : 'currentColor'} />
                         </button>
                       );
                     })}

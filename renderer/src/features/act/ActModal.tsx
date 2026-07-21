@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { flushSync } from 'react-dom';
 import { XIcon, type LucideIcon } from 'lucide-react';
@@ -64,7 +64,8 @@ export function ActModal({
                 {headerStart ? <div className="shrink-0">{headerStart}</div> : null}
                 {Icon ? (
                   <div
-                    className="flex size-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--primary)_25%,transparent)] bg-[color-mix(in_oklab,var(--primary)_10%,transparent)] text-primary"
+                    className="aura-icon-plate flex size-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_oklab,var(--primary)_25%,transparent)] bg-[color-mix(in_oklab,var(--primary)_10%,transparent)] text-primary"
+                    style={{ '--aura-list-icon-tint': 'var(--primary)' } as CSSProperties}
                     aria-hidden
                   >
                     <Icon className="size-4" />
@@ -174,6 +175,8 @@ type ActAffixValueFieldProps = {
   placeholder?: string;
   disabled?: boolean;
   autoStartEditKey?: string | number | null;
+  buttonClassName?: string;
+  inputClassName?: string;
   onCommit: (next: string) => void;
 };
 
@@ -186,6 +189,8 @@ export function ActAffixValueField({
   placeholder,
   disabled = false,
   autoStartEditKey = null,
+  buttonClassName,
+  inputClassName,
   onCommit,
 }: ActAffixValueFieldProps) {
   const [editing, setEditing] = useState(false);
@@ -199,13 +204,12 @@ export function ActAffixValueField({
     if (!editing) snapshotRef.current = value;
   }, [value, editing]);
 
-  const displayLine = useMemo(() => {
+  const displayValue = useMemo(() => {
     const t = value.trim();
     if (!t) return '—';
-    const s = suffix?.trim() ?? '';
-    if (!s) return t;
-    return `${t}\u00a0${s}`;
-  }, [value, suffix]);
+    return t;
+  }, [value]);
+  const displaySuffix = suffix?.trim() ?? '';
 
   const start = () => {
     if (disabled) return;
@@ -275,62 +279,77 @@ export function ActAffixValueField({
         aria-label={ariaLabel}
         disabled={disabled}
         onClick={start}
-        className={cn(
-          'flex h-9 w-full min-w-0 items-center justify-center rounded-md border border-soft bg-control px-3 text-center text-sm text-foreground shadow-xs aura-tx-colors hover:bg-hover',
-          disabled && 'disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50'
-        )}
+        data-act-affix-field="true"
+	        className={cn(
+	          'flex h-8 w-full min-w-0 items-center justify-center rounded-sm border-0 bg-transparent px-2.5 text-center text-sm text-foreground shadow-none aura-tx-colors hover:bg-hover/45 focus-visible:bg-background/35 focus-visible:ring-1 focus-visible:ring-ring/45',
+	          disabled && 'disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-transparent disabled:opacity-50',
+	          buttonClassName
+	        )}
       >
-        <span className={cn('max-w-full truncate', (inputKind === 'number' || inputKind === 'integer') && 'tabular-nums')}>{displayLine}</span>
+        <span className="flex min-w-0 max-w-full items-baseline justify-center gap-1.5">
+          <span className={cn('min-w-0 truncate', (inputKind === 'number' || inputKind === 'integer') && 'tabular-nums')}>{displayValue}</span>
+          {displaySuffix ? <span className="shrink-0 text-xs font-semibold text-faint">{displaySuffix}</span> : null}
+        </span>
       </button>
     );
   }
 
   return (
-    <Input
-      ref={inputRef}
-      id={id}
-      autoFocus
-      type="text"
-      inputMode={inputKind === 'number' ? 'decimal' : inputKind === 'integer' ? 'numeric' : 'text'}
-      value={draft}
-      placeholder={placeholder}
-      aria-label={ariaLabel}
-      onChange={(e) =>
-        setDraft(inputKind === 'number' || inputKind === 'integer' ? sanitizeNumericDraft(e.target.value) : e.target.value)
-      }
-      onBlur={() => { if (!committedByKeyRef.current) commit(); }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-          committedByKeyRef.current = true;
-          // Commit directly — don't rely on blur to avoid phantom form submit
-          const snap = snapshotRef.current;
-          const t = draft.trim();
-          const committed =
-            !t ? snap
-            : inputKind === 'number' || inputKind === 'integer'
-              ? (Number.isFinite(parseFloat(t.replace(',', '.'))) ? t : snap)
-              : draft;
-          setEditing(false);
-          setDraft('');
-          onCommit(committed);
-          window.setTimeout(() => {
-            committedByKeyRef.current = false;
-            document.querySelector<HTMLElement>('[data-modal-default-action="true"]')?.focus();
-          }, 0);
+    <div className="relative min-w-0">
+      <Input
+        ref={inputRef}
+        id={id}
+        autoFocus
+        type="text"
+        inputMode={inputKind === 'number' ? 'decimal' : inputKind === 'integer' ? 'numeric' : 'text'}
+        value={draft}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        data-act-affix-input="true"
+        onChange={(e) =>
+          setDraft(inputKind === 'number' || inputKind === 'integer' ? sanitizeNumericDraft(e.target.value) : e.target.value)
         }
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          e.stopPropagation();
-          cancel();
-        }
-      }}
-      className={cn(
-        'h-9 w-full min-w-0 rounded-md border border-soft bg-control px-3 text-center text-sm shadow-xs',
-        (inputKind === 'number' || inputKind === 'integer') && 'tabular-nums'
-      )}
-    />
+        onBlur={() => { if (!committedByKeyRef.current) commit(); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            committedByKeyRef.current = true;
+            // Commit directly — don't rely on blur to avoid phantom form submit
+            const snap = snapshotRef.current;
+            const t = draft.trim();
+            const committed =
+              !t ? snap
+              : inputKind === 'number' || inputKind === 'integer'
+                ? (Number.isFinite(parseFloat(t.replace(',', '.'))) ? t : snap)
+                : draft;
+            setEditing(false);
+            setDraft('');
+            onCommit(committed);
+            window.setTimeout(() => {
+              committedByKeyRef.current = false;
+              document.querySelector<HTMLElement>('[data-modal-default-action="true"]')?.focus();
+            }, 0);
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            cancel();
+          }
+        }}
+	        className={cn(
+	          'h-8 w-full min-w-0 rounded-sm border-0 bg-background/35 px-2.5 text-center text-sm shadow-none focus-visible:bg-background/55 focus-visible:ring-1 focus-visible:ring-ring/45',
+	          displaySuffix && 'pr-9',
+	          (inputKind === 'number' || inputKind === 'integer') && 'tabular-nums',
+	          inputClassName
+        )}
+      />
+      {displaySuffix ? (
+        <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs font-semibold text-faint">
+          {displaySuffix}
+        </span>
+      ) : null}
+    </div>
   );
 }
 

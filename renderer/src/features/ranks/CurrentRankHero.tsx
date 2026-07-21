@@ -2,7 +2,6 @@
 // Верхний блок страницы рангов: изображение текущего ранга, очки, прогресс до следующего.
 
 import type { CSSProperties } from 'react';
-import { Progress } from '@/components/ui/progress';
 import { Caption } from '@/shared/ui/caption';
 import { formatRankPoints, rankAuraHsl, rankImageSrc, type RankTier } from '@/shared/config/ranks-model';
 import { RankImage } from './RankImage';
@@ -20,7 +19,7 @@ type Props = {
 export function CurrentRankHero({ current, actualCurrent, next, points, pct, needed, dateString }: Props) {
   const aura = rankAuraHsl(current.id);
   const heroAuraVars = { ['--rank-aura' as string]: aura } as CSSProperties;
-  const hasLocalPointsFallback = typeof window === 'undefined' || !window.PointsService;
+  const progressPct = next ? Math.max(0, Math.min(100, Number(pct) || 0)) : 100;
 
   return (
     <div
@@ -43,7 +42,7 @@ export function CurrentRankHero({ current, actualCurrent, next, points, pct, nee
           <RankImage
             src={rankImageSrc(current.imageNumber)}
             alt={current.name}
-            className="relative z-[1] max-h-full w-full object-contain drop-shadow-sm"
+            className="aura-operator-visual relative z-[1] max-h-full w-full object-contain drop-shadow-sm"
             loading="eager"
             revealWhenLoaded
           />
@@ -51,7 +50,7 @@ export function CurrentRankHero({ current, actualCurrent, next, points, pct, nee
 
         {/* Информация о ранге */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start gap-3 sm:gap-4 xl:justify-center">
-          <Caption>Текущий ранг</Caption>
+          <Caption>Ранг</Caption>
           <h2 className="font-heading text-balance text-lg font-semibold tracking-tight text-foreground sm:text-2xl xl:text-3xl">
             {current.name}
           </h2>
@@ -68,48 +67,42 @@ export function CurrentRankHero({ current, actualCurrent, next, points, pct, nee
             {current.description}
           </div>
 
-          {/* Карточки: накоплено / до следующего */}
-          <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-            <div className="rounded-lg border border-soft bg-panel px-3 py-2.5 sm:px-4 sm:py-3">
-              <Caption>Накоплено очков</Caption>
-              <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">{formatRankPoints(points)}</p>
-              <p className="text-muted-foreground mt-1 text-xs tabular-nums">на {dateString}</p>
-            </div>
-            <div className="rounded-lg border border-soft bg-panel px-3 py-2.5 sm:px-4 sm:py-3">
-              {next ? (
-                <>
-                  <Caption>До «{next.name}»</Caption>
-                  <p className="mt-1 text-base font-semibold tabular-nums text-foreground sm:text-lg">
-                    ещё <span className="text-primary">{formatRankPoints(needed)}</span>
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-xs">порог: {formatRankPoints(next.threshold)}</p>
-                </>
-              ) : (
-                <>
-                  <Caption>Вершина</Caption>
-                  <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">Максимальный ранг</p>
-                  <p className="text-muted-foreground mt-1 text-xs">Вы прошли весь путь лестницы.</p>
-                </>
-              )}
+          <div
+            className="aura-operator-panel relative z-20 shrink-0 overflow-hidden rounded-xl border border-soft/70 bg-panel/40"
+            style={{ ['--rank-tint' as string]: aura } as CSSProperties}
+          >
+            <div
+              className="aura-data-fill pointer-events-none absolute inset-y-0 left-0 w-full"
+              aria-hidden
+              style={{
+                width: `${progressPct}%`,
+                background: `linear-gradient(90deg, color-mix(in oklab, ${aura} 24%, transparent), color-mix(in oklab, ${aura} 12%, transparent))`,
+              }}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-background/5 to-background/30" aria-hidden />
+
+            <div className="relative z-10 grid min-h-[4.25rem] min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3 sm:px-4">
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="min-w-0 truncate text-sm font-semibold leading-tight text-foreground">
+                    {next ? next.name : 'Верхняя ступень'}
+                  </span>
+                  <span className="aura-operator-kpi shrink-0 text-xs font-semibold tabular-nums text-dim">
+                    {Math.round(progressPct)}%
+                  </span>
+                </div>
+                <p className="mt-1 truncate text-caption font-medium text-dim tabular-nums">
+                  {next ? `${formatRankPoints(needed)} до перехода` : 'шкала заполнена'}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="aura-operator-kpi text-lg font-semibold tabular-nums leading-none text-foreground sm:text-xl">
+                  {formatRankPoints(points)}
+                </p>
+                <p className="mt-1 text-nano font-medium leading-none text-faint">очков</p>
+              </div>
             </div>
           </div>
-
-          {/* Прогресс-бар к следующему рангу */}
-          {next ? (
-            <div className="space-y-2">
-              <div className="flex items-end justify-between gap-2 text-xs">
-                <span className="text-muted-foreground">Прогресс к следующему рангу</span>
-                <span className="font-semibold tabular-nums text-foreground">{Math.round(pct)}%</span>
-              </div>
-              <Progress value={pct} className="h-2" />
-            </div>
-          ) : null}
-
-          {hasLocalPointsFallback ? (
-            <p className="text-muted-foreground text-xs">
-              Локальный режим: очки берутся из сохранённых дневных данных без Electron.
-            </p>
-          ) : null}
         </div>
       </div>
     </div>

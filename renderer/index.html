@@ -15,45 +15,79 @@
       (function () {
         // Тема до загрузки CSS — убирает белый флеш.
         // Используем точные oklch-значения из globals.css (не hex-аппроксимации).
-        var theme = localStorage.getItem('aura-theme') || 'dark';
-        var bg = theme === 'light' ? 'oklch(0.952 0.008 260)'
-               : theme === 'dim'   ? 'oklch(0.22 0.01 262)'
-               :                     'oklch(0.13 0 0)';
-        document.documentElement.style.background = bg;
+        var rawTheme = localStorage.getItem('aura-theme');
+        var theme = rawTheme === 'dark' ? 'dark' : (rawTheme === 'tinted' || rawTheme === 'dim') ? 'tinted' : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         if (theme !== 'light') document.documentElement.classList.add('dark');
 
         // Apply color-filter and theme-style synchronously to avoid background/border token flash
-        var colorFilter = localStorage.getItem('aura-color-filter') || 'vivid';
+        var colorFilter = localStorage.getItem('aura-color-filter') || 'standard';
         document.documentElement.setAttribute('data-color-filter', colorFilter);
-        var themeStyle = localStorage.getItem('aura-theme-style') || 'vivid';
+        var themeStyle = localStorage.getItem('aura-theme-style') || 'standard';
         document.documentElement.setAttribute('data-theme-style', themeStyle);
 
         // Set --primary from accent preset immediately — so LoadingScreen and
         // the inline preloader show the correct accent color before ThemeContext runs.
         var ACCENT = {
-          slate:    { l: 'oklch(0.72 0.08 255)',  d: 'oklch(0.72 0.08 255)' },
-          stone:    { l: 'oklch(0.5 0.01 85)',     d: 'oklch(0.82 0.008 85)' },
-          graphite: { l: 'oklch(0.34 0.01 260)',   d: 'oklch(0.74 0.01 260)' },
-          violet:   { l: 'oklch(0.54 0.26 285)',   d: 'oklch(0.68 0.24 285)' },
-          indigo:   { l: 'oklch(0.52 0.18 280)',   d: 'oklch(0.7 0.14 280)' },
-          blue:     { l: 'oklch(0.52 0.24 248)',   d: 'oklch(0.66 0.22 248)' },
-          cobalt:   { l: 'oklch(0.52 0.18 262)',   d: 'oklch(0.7 0.14 262)' },
-          cyan:     { l: 'oklch(0.57 0.22 212)',   d: 'oklch(0.72 0.2 212)' },
-          teal:     { l: 'oklch(0.55 0.18 188)',   d: 'oklch(0.7 0.16 188)' },
-          emerald:  { l: 'oklch(0.56 0.22 158)',   d: 'oklch(0.7 0.2 158)' },
-          forest:   { l: 'oklch(0.5 0.12 150)',    d: 'oklch(0.7 0.1 150)' },
-          lime:     { l: 'oklch(0.68 0.24 132)',   d: 'oklch(0.78 0.24 132)' },
-          amber:    { l: 'oklch(0.62 0.2 68)',     d: 'oklch(0.78 0.2 68)' },
-          orange:   { l: 'oklch(0.6 0.24 44)',     d: 'oklch(0.76 0.22 44)' },
-          rose:     { l: 'oklch(0.56 0.26 14)',    d: 'oklch(0.7 0.24 14)' },
-          pink:     { l: 'oklch(0.58 0.26 340)',   d: 'oklch(0.72 0.24 340)' },
-          mono:     { l: 'oklch(0.36 0 0)',        d: 'oklch(0.82 0 0)' },
+          slate:    { light: 'oklch(0.46 0.06 255)', tinted: 'oklch(0.72 0.085 255)', dark: 'oklch(0.72 0.08 255)' },
+          stone:    { light: 'oklch(0.5 0.01 85)',   tinted: 'oklch(0.78 0.012 85)',  dark: 'oklch(0.82 0.008 85)' },
+          graphite: { light: 'oklch(0.34 0.01 260)', tinted: 'oklch(0.76 0.012 260)', dark: 'oklch(0.74 0.01 260)' },
+          violet:   { light: 'oklch(0.54 0.26 285)', tinted: 'oklch(0.72 0.25 285)',  dark: 'oklch(0.68 0.24 285)' },
+          indigo:   { light: 'oklch(0.52 0.18 280)', tinted: 'oklch(0.73 0.17 280)',  dark: 'oklch(0.7 0.14 280)' },
+          blue:     { light: 'oklch(0.52 0.24 248)', tinted: 'oklch(0.72 0.23 248)',  dark: 'oklch(0.66 0.22 248)' },
+          cobalt:   { light: 'oklch(0.52 0.18 262)', tinted: 'oklch(0.73 0.17 262)',  dark: 'oklch(0.7 0.14 262)' },
+          cyan:     { light: 'oklch(0.57 0.22 212)', tinted: 'oklch(0.78 0.2 212)',   dark: 'oklch(0.72 0.2 212)' },
+          teal:     { light: 'oklch(0.55 0.18 188)', tinted: 'oklch(0.75 0.16 188)',  dark: 'oklch(0.7 0.16 188)' },
+          emerald:  { light: 'oklch(0.56 0.22 158)', tinted: 'oklch(0.75 0.2 158)',   dark: 'oklch(0.7 0.2 158)' },
+          forest:   { light: 'oklch(0.5 0.12 150)',  tinted: 'oklch(0.73 0.12 150)',  dark: 'oklch(0.7 0.1 150)' },
+          lime:     { light: 'oklch(0.68 0.24 132)', tinted: 'oklch(0.82 0.23 132)',  dark: 'oklch(0.78 0.24 132)' },
+          amber:    { light: 'oklch(0.62 0.2 68)',   tinted: 'oklch(0.8 0.19 68)',    dark: 'oklch(0.78 0.2 68)' },
+          orange:   { light: 'oklch(0.6 0.24 44)',   tinted: 'oklch(0.77 0.22 44)',   dark: 'oklch(0.76 0.22 44)' },
+          rose:     { light: 'oklch(0.56 0.26 14)',  tinted: 'oklch(0.72 0.24 14)',   dark: 'oklch(0.7 0.24 14)' },
+          pink:     { light: 'oklch(0.58 0.26 340)', tinted: 'oklch(0.74 0.24 340)',  dark: 'oklch(0.72 0.24 340)' },
+          fantasy:  { light: 'oklch(0.55 0.16 292)', tinted: 'oklch(0.76 0.15 292)',  dark: 'oklch(0.74 0.13 292)' },
+          mono:     { light: 'oklch(0.36 0 0)',      tinted: 'oklch(0.78 0 0)',       dark: 'oklch(0.82 0 0)' },
         };
-        var preset = localStorage.getItem('aura-accent-preset') || 'violet';
-        var entry = ACCENT[preset] || ACCENT.violet;
-        var primary = theme === 'light' ? entry.l : entry.d;
+        function normalizeAccent(value) {
+          if (value === 'fantasy' || value === 'blue' || value === 'teal' || value === 'emerald' || value === 'amber' || value === 'rose' || value === 'slate' || value === 'graphite') return value;
+          if (value === 'violet' || value === 'indigo' || value === 'pink') return 'fantasy';
+          if (value === 'cyan' || value === 'cobalt') return 'blue';
+          if (value === 'forest' || value === 'lime') return 'emerald';
+          if (value === 'orange') return 'amber';
+          if (value === 'mono' || value === 'stone') return 'graphite';
+          return 'fantasy';
+        }
+        var preset = normalizeAccent(localStorage.getItem('aura-accent-preset'));
+        var entry = ACCENT[preset] || ACCENT.fantasy;
+        var strictMode = localStorage.getItem('aura-strict-mode') === 'on';
+        if (strictMode) document.documentElement.setAttribute('data-strict-mode', 'on');
+        var primary = strictMode
+          ? (theme === 'light' ? 'oklch(0.18 0 0)' : 'oklch(0.86 0 0)')
+          : (entry[theme] || entry.dark);
         document.documentElement.style.setProperty('--primary', primary);
+        document.documentElement.style.setProperty('--ring', primary);
+        document.documentElement.style.setProperty('--accent', primary);
+        document.documentElement.style.setProperty('--sidebar-primary', primary);
+
+        var bg = theme === 'light'
+          ? 'oklch(0.972 0.004 255)'
+          : theme === 'tinted'
+            ? 'color-mix(in oklab, oklch(0.295 0.012 255) 90%, ' + primary + ' 10%)'
+            : 'oklch(0.13 0 0)';
+        var fg = theme === 'light' ? 'oklch(0.11 0.014 255)' : 'oklch(0.965 0.006 255)';
+        document.documentElement.style.background = bg;
+        document.documentElement.style.setProperty('--background', bg);
+        document.documentElement.style.setProperty('--foreground', fg);
+        document.documentElement.style.setProperty('--aura-preload-bg', bg);
+        document.documentElement.style.setProperty('--aura-preload-fg', fg);
+        document.documentElement.style.setProperty('--aura-preload-primary', primary);
+
+        var font = localStorage.getItem('aura-font');
+        if (font && font !== '__standard__') {
+          var family = "'" + font.replace(/'/g, '') + "', ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\"";
+          document.documentElement.style.setProperty('--font-sans', family);
+          document.documentElement.style.setProperty('--font-heading', family);
+        }
 
         // Подавляем цветовые переходы до первого рендера React.
         // AppMainArea снимет атрибут после загрузки данных страницы.
@@ -82,65 +116,93 @@
       <style>
         /* Preloader — position: fixed relative to viewport, never moves */
         #aura-preload {
+          all: initial;
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
           z-index: 9998;
-          background: inherit;
-          transition: opacity 200ms ease;
+          display: grid;
+          place-items: center;
+          background:
+            radial-gradient(circle at 50% 44%, color-mix(in oklab, var(--aura-preload-primary) 13%, transparent), transparent 544px),
+            var(--aura-preload-bg);
+          color: var(--aura-preload-primary);
+          font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-size: 16px;
+          line-height: 1;
+          box-sizing: border-box;
+          contain: strict;
+          opacity: 1;
+          transition: opacity 560ms cubic-bezier(.22,1,.36,1);
+        }
+        #aura-preload *,
+        #aura-preload *::before,
+        #aura-preload *::after {
+          box-sizing: border-box;
         }
         #aura-preload.aura-preload-gone {
           opacity: 0;
           pointer-events: none;
         }
-        /* Single anchor point: absolute center of viewport, no flexbox */
-        ._pl-anchor {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0;
-          height: 0;
+        ._pl-mark {
+          all: initial;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: var(--aura-preload-primary);
+          font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          line-height: 1;
+          opacity: .92;
+          transform: scale(1);
+          transform-origin: center;
+          animation: _pl-enter 520ms cubic-bezier(.22,1,.36,1) both;
+          transition: opacity 520ms cubic-bezier(.22,1,.36,1), transform 520ms cubic-bezier(.22,1,.36,1);
         }
-        /* All children positioned relative to anchor center */
-        ._pl-ring {
-          position: absolute;
-          border-radius: 50%;
-          border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
-          animation: _pl-ring 2.8s ease-in-out infinite;
-        }
-        ._pl-ring-1 {
-          width: 72px; height: 72px;
-          top: -36px; left: -36px;
-        }
-        ._pl-ring-2 {
-          width: 52px; height: 52px;
-          top: -26px; left: -26px;
-          border-color: color-mix(in oklab, var(--primary) 14%, transparent);
-          animation-delay: .6s;
+        #aura-preload.aura-preload-gone ._pl-mark {
+          animation: none;
+          opacity: 0;
+          transform: scale(.96);
         }
         ._pl-star {
-          position: absolute;
-          width: 28px; height: 28px;
-          top: -14px; left: -14px;
-          color: var(--primary);
-          filter: drop-shadow(0 0 8px color-mix(in oklab, var(--primary) 40%, transparent));
-          animation: _pl-star 4s ease-in-out infinite;
-          transform-origin: 14px 14px;
+          all: initial;
+          width: 34px;
+          height: 34px;
+          flex: 0 0 auto;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          background: color-mix(in oklab, var(--aura-preload-primary) 18%, transparent);
+          border: 1px solid color-mix(in oklab, var(--aura-preload-primary) 26%, transparent);
+          color: var(--aura-preload-primary);
+          box-shadow: inset 0 0 0 1px color-mix(in oklab, white 6%, transparent);
         }
-        @keyframes _pl-ring {
-          0%, 100% { opacity: .4; transform: scale(1); }
-          50%       { opacity: .12; transform: scale(1.1); }
+        ._pl-star svg {
+          display: block;
+          width: 17px;
+          height: 17px;
+          color: inherit;
         }
-        @keyframes _pl-star {
-          0%, 100% { opacity: .8; }
-          50%       { opacity: 1; }
+        ._pl-title {
+          all: initial;
+          width: 52px;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: .18em;
+          line-height: 1;
+          color: color-mix(in oklab, var(--aura-preload-primary) 72%, var(--aura-preload-fg) 28%);
+          font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        @keyframes _pl-enter {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       </style>
-      <div class="_pl-anchor">
-        <div class="_pl-ring _pl-ring-1"></div>
-        <div class="_pl-ring _pl-ring-2"></div>
-        <svg class="_pl-star" viewBox="0 0 24 24" fill="none">
-          <path d="M12 1.75L14.88 9.12L22.25 12L14.88 14.88L12 22.25L9.12 14.88L1.75 12L9.12 9.12L12 1.75Z" fill="currentColor"/>
-        </svg>
+      <div class="_pl-mark">
+        <div class="_pl-star">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none">
+            <path d="M12 1.75L14.88 9.12L22.25 12L14.88 14.88L12 22.25L9.12 14.88L1.75 12L9.12 9.12L12 1.75Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="_pl-title">AURA</div>
       </div>
     </div>
 

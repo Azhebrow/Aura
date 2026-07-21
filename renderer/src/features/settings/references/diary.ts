@@ -15,7 +15,7 @@ export const DIARY_REFERENCES: Record<string, SettingsReference> = {
   'diary-categories': {
     id: 'diary-categories',
     icon: BookHeart,
-    title: 'Категории дневника',
+    title: 'Категории',
     definition:
       'Типы записей в дневнике: события, мысли, переживания, идеи. Помогает структурировать и организовать заметки.',
     usedOn: [
@@ -143,7 +143,7 @@ export const DIARY_REFERENCES: Record<string, SettingsReference> = {
   'diary-entry-presets': {
     id: 'diary-entry-presets',
     icon: BookText,
-    title: 'Цитаты записи',
+    title: 'Цитаты',
     definition:
       'Подсказки, цитаты и вопросы, которые мотивируют писать в дневнике. Они случайно показываются в пустом поле при открытии дневника.',
     usedOn: [

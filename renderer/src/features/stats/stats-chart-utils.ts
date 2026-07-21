@@ -1,4 +1,5 @@
 import { normalizeCssColorForPaint } from '@/lib/css-color';
+import { isStrictVisualMode, strictModeForeground } from '@/features/theme/strict-mode';
 import { getAuraPublicIconUrlFromName } from '@/shared/lib/aura-icon-url';
 import type { StatsCellValue, StatsMode } from '@/features/stats/types';
 import type { StatsFormattedRow } from '@/features/stats/stats-table-format';
@@ -47,6 +48,9 @@ function readCssVariable(variableName: string): string {
 }
 
 export function resolveChartColor(raw: string | null | undefined, fallback = 'hsl(214, 70%, 56%)'): string {
+  if (isStrictVisualMode()) {
+    return strictModeForeground();
+  }
   if (!raw) return fallback;
   const t = String(raw).trim();
   if (!t) return fallback;
@@ -58,7 +62,7 @@ export function resolveChartColor(raw: string | null | undefined, fallback = 'hs
   return normalizeCssColorForPaint(t) ?? fallback;
 }
 
-export function getChartNumericValue(mode: StatsMode, key: string, raw: StatsCellValue): number | null {
+export function getChartNumericValue(mode: StatsMode, _key: string, raw: StatsCellValue): number | null {
   if (raw === null || raw === undefined) return null;
   if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
   if (mode === 'nutrition' && typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {

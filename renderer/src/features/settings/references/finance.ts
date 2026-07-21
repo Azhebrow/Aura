@@ -100,7 +100,7 @@ export const FINANCE_REFERENCES: Record<string, SettingsReference> = {
     relatedSettings: [
       {
         sectionId: 'interface-data',
-        reason: 'Валюта счётов устанавливается в разделе "Оформление и данные".',
+        reason: 'Валюта счётов устанавливается в разделе "Система".',
       },
       {
         sectionId: 'finance-income',

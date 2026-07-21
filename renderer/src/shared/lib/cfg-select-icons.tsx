@@ -20,7 +20,7 @@ import {
   Wheat,
 } from 'lucide-react';
 
-const iconCls = 'text-muted-foreground size-4 shrink-0';
+const iconCls = 'size-4 shrink-0 text-current';
 
 function Ic(Icon: LucideIcon) {
   return <Icon className={iconCls} aria-hidden />;

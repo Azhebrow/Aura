@@ -8,11 +8,19 @@
 
 /** Единый ритм правой колонки CFG-модалки (высота как у `h-9`). */
 export const CFG_INPUT_CN =
-  'border-soft bg-transparent h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-none';
+  'border-soft bg-control/55 h-9 w-full min-w-0 rounded-lg border px-3 text-left text-sm shadow-none focus-visible:bg-control/75';
 
-/** Кнопка-триггер для выбора иконки — иконка + текст, центрировано. */
+/** Кнопка-триггер для выбора иконки — та же геометрия, что у остальных полей. */
 export const CFG_ICON_TRIGGER_CN =
-  'border-soft bg-transparent hover:bg-hover flex h-9 w-full min-w-0 flex-row items-center justify-center gap-2 rounded-md border px-3 text-center text-sm font-normal aura-tx-colors shadow-none';
+  'border-soft bg-control/55 hover:bg-hover flex h-9 w-full min-w-0 flex-row items-center justify-start gap-2 rounded-lg border px-3 text-left text-sm font-normal text-foreground aura-tx-colors shadow-none';
+
+export function formatCfgIconLabel(value: unknown): string {
+  const clean = String(value ?? '').trim();
+  if (!clean) return '—';
+  return clean
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+}
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
@@ -35,7 +43,7 @@ type AffixFieldProps = {
 
 /**
  * Числовое или короткое текстовое поле с суффиксом.
- * В режиме просмотра показывает «значение единица», по клику — пустой input.
+ * Суффикс живёт отдельно от значения и в просмотре, и при редактировании.
  * При потере фокуса или Enter фиксирует ввод; Escape отменяет.
  */
 export function CfgAffixValueField({
@@ -56,16 +64,16 @@ export function CfgAffixValueField({
     if (!editing) snapshotRef.current = value;
   }, [value, editing]);
 
-  const displayLine = useMemo(() => {
+  const displayValue = useMemo(() => {
     const t = value.trim();
     if (!t) return '—';
-    const a = displayAffix.trim();
-    return a ? `${t} ${a}` : t;
-  }, [value, displayAffix]);
+    return t;
+  }, [value]);
+  const affix = displayAffix.trim();
 
   const start = () => {
     snapshotRef.current = value;
-    setDraft('');
+    setDraft(value);
     setEditing(true);
   };
 
@@ -104,35 +112,46 @@ export function CfgAffixValueField({
         id={id}
         aria-label={ariaLabel}
         onClick={start}
-        className="border-soft bg-transparent text-foreground hover:bg-hover flex h-9 w-full min-w-0 items-center justify-center rounded-md border px-3 text-center text-sm shadow-none aura-tx-colors"
+        className="border-soft bg-control/55 text-foreground hover:bg-hover flex h-9 w-full min-w-0 items-center justify-start rounded-lg border px-3 text-left text-sm shadow-none aura-tx-colors"
       >
-        <span className={cn('max-w-full truncate', inputKind === 'number' && 'tabular-nums')}>{displayLine}</span>
+        <span className="flex min-w-0 max-w-full items-baseline justify-start gap-1.5">
+          <span className={cn('min-w-0 truncate', inputKind === 'number' && 'tabular-nums')}>{displayValue}</span>
+          {affix ? <span className="shrink-0 text-xs font-semibold text-faint">{affix}</span> : null}
+        </span>
       </button>
     );
   }
 
   return (
-    <Input
-      id={id}
-      autoFocus
-      type="text"
-      inputMode={inputKind === 'number' ? 'decimal' : 'text'}
-      value={draft}
-      placeholder={placeholder}
-      aria-label={ariaLabel}
-      onChange={(e) =>
-        setDraft(inputKind === 'number' ? sanitizeNumericDraft(e.target.value) : e.target.value)
-      }
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget as HTMLInputElement).blur(); }
-        if (e.key === 'Escape') { e.preventDefault(); cancel(); }
-      }}
-      className={cn(
-        'border-soft bg-transparent h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-none',
-        inputKind === 'number' && 'tabular-nums'
-      )}
-    />
+    <div className="relative min-w-0">
+      <Input
+        id={id}
+        autoFocus
+        type="text"
+        inputMode={inputKind === 'number' ? 'decimal' : 'text'}
+        value={draft}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        onChange={(e) =>
+          setDraft(inputKind === 'number' ? sanitizeNumericDraft(e.target.value) : e.target.value)
+        }
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget as HTMLInputElement).blur(); }
+          if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+        }}
+        className={cn(
+          'border-soft bg-control/55 h-9 w-full min-w-0 rounded-lg border px-3 text-left text-sm shadow-none focus-visible:bg-control/75',
+          affix && 'pr-9',
+          inputKind === 'number' && 'tabular-nums'
+        )}
+      />
+      {affix ? (
+        <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs font-semibold text-faint">
+          {affix}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -159,7 +178,7 @@ export function CfgModalGridRow({ label, htmlFor, children }: GridRowProps) {
           {label}
         </Label>
       </div>
-      <div className="flex min-w-0 w-full flex-col items-center justify-center px-3 py-2 sm:min-h-9">
+      <div className="flex min-w-0 w-full flex-col items-stretch justify-center px-3 py-2 sm:min-h-9">
         {children}
       </div>
     </div>

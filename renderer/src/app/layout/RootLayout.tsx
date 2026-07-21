@@ -6,6 +6,7 @@ import { AppMobileDock } from '@/widgets/app-chrome/AppMobileDock';
 import { AppearanceScaleSync } from '@/features/theme/AppearanceScaleSync';
 import { OnboardingWizard } from '@/features/onboarding/OnboardingWizard';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
+import { ShellErrorBoundary } from '@/app/layout/ShellErrorBoundary';
 
 type Stage = 'idle' | 'sidebar' | 'header' | 'content';
 
@@ -25,8 +26,13 @@ export function RootLayout() {
 
   useEffect(() => {
     if (!ready) return;
-    const settings = db?.getAppSettings?.() as Record<string, unknown> | null | undefined;
-    setOnboardingDone(isOnboardingComplete(settings?.onboarding_complete));
+    try {
+      const settings = db?.getAppSettings?.() as Record<string, unknown> | null | undefined;
+      setOnboardingDone(isOnboardingComplete(settings?.onboarding_complete));
+    } catch (error) {
+      console.warn('[AURA] Failed to read onboarding settings, opening main shell.', error);
+      setOnboardingDone(true);
+    }
   }, [db, ready]);
 
   useEffect(() => {
@@ -43,7 +49,7 @@ export function RootLayout() {
   const contentReady  = stage === 'content';
 
   const tx = (delay = 0) =>
-    `transition-opacity duration-[380ms] ease-out${delay ? ` delay-[${delay}ms]` : ''}`;
+    `aura-shell-reveal transition-opacity duration-[380ms] ease-out${delay ? ` delay-[${delay}ms]` : ''}`;
 
   if (!ready || onboardingDone === null) {
     return (
@@ -64,7 +70,7 @@ export function RootLayout() {
 
   return (
     <div
-      className="bg-background flex w-full min-w-0 overflow-hidden aura-tx-colors"
+      className="aura-app-root bg-background flex w-full min-w-0 overflow-hidden aura-tx-colors"
       style={{ height: 'var(--aura-app-height, 100svh)' }}
     >
       <AppearanceScaleSync />
@@ -73,34 +79,42 @@ export function RootLayout() {
       <div className="flex min-h-0 min-w-0 flex-1">
         {/* Sidebar — slides in from left */}
         <div
-          className={`flex min-h-0 shrink-0 ${tx()}`}
+          className={`aura-app-sidebar-shell flex min-h-0 shrink-0 ${tx()}`}
           style={{ opacity: sidebarReady ? 1 : 0 }}
         >
-          <AppSidebar />
+          <ShellErrorBoundary label="Навигация">
+            <AppSidebar />
+          </ShellErrorBoundary>
         </div>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div
-            className={`shrink-0 ${tx(40)}`}
+            className={`aura-app-header-shell shrink-0 ${tx(40)}`}
             style={{ opacity: headerReady ? 1 : 0 }}
           >
-            <AppHeader />
+            <ShellErrorBoundary label="Верхняя панель">
+              <AppHeader />
+            </ShellErrorBoundary>
           </div>
 
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <div
-              className={`${tx(80)} flex min-h-0 min-w-0 flex-1 flex-col`}
+              className={`aura-app-content-shell ${tx(80)} flex min-h-0 min-w-0 flex-1 flex-col`}
               style={{ opacity: contentReady ? 1 : 0 }}
             >
-              <AppMainArea />
+              <ShellErrorBoundary label="Страница">
+                <AppMainArea />
+              </ShellErrorBoundary>
             </div>
           </div>
 
           <div
-            className={`shrink-0 ${tx(120)}`}
+            className={`aura-app-mobile-shell shrink-0 ${tx(120)}`}
             style={{ opacity: contentReady ? 1 : 0 }}
           >
-            <AppMobileDock />
+            <ShellErrorBoundary label="Нижняя панель">
+              <AppMobileDock />
+            </ShellErrorBoundary>
           </div>
         </div>
       </div>

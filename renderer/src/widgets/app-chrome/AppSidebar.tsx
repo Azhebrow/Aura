@@ -39,8 +39,13 @@ export function AppSidebar() {
 
   const sectionsVis = useMemo(() => {
     if (!db) return null;
-    const settings = db.getAppSettings() as AuraRow | null;
-    return getPageSectionsFromSettings(settings);
+    try {
+      const settings = db.getAppSettings() as AuraRow | null;
+      return getPageSectionsFromSettings(settings);
+    } catch (error) {
+      console.warn('[AURA] Failed to read sidebar visibility settings, showing default navigation.', error);
+      return null;
+    }
   }, [db]);
 
   const { mainPages, settingsPage } = useMemo(() => {
@@ -56,7 +61,7 @@ export function AppSidebar() {
   }, [navOrder, sectionsVis]);
 
   return (
-    <aside className="hidden h-full min-h-0 w-[12.5rem] shrink-0 flex-col border-r border-soft bg-panel px-2 py-3 aura-tx-surface md:flex xl:w-52">
+    <aside className="aura-app-sidebar hidden h-full min-h-0 w-[12.5rem] shrink-0 flex-col border-r border-soft bg-panel px-2 py-3 aura-tx-surface md:flex xl:w-52">
       <div className="mb-2.5 shrink-0 px-0.5">
         <div
           className="relative h-8"
@@ -67,7 +72,7 @@ export function AppSidebar() {
             <button
               type="button"
               onClick={toggleCalendar}
-              className="inline-flex h-8 w-full items-center gap-2 rounded-lg bg-primary/8 px-2 text-left aura-tx-colors hover:bg-primary/14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="aura-shell-brand-button inline-flex h-8 w-full items-center gap-2 rounded-lg bg-primary/8 px-2 text-left aura-tx-colors hover:bg-primary/14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               aria-label={activePageId === 'calendar' ? t('common:action.back') : t('calendar')}
               title={activePageId === 'calendar' ? t('common:action.back') : t('calendar')}
             >
@@ -81,7 +86,7 @@ export function AppSidebar() {
             <button
               type="button"
               onClick={() => setActivePageId('home')}
-              className="inline-flex h-8 w-full items-center gap-2 rounded-lg px-1 text-left aura-tx-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              className="aura-shell-brand-button inline-flex h-8 w-full items-center gap-2 rounded-lg px-1 text-left aura-tx-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
               aria-label={t('home')}
               title={t('home')}
             >

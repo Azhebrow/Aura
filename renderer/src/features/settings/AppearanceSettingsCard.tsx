@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Moon, MoonStar, Palette, Sun, Sparkles, Drama, CircleDashed, Flame, Snowflake, Cloud, Zap } from 'lucide-react';
+import { Moon, Palette, Scaling, ShieldCheck, Sun, Sunset, Type } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { UniversalRadioGroup, type UniversalRadioOption } from '@/components/ui/header-segmented-radio';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
-import { getAuraAccentPresetColors, applyAuraColorFilter } from '@/features/theme/apply-theme-dom';
+import { getAuraAccentPresetColors } from '@/features/theme/apply-theme-dom';
 import { useAuraTheme } from '@/features/theme/ThemeContext';
-import type { AuraAccentPreset, AuraColorFilter, AuraThemeMode } from '@/features/theme/theme-constants';
+import type { AuraAccentPreset, AuraThemeMode } from '@/features/theme/theme-constants';
 import { AURA_FONT_CHOICES, AURA_FONT_STANDARD, isAuraFontFamily } from '@/features/theme/font-constants';
 import {
   APP_SCALE_STORAGE_FIELD,
@@ -18,37 +19,22 @@ import {
 } from '@/features/theme/appearance-scale';
 import type { AuraRow } from '@/types/aura';
 import { SettingsSectionCard } from '@/widgets/settings/SettingsSectionCard';
-import { cn } from '@/lib/utils';
 
 const THEMES: UniversalRadioOption<AuraThemeMode>[] = [
-  { value: 'light', label: 'Светлая', Icon: Sun },
-  { value: 'dim',   label: 'Тихая',   Icon: MoonStar },
-  { value: 'dark',  label: 'Тёмная',  Icon: Moon },
+  { value: 'light',  label: 'Светлое',      Icon: Sun },
+  { value: 'tinted', label: 'Тонированное', Icon: Sunset },
+  { value: 'dark',   label: 'Тёмное',       Icon: Moon },
 ];
 
 const ACCENT_PRESETS: Array<{ value: AuraAccentPreset; label: string }> = [
-  { value: 'mono',    label: 'Моно' },
-  { value: 'slate',   label: 'Сланец' },
-  { value: 'violet',  label: 'Фиолет' },
+  { value: 'fantasy',  label: 'Fantasy' },
   { value: 'blue',    label: 'Синий' },
-  { value: 'cyan',    label: 'Циан' },
   { value: 'teal',    label: 'Бирюза' },
   { value: 'emerald', label: 'Изумруд' },
-  { value: 'lime',    label: 'Лайм' },
   { value: 'amber',   label: 'Янтарь' },
-  { value: 'orange',  label: 'Апельсин' },
   { value: 'rose',    label: 'Красный' },
-  { value: 'pink',    label: 'Розовый' },
-];
-
-const COLOR_FILTERS: UniversalRadioOption<AuraColorFilter>[] = [
-  { value: 'vivid',    label: 'Яркий',     Icon: Sparkles },
-  { value: 'serious',  label: 'Серьёзный', Icon: Drama },
-  { value: 'warm',     label: 'Тёплый',    Icon: Flame },
-  { value: 'cool',     label: 'Холодный',  Icon: Snowflake },
-  { value: 'pastel',   label: 'Пастель',   Icon: Cloud },
-  { value: 'contrast', label: 'Контраст',  Icon: Zap },
-  { value: 'bw',       label: 'Ч/Б',       Icon: CircleDashed },
+  { value: 'slate',   label: 'Сталь' },
+  { value: 'graphite', label: 'Графит' },
 ];
 
 const APP_SCALE_MIN  = 90;
@@ -74,23 +60,86 @@ function saveAppSettings(db: ReturnType<typeof useAuraDb>['db'], patch: Partial<
   window.dispatchEvent(new Event('settings-saved'));
 }
 
-function SectionDivider() {
-  return <div className="-mx-3 h-px bg-soft sm:-mx-4" />;
+function SettingRow({
+  icon: Icon,
+  label,
+  meta,
+  children,
+}: {
+  icon: typeof Palette;
+  label: string;
+  meta?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid min-h-14 grid-cols-1 gap-2 border-t border-soft/55 px-3 py-2.5 first:border-t-0 sm:grid-cols-[minmax(11rem,1fr)_minmax(13rem,1.4fr)] sm:items-center">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-control/60 text-subtle">
+          <Icon className="size-4" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-tight text-foreground">{label}</p>
+          {meta ? <p className="mt-0.5 truncate text-xs text-dim">{meta}</p> : null}
+        </div>
+      </div>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function ScaleControl({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: string) => void;
+}) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-wider text-dim">
-      {children}
-    </p>
+    <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_3rem] items-center gap-2">
+      <span className="text-xs font-medium text-dim">{label}</span>
+      <Slider
+        min={min}
+        max={max}
+        step={step}
+        value={[scaleToSlider(value, min, max)]}
+        onValueChange={(values) => onChange(sliderToScale(values[0] ?? 100))}
+        className="min-w-0 px-0.5"
+      />
+      <span className="text-right tabular-nums text-xs font-semibold text-foreground">
+        {Math.round(Number(value) * 100)}%
+      </span>
+    </div>
   );
 }
 
 export function AppearanceSettingsCard() {
   const { db } = useAuraDb();
-  const { theme, setTheme, accentPreset, setAccentPreset, fontFamily, setFontFamily, colorFilter, setColorFilter } = useAuraTheme();
+  const {
+    theme,
+    setTheme,
+    accentPreset,
+    setAccentPreset,
+    fontFamily,
+    setFontFamily,
+    iconTheme,
+    setIconTheme,
+    strictMode,
+    setStrictMode,
+  } = useAuraTheme();
   const [appScale, setAppScale]   = useState(DEFAULT_APP_SCALE);
   const [textScale, setTextScale] = useState(DEFAULT_TEXT_SCALE);
+
+  useEffect(() => {
+    if (iconTheme !== 'filled') setIconTheme('filled');
+  }, [iconTheme, setIconTheme]);
 
   useEffect(() => {
     if (!db) return;
@@ -103,57 +152,22 @@ export function AppearanceSettingsCard() {
 
   const activeAccent = ACCENT_PRESETS.find((p) => p.value === accentPreset) ?? ACCENT_PRESETS[0];
   const { tint: activeAccentTint } = getAuraAccentPresetColors(activeAccent.value, theme);
+  const themeMeta = theme === 'light' ? 'Светлое' : theme === 'tinted' ? 'Тонированное' : 'Тёмное';
 
   return (
-    <SettingsSectionCard title="Оформление" leadingIcon={Palette} contentClassName="gap-4">
+    <SettingsSectionCard title="Оформление" leadingIcon={Palette} contentClassName="gap-3">
+      <div className="overflow-hidden rounded-xl border border-soft/70 bg-card/60">
+        <SettingRow icon={Sun} label="Тема" meta={themeMeta}>
+          <UniversalRadioGroup
+            value={theme}
+            onValueChange={(v) => { setTheme(v); saveAppSettings(db, { theme_mode: v }); }}
+            options={THEMES}
+            ariaLabel="Тема"
+            fullWidth
+          />
+        </SettingRow>
 
-      {/* ── Тема ── */}
-      <div className="flex flex-col gap-2">
-        <SectionLabel>Тема</SectionLabel>
-        <UniversalRadioGroup
-          value={theme}
-          onValueChange={(v) => { setTheme(v); saveAppSettings(db, { theme_mode: v }); }}
-          options={THEMES}
-          ariaLabel="Тема"
-          fullWidth
-        />
-      </div>
-
-      <SectionDivider />
-
-      {/* ── Настроение ── */}
-      <div className="flex flex-col gap-2">
-        <SectionLabel>Настроение</SectionLabel>
-        <div className="grid w-full grid-cols-7 gap-1" role="group" aria-label="Цветовой фильтр">
-          {COLOR_FILTERS.map(({ value: v, label, Icon }) => {
-            const active = colorFilter === v;
-            return (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={active}
-                title={label}
-                onClick={() => { setColorFilter(v); applyAuraColorFilter(v); }}
-                className={cn(
-                  'flex w-full flex-col items-center justify-center gap-1 rounded-lg py-2 text-center transition-colors',
-                  active
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-control text-subtle hover:bg-hover hover:text-foreground',
-                )}
-              >
-                {Icon && <Icon className="size-3.5 shrink-0" aria-hidden />}
-                <span className="w-full truncate px-0.5 text-[9px] font-medium leading-none">{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <SectionDivider />
-
-      {/* ── Шрифт ── */}
-      <div className="flex flex-col gap-2">
-        <SectionLabel>Шрифт</SectionLabel>
+        <SettingRow icon={Type} label="Шрифт" meta={fontFamily === AURA_FONT_STANDARD ? 'Стандартный' : fontFamily}>
         <Select
           value={fontFamily}
           onValueChange={(v) => {
@@ -177,88 +191,88 @@ export function AppearanceSettingsCard() {
             ))}
           </SelectContent>
         </Select>
+        </SettingRow>
+
+        <SettingRow icon={ShieldCheck} label="Операторский режим" meta={strictMode === 'on' ? 'Чёрно-белый контроль' : 'Обычный интерфейс'}>
+          <div className="flex min-w-0 items-center justify-end gap-3">
+            <span className="min-w-0 truncate text-right text-xs font-medium text-dim">
+              {strictMode === 'on' ? 'Цвета отключены' : 'Акценты включены'}
+            </span>
+            <Switch
+              id="settings-strict-mode"
+              checked={strictMode === 'on'}
+              onCheckedChange={(checked) => {
+                const next = checked ? 'on' : 'off';
+                setStrictMode(next);
+                saveAppSettings(db, { strict_visual_mode: next });
+              }}
+              aria-label="Операторский режим"
+            />
+          </div>
+        </SettingRow>
+
+        {strictMode !== 'on' ? (
+          <SettingRow icon={Palette} label="Акцент" meta={activeAccent.label}>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="aura-operator-swatch size-7 shrink-0 rounded-lg border border-soft shadow-xs" style={{ backgroundColor: activeAccentTint }} aria-hidden />
+              <div className="grid min-w-0 flex-1 grid-cols-4 gap-1.5 sm:grid-cols-8">
+                {ACCENT_PRESETS.map((item) => {
+                  const selected = accentPreset === item.value;
+                  const { tint } = getAuraAccentPresetColors(item.value, theme);
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      aria-pressed={selected}
+                      aria-label={item.label}
+                      title={item.label}
+                      onClick={() => { setAccentPreset(item.value); saveAppSettings(db, { accent_preset: item.value }); }}
+                      className="aura-operator-control flex h-7 min-w-0 items-center justify-center rounded-lg border border-soft/70 bg-control/30 aura-tx-interactive hover:bg-hover"
+                    >
+                      <span
+                        className="aura-operator-swatch size-4 rounded-full"
+                        style={{
+                          backgroundColor: tint,
+                          boxShadow: selected ? `0 0 0 2px var(--background), 0 0 0 3px ${tint}` : undefined,
+                        }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </SettingRow>
+        ) : null}
+
+        <SettingRow icon={Scaling} label="Масштаб" meta="Интерфейс и текст">
+          <div className="flex flex-col gap-2">
+            <ScaleControl
+              label="Интерфейс"
+              value={appScale}
+              min={APP_SCALE_MIN}
+              max={APP_SCALE_MAX}
+              step={APP_SCALE_STEP}
+              onChange={(next) => {
+                setAppScale(next);
+                saveAppSettings(db, { [APP_SCALE_STORAGE_FIELD]: next });
+                applyAppearanceScales(next, textScale);
+              }}
+            />
+            <ScaleControl
+              label="Текст"
+              value={textScale}
+              min={TEXT_SCALE_MIN}
+              max={TEXT_SCALE_MAX}
+              step={TEXT_SCALE_STEP}
+              onChange={(next) => {
+                setTextScale(next);
+                saveAppSettings(db, { [TEXT_SCALE_STORAGE_FIELD]: next });
+                applyAppearanceScales(appScale, next);
+              }}
+            />
+          </div>
+        </SettingRow>
       </div>
-
-      <SectionDivider />
-
-      {/* ── Акцентный цвет ── */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <SectionLabel>Акцентный цвет</SectionLabel>
-          <span className="text-xs font-semibold" style={{ color: activeAccentTint }}>
-            {activeAccent.label}
-          </span>
-        </div>
-        <div className="grid grid-cols-6 gap-2 sm:grid-cols-12">
-          {ACCENT_PRESETS.map((item) => {
-            const selected = accentPreset === item.value;
-            const { tint } = getAuraAccentPresetColors(item.value, theme);
-            return (
-              <button
-                key={item.value}
-                type="button"
-                aria-pressed={selected}
-                aria-label={item.label}
-                title={item.label}
-                onClick={() => { setAccentPreset(item.value); saveAppSettings(db, { accent_preset: item.value }); }}
-                className="aspect-square w-full rounded-full transition-transform duration-150 hover:scale-110 active:scale-90"
-                style={{
-                  backgroundColor: tint,
-                  boxShadow: selected
-                    ? `0 0 0 2px var(--aura-surface-panel), 0 0 0 3.5px ${tint}`
-                    : undefined,
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      <SectionDivider />
-
-      {/* ── Масштаб ── */}
-      <div className="flex flex-col gap-3">
-        <SectionLabel>Масштаб</SectionLabel>
-        <div className="flex items-center gap-3">
-          <span className="w-20 shrink-0 text-xs font-medium text-foreground/80">Интерфейс</span>
-          <Slider
-            min={APP_SCALE_MIN}
-            max={APP_SCALE_MAX}
-            step={APP_SCALE_STEP}
-            value={[scaleToSlider(appScale, APP_SCALE_MIN, APP_SCALE_MAX)]}
-            onValueChange={(values) => {
-              const next = sliderToScale(values[0] ?? APP_SCALE_MIN);
-              setAppScale(next);
-              saveAppSettings(db, { [APP_SCALE_STORAGE_FIELD]: next });
-              applyAppearanceScales(next, textScale);
-            }}
-            className="flex-1 px-0.5"
-          />
-          <span className="w-9 shrink-0 text-right tabular-nums text-xs font-medium text-dim">
-            {Math.round(Number(appScale) * 100)}%
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="w-20 shrink-0 text-xs font-medium text-foreground/80">Текст</span>
-          <Slider
-            min={TEXT_SCALE_MIN}
-            max={TEXT_SCALE_MAX}
-            step={TEXT_SCALE_STEP}
-            value={[scaleToSlider(textScale, TEXT_SCALE_MIN, TEXT_SCALE_MAX)]}
-            onValueChange={(values) => {
-              const next = sliderToScale(values[0] ?? 100);
-              setTextScale(next);
-              saveAppSettings(db, { [TEXT_SCALE_STORAGE_FIELD]: next });
-              applyAppearanceScales(appScale, next);
-            }}
-            className="flex-1 px-0.5"
-          />
-          <span className="w-9 shrink-0 text-right tabular-nums text-xs font-medium text-dim">
-            {Math.round(Number(textScale) * 100)}%
-          </span>
-        </div>
-      </div>
-
     </SettingsSectionCard>
   );
 }

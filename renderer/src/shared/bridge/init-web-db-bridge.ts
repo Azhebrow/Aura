@@ -1,5 +1,5 @@
 import type { AuraDatabase } from '@/types/aura';
-import { callDbBatched, fetchBootstrap, invalidateBootstrapCache } from './mini-app-client';
+import { callDbBatched, fetchBootstrap, getReadFallback, invalidateBootstrapCache } from './mini-app-client';
 import { AURA_DATA_CHANGED } from '@/shared/lib/aura-data-events';
 
 type DbCallResponse = {
@@ -198,7 +198,7 @@ function getCacheTtlMs(method: string, args: unknown[]) {
   }
   const base = isMobileRuntime() ? MOBILE_READ_CACHE_TTL_MS : DESKTOP_READ_CACHE_TTL_MS;
   if (method === 'getTaskProgress') {
-    return isMobileRuntime() ? 7000 : 3600;
+    return 0;
   }
   if (method === 'getTaskTimerTotal') {
     return isMobileRuntime() ? 7000 : 3600;
@@ -269,6 +269,14 @@ function createSyncHttpProxy(): AuraDatabase {
         } catch (error) {
           bridgeAuditState.totalErrors += 1;
           methodStat.errors += 1;
+          if (!isMutationMethod) {
+            const fallback = getReadFallback(prop);
+            if (fallback !== undefined) {
+              readCache.set(cacheKey, { value: fallback, ts: Date.now() });
+              console.warn(`[web-db-bridge] ${prop} unavailable; using read-only fallback.`, error);
+              return fallback;
+            }
+          }
           throw error;
         } finally {
           const elapsed = Math.max(0, performance.now() - callStart);

@@ -48,7 +48,7 @@ function SelectTrigger({
       data-size={size}
       data-content-align={contentAlign}
       className={cn(
-        "text-foreground flex w-fit items-center justify-between gap-1.5 rounded-lg border border-soft bg-control py-2 pl-2.5 pr-2 text-sm whitespace-nowrap shadow-none aura-tx-colors outline-none select-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-faint data-[size=default]:h-9 sm:data-[size=default]:h-8 data-[size=sm]:h-8 sm:data-[size=sm]:h-7 data-[size=sm]:rounded-lg *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "text-foreground flex w-full min-w-0 items-center justify-between gap-1.5 rounded-lg border border-soft bg-control py-2 pl-2.5 pr-2 text-sm whitespace-nowrap shadow-none aura-tx-colors outline-none select-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-faint data-[size=default]:h-9 sm:data-[size=default]:h-8 data-[size=sm]:h-8 sm:data-[size=sm]:h-7 data-[size=sm]:rounded-lg *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         contentAlign === "center" &&
           "*:data-[slot=select-value]:items-center *:data-[slot=select-value]:justify-center *:data-[slot=select-value]:text-center",
         contentAlign === "start" &&
@@ -129,6 +129,7 @@ function SelectItem({
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      style={tint ? ({ '--select-item-tint': tint } as React.CSSProperties) : undefined}
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1.5 pl-1.5 pr-8 text-sm outline-hidden select-none transition-colors focus:bg-muted/70 focus:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 sm:py-1",
         className

@@ -15,6 +15,7 @@ import {
 import { normalizeCssColorForPaint } from '@/lib/css-color';
 import type { CfgSectionSpec } from '@/features/settings/cfg-section-types';
 import type { AuraRow } from '@/types/aura';
+import { formatAmbientTrackName } from '@/features/timer/use-ambient-audio';
 
 // ─── Color preset helpers ─────────────────────────────────────────────────────
 
@@ -60,6 +61,11 @@ export function rowTitle(row: AuraRow, keys?: string[]): string {
   return String(row.id ?? '');
 }
 
+export function ambientTrackDisplayTitle(row: AuraRow): string {
+  const raw = rowTitle(row, ['name', 'title', 'file_name', 'id']);
+  return formatAmbientTrackName(raw);
+}
+
 function getFieldOptionLabel(translatedSpec: CfgSectionSpec, fieldKey: string, value: unknown): string | undefined {
   const field = translatedSpec.fields.find((f) => f.key === fieldKey);
   if (!field?.options) return undefined;
@@ -72,6 +78,36 @@ function formatParamValue(value: unknown): string | null {
   if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
   const str = String(value).trim();
   return str.length > 0 ? str : null;
+}
+
+function formatNutritionNumber(value: unknown, fractionDigits = 0): string | null {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const rounded = fractionDigits > 0 ? Math.round(n * 10 ** fractionDigits) / 10 ** fractionDigits : Math.round(n);
+  return rounded.toLocaleString('ru-RU', {
+    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: 0,
+  });
+}
+
+function nutritionProductMeta(row: AuraRow): string | null {
+  const kcal = formatNutritionNumber(row.calories_per_100g);
+  const protein = formatNutritionNumber(row.proteins_per_100g, 1);
+  const fats = formatNutritionNumber(row.fats_per_100g, 1);
+  const carbs = formatNutritionNumber(row.carbs_per_100g, 1);
+  const parts = [
+    kcal ? `${kcal} ккал` : null,
+    protein ? `Б ${protein}` : null,
+    fats ? `Ж ${fats}` : null,
+    carbs ? `У ${carbs}` : null,
+  ].filter((part): part is string => part != null);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+export function rowValueSummary(spec: CfgSectionSpec, row: AuraRow): string | undefined {
+  if (spec.table !== 'cfg_nutrition_products') return undefined;
+  const portion = formatNutritionNumber(row.portion_weight);
+  return portion ? `${portion} г` : undefined;
 }
 
 /**
@@ -154,12 +190,8 @@ export function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | 
   }
 
   if (spec.table === 'cfg_nutrition_products') {
-    const groupLabel = getFieldOptionLabel(spec, 'group', row.group);
-    if (groupLabel) parts.push(`Группа: ${groupLabel}`);
-    if (row.calories_per_100g != null) parts.push(`${row.calories_per_100g}ккал`);
-    if (row.proteins_per_100g != null) parts.push(`Б:${row.proteins_per_100g}г`);
-    if (row.fats_per_100g != null) parts.push(`Ж:${row.fats_per_100g}г`);
-    if (row.carbs_per_100g != null) parts.push(`У:${row.carbs_per_100g}г`);
+    const nutrition = nutritionProductMeta(row);
+    if (nutrition) parts.push(nutrition);
   }
 
   if (spec.table === 'cfg_nutrition_presets') {
@@ -167,11 +199,6 @@ export function rowMetaSummary(spec: CfgSectionSpec, row: AuraRow): ReactNode | 
     if (nutrition && (nutrition.calories > 0 || nutrition.protein > 0 || nutrition.fats > 0 || nutrition.carbs > 0)) {
       parts.push(`${nutrition.calories}ккал · Б:${nutrition.protein}г · Ж:${nutrition.fats}г · У:${nutrition.carbs}г`);
     }
-  }
-
-  if (spec.table === 'cfg_ambient_music') {
-    const file = formatParamValue(row.file_name);
-    if (file) parts.push(`Файл: ${file}`);
   }
 
   if (parts.length === 0) return undefined;

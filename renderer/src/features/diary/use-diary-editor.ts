@@ -84,7 +84,8 @@ export function useDiaryEditor({ db, dateString, dayLocked }: Params) {
       /<img|<ul|<ol|<li|<h\d|<blockquote/i.test(sourceHtml);
     const trimmed = hasHtmlContent ? sourceHtml.trim() : plainText;
     const id = entryId ?? `diary_${dateString}`;
-    if (trimmed.length > 0 || moodId || categoryId) {
+    const hasDiaryContent = trimmed.length > 0 || Boolean(categoryId);
+    if (hasDiaryContent) {
       runAuraMutation('diary', () => {
         dbx.saveDiaryEntry({ id, date: dateString, mood_id: moodId || null, category_id: categoryId || null, text: trimmed || null });
       }, dateString);

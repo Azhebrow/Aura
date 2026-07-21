@@ -18,26 +18,32 @@ import { useTranslation } from 'react-i18next';
 import { DEFAULT_PICKER_COLOR } from '@/shared/config/aura-palette';
 import {
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
+  Disc3,
   FolderOpen,
   ImageIcon,
   ListPlus,
   Music2,
   Palette,
   Pencil,
+  Plus,
   Trash2,
   X,
   XIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AddListButton } from '@/components/ui/add-list-button';
 import {
   Dialog,
   DialogClose,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { UniversalModalContent } from '@/components/ui/universal-modal';
+import {
+  UNIVERSAL_MODAL_COMPACT_PICKER_CN,
+  UniversalModalContent,
+} from '@/components/ui/universal-modal';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -48,7 +54,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ListItem } from '@/components/ui/list-item';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
@@ -67,6 +72,7 @@ import type { AuraRow } from '@/types/aura';
 import { cn } from '@/lib/utils';
 import { useSettingsTabActions } from '@/features/settings/settings-tab-actions-context';
 import { ActModalFooter } from '@/features/act/ActModal';
+import { ActList, type ActItem } from '@/features/act-system';
 import { LoadingShell } from '@/shared/ui/data-states';
 import {
   resolveAmbientMusicFolderPath,
@@ -79,11 +85,13 @@ import {
 
 // ─── Local feature imports ─────────────────────────────────────────────────────
 
-import { CfgAffixValueField, CfgModalGridRow, CFG_INPUT_CN, CFG_ICON_TRIGGER_CN } from './cfg-primitives';
+import { CfgAffixValueField, CfgModalGridRow, CFG_INPUT_CN, CFG_ICON_TRIGGER_CN, formatCfgIconLabel } from './cfg-primitives';
 import {
   sectionColorPresets,
   rowTitle,
+  ambientTrackDisplayTitle,
   rowMetaSummary,
+  rowValueSummary,
   sortRows,
   rowListAccent,
   cfgListIconTint,
@@ -164,7 +172,7 @@ function AmbientCoverImageField({ value, onChange }: { value: string; onChange: 
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cn(
-          'relative flex h-24 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors',
+          'aura-operator-row relative flex h-24 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors',
           dragging
             ? 'border-primary bg-primary/10'
             : 'border-soft bg-control/40 hover:border-primary/50'
@@ -203,12 +211,171 @@ function AmbientCoverImageField({ value, onChange }: { value: string; onChange: 
   );
 }
 
+function AmbientTrackArtwork({ row, tint }: { row: AuraRow; tint: string }) {
+  const cover = typeof row.cover_image === 'string' && row.cover_image.trim()
+    ? resolveAmbientCoverImageUrl(row.cover_image)
+    : null;
+  return (
+    <div className="flex h-12 shrink-0 items-center justify-center px-2">
+      {cover ? (
+        <div className="size-9 overflow-hidden rounded-lg border border-soft bg-control shadow-xs">
+          <img src={cover} alt="" className="h-full w-full object-cover" draggable={false} />
+        </div>
+      ) : (
+        <div className="rounded-lg bg-panel/45 p-0.5">
+          <AuraThemedIcon name={typeof row.icon === 'string' ? row.icon : AMBIENT_MUSIC_DEFAULT_ICON} tint={cfgListIconTint(tint)} className="size-6" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AmbientTrackShelf({
+  rows,
+  onEdit,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+}: {
+  rows: AuraRow[];
+  onEdit: (row: AuraRow) => void;
+  onDelete: (row: AuraRow) => void;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        title="Пока нет треков."
+        hint="Добавьте трек вручную или загрузите музыку из папки."
+        compact
+      />
+    );
+  }
+
+  const scrollByPage = (direction: -1 | 1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction * Math.max(180, el.clientWidth * 0.75), behavior: 'smooth' });
+  };
+
+  return (
+    <div className="grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-2 overflow-hidden">
+      <div className="flex items-center justify-end gap-1">
+        <button
+          type="button"
+          className="flex size-8 items-center justify-center rounded-lg bg-control/45 text-dim aura-tx-interactive hover:bg-control hover:text-foreground"
+          onClick={() => scrollByPage(-1)}
+          aria-label="Прокрутить треки влево"
+        >
+          <ChevronLeft className="size-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          className="flex size-8 items-center justify-center rounded-lg bg-control/45 text-dim aura-tx-interactive hover:bg-control hover:text-foreground"
+          onClick={() => scrollByPage(1)}
+          aria-label="Прокрутить треки вправо"
+        >
+          <ChevronRight className="size-4" aria-hidden />
+        </button>
+      </div>
+      <div ref={scrollRef} className="block w-full min-w-0 max-w-full overflow-x-auto overflow-y-hidden pb-2 [scrollbar-width:thin]">
+        <ul className="flex w-max max-w-none gap-3 pr-1">
+          {rows.map((row, index) => {
+            const title = ambientTrackDisplayTitle(row);
+            const tint = rowListAccent({ table: 'cfg_ambient_music', sectionId: 'ambient-music', title: '', description: '', fields: [], sortBy: 'none' }, row);
+            const cover = typeof row.cover_image === 'string' && row.cover_image.trim()
+              ? resolveAmbientCoverImageUrl(row.cover_image)
+              : null;
+            const icon = typeof row.icon === 'string' && row.icon.trim() ? row.icon : AMBIENT_MUSIC_DEFAULT_ICON;
+            return (
+              <li key={String(row.id)} className="w-36 shrink-0 sm:w-40">
+                <article className="group flex min-h-48 flex-col overflow-hidden rounded-xl border border-soft bg-card/95 shadow-xs aura-tx-surface hover:bg-hover/60">
+                  <button
+                    type="button"
+                    className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-control/35"
+                    onClick={() => onEdit(row)}
+                    aria-label={`Изменить ${title}`}
+                  >
+                    {cover ? (
+                      <img src={cover} alt="" className="h-full w-full object-cover" draggable={false} />
+                    ) : (
+                      <div
+                        className="relative flex size-24 items-center justify-center rounded-full border border-soft shadow-inner"
+                        style={{
+                          background:
+                            `radial-gradient(circle at center, var(--card) 0 12%, transparent 13% 20%, ${cfgListIconTint(tint)} 21% 22%, transparent 23%), ` +
+                            `linear-gradient(135deg, color-mix(in oklab, ${tint} 24%, transparent), color-mix(in oklab, var(--card) 88%, var(--foreground)))`,
+                        }}
+                      >
+                        <Disc3 className="absolute inset-0 m-auto size-20 text-foreground/10" aria-hidden />
+                        <AuraThemedIcon name={icon} tint={cfgListIconTint(tint)} className="size-8" />
+                      </div>
+                    )}
+                    <span className="absolute inset-x-2 bottom-2 flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                      <span className="rounded-md bg-background/85 px-1.5 py-1 text-[10px] font-semibold text-foreground shadow-sm">
+                        Изменить
+                      </span>
+                    </span>
+                  </button>
+                  <div className="flex min-h-20 flex-1 flex-col gap-2 p-2.5">
+                    <p className="line-clamp-2 min-h-9 text-xs font-semibold leading-snug text-foreground" title={title}>
+                      {title}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="flex h-7 flex-1 items-center justify-center rounded-lg bg-control/35 text-dim aura-tx-interactive hover:bg-control hover:text-foreground disabled:opacity-35"
+                        onClick={() => onMoveUp(index)}
+                        disabled={index === 0}
+                        aria-label={`Переместить ${title} влево`}
+                      >
+                        <ChevronLeft className="size-3.5" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        className="flex h-7 flex-1 items-center justify-center rounded-lg bg-control/35 text-dim aura-tx-interactive hover:bg-control hover:text-foreground disabled:opacity-35"
+                        onClick={() => onMoveDown(index)}
+                        disabled={index === rows.length - 1}
+                        aria-label={`Переместить ${title} вправо`}
+                      >
+                        <ChevronRight className="size-3.5" aria-hidden />
+                      </button>
+                    </div>
+                    <div className="mt-auto flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="flex h-7 flex-1 items-center justify-center gap-1 rounded-lg bg-control/45 text-xs font-medium text-dim aura-tx-interactive hover:bg-control hover:text-foreground"
+                        onClick={() => onEdit(row)}
+                      >
+                        <Pencil className="size-3.5" aria-hidden />
+                        Изм.
+                      </button>
+                      <button
+                        type="button"
+                        className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-control/45 text-dim aura-tx-interactive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => onDelete(row)}
+                        aria-label={`Удалить ${title}`}
+                      >
+                        <Trash2 className="size-3.5" aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const COLOR_PICKER_DEFAULT = DEFAULT_PICKER_COLOR;
-
-const CFG_LIST_ITEM_CN =
-  'rounded-xl border-border/55 bg-card/55 shadow-none hover:border-border/75 hover:bg-muted/25';
 
 /** Подвид открытого диалога: главная форма | цвет | состав блюда. */
 type DialogSub = 'form' | { k: 'color'; field: string } | { k: 'preset-products'; field: string };
@@ -251,7 +418,7 @@ export function CfgSectionCard({ spec }: Props) {
     setRows(sortRows(list, spec.sortBy));
   }, [db, spec.filter, spec.sortBy, spec.table]);
 
-  const canReorder = spec.sortBy === 'level' && translatedSpec.fields.some((f) => f.key === 'level');
+  const canReorder = spec.sortBy === 'level' && (spec.table === 'cfg_ambient_music' || translatedSpec.fields.some((f) => f.key === 'level'));
   const hideRowReorder = spec.sectionId.startsWith('finance-') || spec.sectionId.startsWith('nutrition-');
 
   // Считаем только для cfg_accounts — иначе 0 без итерации по rows
@@ -367,7 +534,14 @@ export function CfgSectionCard({ spec }: Props) {
     try {
       let added = 0;
       for (const fileName of missing) {
-        if (db.create('cfg_ambient_music', { name: fileName, icon: AMBIENT_MUSIC_DEFAULT_ICON, file_name: fileName })) added += 1;
+        const level = existing.size + added;
+        if (db.create('cfg_ambient_music', {
+          id: `ambient_${Date.now()}_${added}`,
+          name: fileName,
+          icon: AMBIENT_MUSIC_DEFAULT_ICON,
+          file_name: fileName,
+          level,
+        })) added += 1;
       }
       reload();
       refreshAmbientMusicFiles();
@@ -379,6 +553,18 @@ export function CfgSectionCard({ spec }: Props) {
       setAmbientMusicImporting(false);
     }
   }, [ambientMusicImporting, db, refreshAmbientMusicFiles, reload, spec.table]);
+
+  const openAmbientMusicFolder = useCallback(async () => {
+    const folderPath = resolveAmbientMusicFolderPath();
+    setAmbientMusicFolderPath(folderPath);
+    if (!folderPath) return;
+    refreshAmbientMusicFiles();
+    const req = getNodeRequire();
+    const electron = req
+      ? (req('electron') as { shell?: { openPath: (p: string) => Promise<string> } })
+      : null;
+    if (electron?.shell) await electron.shell.openPath(folderPath);
+  }, [refreshAmbientMusicFiles]);
 
   // ─── Category editor ──────────────────────────────────────────────────────
 
@@ -450,28 +636,6 @@ export function CfgSectionCard({ spec }: Props) {
   useEffect(() => { reload(); }, [reload]);
   useEffect(() => { refreshAmbientMusicFiles(); }, [refreshAmbientMusicFiles]);
 
-  // Кнопка «Вид блока» в заголовке вкладки (только для секций задач с категорией)
-  useLayoutEffect(() => {
-    setTabActions(
-      <div className="flex items-center gap-2">
-        {taskCategoryKey ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="text-muted-foreground h-8 px-2 text-xs font-normal"
-            onClick={openCategoryEditor}
-            disabled={!db}
-          >
-            <Palette className="mr-1 size-3.5" aria-hidden />
-            Вид блока
-          </Button>
-        ) : null}
-      </div>
-    );
-    return () => setTabActions(null);
-  }, [setTabActions, db, taskCategoryKey, openCategoryEditor]);
-
   // ─── Dialog open helpers ──────────────────────────────────────────────────
 
   const openCreate = useCallback(() => {
@@ -489,7 +653,7 @@ export function CfgSectionCard({ spec }: Props) {
       if (translatedSpec.fields.some((f) => f.key === k)) init[k] = String(v);
     }
     const maxLv = rows.reduce((m, r) => Math.max(m, Number(r.level) || 0), -1);
-    if (translatedSpec.fields.some((f) => f.key === 'level')) init.level = String(maxLv + 1);
+    if (translatedSpec.fields.some((f) => f.key === 'level') || spec.table === 'cfg_ambient_music') init.level = String(maxLv + 1);
     if (spec.table === 'cfg_tasks') {
       const allowed = allowedTaskTypesForSection(spec.sectionId);
       init.task_type = allowed?.[0] ?? 'checkbox';
@@ -509,6 +673,75 @@ export function CfgSectionCard({ spec }: Props) {
     setAdvancedOpen(true);
     setOpen(true);
   }, [refreshAmbientMusicFiles, rows, spec, translatedSpec]);
+
+  useLayoutEffect(() => {
+    const isAmbientMusic = spec.table === 'cfg_ambient_music';
+    setTabActions(
+      <>
+        {taskCategoryKey ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="text-muted-foreground h-8 gap-1.5 px-2 text-xs font-normal"
+            onClick={openCategoryEditor}
+            disabled={!db}
+          >
+            <Palette className="size-3.5" aria-hidden />
+            Вид блока
+          </Button>
+        ) : null}
+        {isAmbientMusic ? (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="text-muted-foreground h-8 gap-1.5 px-2 text-xs font-normal"
+              onClick={() => void importAmbientMusicFiles()}
+              disabled={!db || ambientMusicImporting}
+            >
+              <Music2 className="size-3.5" aria-hidden />
+              Загрузить
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="text-muted-foreground h-8 gap-1.5 px-2 text-xs font-normal"
+              onClick={() => void openAmbientMusicFolder()}
+              disabled={!db}
+            >
+              <FolderOpen className="size-3.5" aria-hidden />
+              Папка
+            </Button>
+          </>
+        ) : null}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-8 gap-1.5 px-2 text-xs font-semibold text-foreground hover:bg-hover"
+          disabled={!db}
+          onClick={openCreate}
+        >
+          <Plus className="size-3.5" aria-hidden />
+          Добавить
+        </Button>
+      </>
+    );
+    return () => setTabActions(null);
+  }, [
+    setTabActions,
+    db,
+    spec.table,
+    taskCategoryKey,
+    openCategoryEditor,
+    openCreate,
+    importAmbientMusicFiles,
+    ambientMusicImporting,
+    openAmbientMusicFolder,
+  ]);
 
   const openEdit = (row: AuraRow) => {
     refreshAmbientMusicFiles();
@@ -544,13 +777,15 @@ export function CfgSectionCard({ spec }: Props) {
           if (hasOther) { setDialogError('Тип "Питание" может быть только у одной задачи.'); return; }
         }
         if (mode === 'create') {
-          db.create(spec.table, payload);
+          const created = db.create(spec.table, payload);
+          if (!created) throw new Error('Не удалось создать запись в базе данных.');
         } else if (editId) {
           const { id: _id, ...rest } = payload;
           db.update(spec.table, editId, { ...rest, updated_at: new Date().toISOString() });
         }
       } else if (mode === 'create') {
-        db.create(spec.table, buildPayloadFromForm(spec, form, 'create'));
+        const created = db.create(spec.table, buildPayloadFromForm(spec, form, 'create'));
+        if (!created) throw new Error('Не удалось создать запись в базе данных.');
       } else if (editId) {
         const payload = buildPayloadFromForm(spec, form, 'edit', editId);
         const { id: _id, ...rest } = payload;
@@ -569,7 +804,6 @@ export function CfgSectionCard({ spec }: Props) {
   const remove = (row: AuraRow) => {
     if (!db) return;
     setListError(null);
-    if (!window.confirm(`Удалить «${rowTitle(row, spec.rowTitleKeys)}»?`)) return;
     try {
       db.delete(spec.table, String(row.id));
       window.dispatchEvent(new Event('settings-saved'));
@@ -578,6 +812,48 @@ export function CfgSectionCard({ spec }: Props) {
       console.error('[CfgSectionCard] delete', e);
       setListError(e instanceof Error ? e.message : 'Ошибка удаления');
     }
+  };
+
+  const buildActItem = (
+    row: AuraRow,
+    index: number,
+    scopeRows: AuraRow[],
+    iconName?: string | null
+  ): ActItem => {
+    const tint = rowListAccent(spec, row);
+    const title = spec.table === 'cfg_ambient_music'
+      ? ambientTrackDisplayTitle(row)
+      : rowTitle(row, spec.rowTitleKeys);
+    return {
+      id: String(row.id),
+      kind: 'diary',
+	      icon: iconName ?? (typeof row.icon === 'string' ? row.icon : null),
+	      iconTint: cfgListIconTint(tint),
+	      leading: spec.table === 'cfg_ambient_music' ? <AmbientTrackArtwork row={row} tint={tint} /> : undefined,
+	      title:
+        spec.table === 'cfg_expense_categories' && String(row.type ?? '') === 'compulsive' ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <span className="truncate">{title}</span>
+            <span
+              className="inline-flex items-center gap-1 rounded-md border border-amber-500/35 bg-amber-500/10 px-1 py-0.5 text-[10px] leading-none text-amber-700 dark:text-amber-200"
+              title="Импульсивная категория"
+            >
+              <AlertTriangle className="size-3" aria-hidden />
+            </span>
+          </span>
+      ) : title,
+      description: rowMetaSummary(translatedSpec, row),
+      value: rowValueSummary(translatedSpec, row),
+      density: 'compact',
+      onActivate: () => openEdit(row),
+      onEdit: () => openEdit(row),
+      onDelete: () => remove(row),
+      onMoveUp: !hideRowReorder && canReorder && index > 0 ? () => moveRow(scopeRows, index, index - 1) : undefined,
+      onMoveDown:
+        !hideRowReorder && canReorder && index < scopeRows.length - 1
+          ? () => moveRow(scopeRows, index, index + 1)
+          : undefined,
+    };
   };
 
   // ─── Field renderer ───────────────────────────────────────────────────────
@@ -626,8 +902,8 @@ export function CfgSectionCard({ spec }: Props) {
           placeholder={f.placeholder}
           rows={tall ? 8 : 4}
           className={cn(
-            'border-soft bg-transparent w-full min-w-0 resize-y rounded-md border px-3 py-2 text-sm shadow-none',
-            tall ? 'text-left text-xs leading-relaxed' : 'text-center'
+            'border-soft bg-control/55 w-full min-w-0 resize-none rounded-lg border px-3 py-2 text-left text-sm shadow-none focus-visible:bg-control/75',
+            tall && 'text-xs leading-relaxed'
           )}
         />
       );
@@ -644,8 +920,11 @@ export function CfgSectionCard({ spec }: Props) {
           onClick={() => setCfgIconField(f.key)}
           className={CFG_ICON_TRIGGER_CN}
         >
-          <AuraThemedIcon name={name || null} className="size-4 shrink-0 opacity-80" />
-          <span className="text-foreground/90 min-w-0 truncate text-sm">{name || '—'}</span>
+          <span className="aura-inline-icon flex size-5 shrink-0 items-center justify-center text-current">
+            <AuraThemedIcon name={name || null} size={14} tint="currentColor" />
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm text-foreground">{formatCfgIconLabel(name)}</span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         </button>
       );
     }
@@ -658,11 +937,11 @@ export function CfgSectionCard({ spec }: Props) {
             value={form[f.key] || '__none__'}
             onValueChange={(v) => setForm((prev) => ({ ...prev, [f.key]: v === '__none__' ? '' : v }))}
           >
-            <SelectTrigger
-              id={fid}
-              contentAlign="start"
-              className="border-soft bg-transparent h-9 w-full min-w-0 justify-center shadow-none"
-            >
+          <SelectTrigger
+            id={fid}
+            contentAlign="start"
+            className={CFG_INPUT_CN}
+          >
               <SelectValue placeholder={ambientMusicFiles.length > 0 ? 'Выберите файл' : 'Файлы не найдены'} />
             </SelectTrigger>
             <SelectContent>
@@ -723,14 +1002,20 @@ export function CfgSectionCard({ spec }: Props) {
           id={fid}
           type="button"
           onClick={() => { setColorDraft(pickerSeed); setDialogSub({ k: 'color', field: f.key }); }}
-          className="border-soft focus-visible:ring-ring/70 h-9 w-full min-w-0 overflow-hidden rounded-md border shadow-none aura-tx-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none"
-          style={{
-            backgroundColor: paint ?? undefined,
-            backgroundImage: paint ? undefined : emptyPattern,
-            backgroundSize: paint ? undefined : '6px 6px',
-          }}
+          className="border-soft bg-control/55 text-foreground hover:bg-hover focus-visible:ring-ring/70 flex h-9 w-full min-w-0 items-center justify-start gap-2 rounded-lg border px-3 text-left text-sm shadow-none aura-tx-colors focus-visible:ring-2 focus-visible:outline-none"
           aria-label={f.label}
-        />
+        >
+          <span
+            className="size-5 shrink-0 rounded-md border border-soft shadow-xs"
+            style={{
+              backgroundColor: paint ?? undefined,
+              backgroundImage: paint ? undefined : emptyPattern,
+              backgroundSize: paint ? undefined : '6px 6px',
+            }}
+            aria-hidden
+          />
+          <span className="min-w-0 truncate font-medium tabular-nums">{raw.trim() || '—'}</span>
+        </button>
       );
     }
 
@@ -759,15 +1044,15 @@ export function CfgSectionCard({ spec }: Props) {
         >
           <SelectTrigger
             id={fid}
-            contentAlign="center"
-            className="border-soft bg-transparent h-9 w-full min-w-0 justify-center shadow-none"
+            contentAlign="start"
+            className={CFG_INPUT_CN}
           >
             <SelectValue placeholder="Выберите" />
           </SelectTrigger>
           <SelectContent>
             {options.map((o) => (
               <SelectItem key={o.value || 'empty'} value={o.value}>
-                <span className="flex items-center justify-center gap-2 text-center">
+                <span className="flex min-w-0 items-center gap-2 text-foreground">
                   {CfgSelectOptionIcon(spec.table, f.key, o.value)}
                   <span className="truncate">{o.label}</span>
                 </span>
@@ -826,25 +1111,26 @@ export function CfgSectionCard({ spec }: Props) {
   return (
     <>
       {/* ── Row list ── */}
-      <div className="flex flex-col gap-5">
+      <div className="flex min-w-0 flex-col gap-3 overflow-hidden">
         {listError ? (
-          <p className="text-destructive bg-destructive/10 rounded-md px-3 py-2 text-sm" role="alert">
+          <p className="rounded-lg border border-soft bg-panel/55 px-3 py-2 text-sm text-subtle" role="status">
             {listError}
           </p>
         ) : null}
 
         {!db ? (
           <LoadingShell />
-        ) : rows.length === 0 ? (
-          <EmptyState
-            title="Пока нет записей."
-            hint="Создайте первую запись, и она сразу появится в списке."
-            className="mx-auto w-full max-w-md"
-            compact
+        ) : spec.table === 'cfg_ambient_music' ? (
+          <AmbientTrackShelf
+            rows={rows}
+            onEdit={openEdit}
+            onDelete={remove}
+            onMoveUp={(index) => moveRow(rows, index, index - 1)}
+            onMoveDown={(index) => moveRow(rows, index, index + 1)}
           />
         ) : spec.sectionId === 'nutrition-products' ? (
           /* Nutrition products: сгруппированы по типу */
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3">
             {NUTRITION_GROUPS.map((gKey) => {
               const inGroup = rows.filter((r) => String(r.group ?? 'proteins') === gKey);
               if (inGroup.length === 0) return null;
@@ -853,29 +1139,10 @@ export function CfgSectionCard({ spec }: Props) {
                   <p className="text-muted-foreground px-0.5 text-xs font-semibold tracking-wide uppercase">
                     {NUTRITION_GROUP_LABEL[gKey]}
                   </p>
-                  <ul className="flex flex-col gap-2">
-                    {inGroup.map((r, idx) => {
-                      const tint = rowListAccent(spec, r);
-                      return (
-                        <li key={String(r.id)}>
-                          <ListItem
-                            mode="edit-delete"
-                            icon={NUTRITION_GROUP_ICON[gKey]}
-                            iconTint={cfgListIconTint(tint)}
-                            title={rowTitle(r, spec.rowTitleKeys)}
-                            description={rowMetaSummary(translatedSpec, r)}
-                            className={CFG_LIST_ITEM_CN}
-                            actionsAlwaysVisible
-                            showDisabledMoveButtons
-                            onMoveUp={!hideRowReorder && canReorder && idx > 0 ? () => moveRow(inGroup, idx, idx - 1) : undefined}
-                            onMoveDown={!hideRowReorder && canReorder && idx < inGroup.length - 1 ? () => moveRow(inGroup, idx, idx + 1) : undefined}
-                            onEdit={() => openEdit(r)}
-                            onDelete={() => remove(r)}
-                          />
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <ActList
+                    items={inGroup.map((r, idx) => buildActItem(r, idx, inGroup, NUTRITION_GROUP_ICON[gKey]))}
+                    emptyTitle="Пока нет записей."
+                  />
                 </div>
               );
             })}
@@ -887,112 +1154,36 @@ export function CfgSectionCard({ spec }: Props) {
               return (
                 <div className="flex flex-col gap-2">
                   <p className="text-muted-foreground px-0.5 text-xs font-semibold tracking-wide uppercase">Другое</p>
-                  <ul className="flex flex-col gap-2">
-                    {other.map((r, idx) => {
-                      const tint = rowListAccent(spec, r);
+                  <ActList
+                    items={other.map((r, idx) => {
                       const g = String(r.group ?? 'proteins');
                       const iconName = g === 'proteins' || g === 'fats' || g === 'carbs' ? NUTRITION_GROUP_ICON[g] : 'apple';
-                      return (
-                        <li key={String(r.id)}>
-                          <ListItem
-                            mode="edit-delete"
-                            icon={iconName}
-                            iconTint={cfgListIconTint(tint)}
-                            title={rowTitle(r, spec.rowTitleKeys)}
-                            description={rowMetaSummary(translatedSpec, r)}
-                            className={CFG_LIST_ITEM_CN}
-                            actionsAlwaysVisible
-                            showDisabledMoveButtons
-                            onMoveUp={!hideRowReorder && canReorder && idx > 0 ? () => moveRow(other, idx, idx - 1) : undefined}
-                            onMoveDown={!hideRowReorder && canReorder && idx < other.length - 1 ? () => moveRow(other, idx, idx + 1) : undefined}
-                            onEdit={() => openEdit(r)}
-                            onDelete={() => remove(r)}
-                          />
-                        </li>
-                      );
+                      return buildActItem(r, idx, other, iconName);
                     })}
-                  </ul>
+                    emptyTitle="Пока нет записей."
+                  />
                 </div>
               );
             })()}
+            {rows.length === 0 ? (
+              <EmptyState
+                title="Пока нет записей."
+                hint="Создайте первую запись, и она сразу появится в списке."
+                compact
+              />
+            ) : null}
           </div>
         ) : (
           /* Standard flat list */
-          <ul className="flex flex-col gap-2">
-            {rows.map((r, idx) => {
-              const tint = rowListAccent(spec, r);
-              return (
-                <li key={String(r.id)}>
-                  <ListItem
-                    mode="edit-delete"
-                    icon={typeof r.icon === 'string' ? r.icon : null}
-                    iconTint={cfgListIconTint(tint)}
-                    title={
-                      spec.table === 'cfg_expense_categories' && String(r.type ?? '') === 'compulsive' ? (
-                        <span className="inline-flex min-w-0 items-center gap-1.5">
-                          <span className="truncate">{rowTitle(r, spec.rowTitleKeys)}</span>
-                          <span
-                            className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-1 py-0.5 text-xs leading-none text-amber-700 dark:text-amber-200"
-                            title="Импульсивная категория"
-                          >
-                            <AlertTriangle className="size-3" aria-hidden />
-                          </span>
-                        </span>
-                      ) : rowTitle(r, spec.rowTitleKeys)
-                    }
-                    description={rowMetaSummary(translatedSpec, r)}
-                    className={CFG_LIST_ITEM_CN}
-                    actionsAlwaysVisible
-                    showDisabledMoveButtons
-                    onMoveUp={!hideRowReorder && canReorder && idx > 0 ? () => moveRow(rows, idx, idx - 1) : undefined}
-                    onMoveDown={!hideRowReorder && canReorder && idx < rows.length - 1 ? () => moveRow(rows, idx, idx + 1) : undefined}
-                    onEdit={() => openEdit(r)}
-                    onDelete={() => remove(r)}
-                  />
-                </li>
-              );
-            })}
-          </ul>
+          <div className="flex min-h-0 flex-col gap-3">
+            <ActList
+              items={rows.map((r, idx) => buildActItem(r, idx, rows))}
+              emptyTitle="Пока нет записей."
+              emptyHint="Создайте первую запись, и она сразу появится в списке."
+            />
+          </div>
         )}
 
-        {/* Add / ambient-music actions */}
-        <div className="flex flex-wrap items-center gap-2">
-          <AddListButton onClick={openCreate} disabled={!db} />
-          {spec.table === 'cfg_ambient_music' ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 gap-2"
-                onClick={() => void importAmbientMusicFiles()}
-                disabled={!db || ambientMusicImporting}
-              >
-                <Music2 className="size-4" />
-                Загрузить музыку из папки
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 gap-2"
-                onClick={async () => {
-                  const folderPath = resolveAmbientMusicFolderPath();
-                  setAmbientMusicFolderPath(folderPath);
-                  if (!folderPath) return;
-                  refreshAmbientMusicFiles();
-                  const req = getNodeRequire();
-                  const electron = req
-                    ? (req('electron') as { shell?: { openPath: (p: string) => Promise<string> } })
-                    : null;
-                  if (electron?.shell) await electron.shell.openPath(folderPath);
-                }}
-                disabled={!db}
-              >
-                <FolderOpen className="size-4" />
-                Открыть папку с музыкой
-              </Button>
-            </>
-          ) : null}
-        </div>
         {spec.table === 'cfg_ambient_music' && ambientMusicFolderPath ? (
           <p className="text-muted-foreground text-xs">Папка музыки: {ambientMusicFolderPath}</p>
         ) : null}
@@ -1207,10 +1398,10 @@ export function CfgSectionCard({ spec }: Props) {
         <UniversalModalContent
           size="picker"
           scroll="content"
-          className="flex max-h-[min(92svh,48rem)] flex-col gap-0 p-0"
+          className={UNIVERSAL_MODAL_COMPACT_PICKER_CN}
           showCloseButton={false}
         >
-          <DialogHeader className="shrink-0 border-b border-border/80 px-4 py-3 sm:px-5">
+          <DialogHeader className="shrink-0 border-b border-border/80 px-3 py-2.5">
             <div className="flex items-center justify-between gap-3">
               <Button type="button" variant="ghost" size="sm" className="shrink-0 px-2 text-xs" onClick={() => setCfgIconField(null)}>
                 ← К форме
@@ -1234,7 +1425,7 @@ export function CfgSectionCard({ spec }: Props) {
               </DialogClose>
             </div>
           </DialogHeader>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-5">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             {cfgIconField ? (
               <IconPickerPanel
                 current={form[cfgIconField] || undefined}

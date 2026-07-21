@@ -9,7 +9,6 @@ import {
   BookOpen,
   Check,
   Music2,
-  Smile,
   Sun,
   Wallet,
 } from 'lucide-react';
@@ -48,20 +47,14 @@ export type WizardState = {
 // ─── Accent presets ───────────────────────────────────────────────────────────
 
 export const ACCENT_PRESETS: Array<{ value: AuraAccentPreset; label: string; hsl: string }> = [
-  { value: 'mono',    label: 'Моно',     hsl: '215 14% 48%' },
-  { value: 'slate',   label: 'Сланец',   hsl: '215 25% 50%' },
-  { value: 'violet',  label: 'Фиолет',   hsl: '263 60% 58%' },
-  { value: 'indigo',  label: 'Индиго',   hsl: '238 60% 60%' },
-  { value: 'blue',    label: 'Синий',    hsl: '214 70% 56%' },
-  { value: 'cobalt',  label: 'Кобальт',  hsl: '220 80% 52%' },
-  { value: 'cyan',    label: 'Циан',     hsl: '188 64% 48%' },
-  { value: 'teal',    label: 'Бирюза',   hsl: '174 60% 40%' },
-  { value: 'emerald', label: 'Изумруд',  hsl: '152 58% 44%' },
-  { value: 'lime',    label: 'Лайм',     hsl: '84 52% 44%'  },
-  { value: 'amber',   label: 'Янтарь',   hsl: '45 84% 50%'  },
-  { value: 'orange',  label: 'Апельсин', hsl: '24 72% 52%'  },
-  { value: 'rose',    label: 'Красный',  hsl: '354 68% 54%' },
-  { value: 'pink',    label: 'Розовый',  hsl: '330 54% 56%' },
+  { value: 'fantasy',  label: 'Fantasy', hsl: '278 54% 58%' },
+  { value: 'blue',     label: 'Синий',   hsl: '214 70% 56%' },
+  { value: 'teal',     label: 'Бирюза',  hsl: '174 58% 42%' },
+  { value: 'emerald',  label: 'Изумруд', hsl: '145 58% 44%' },
+  { value: 'amber',    label: 'Янтарь',  hsl: '45 84% 50%'  },
+  { value: 'rose',     label: 'Красный', hsl: '354 68% 54%' },
+  { value: 'slate',    label: 'Сталь',   hsl: '214 18% 44%' },
+  { value: 'graphite', label: 'Графит',  hsl: '220 8% 34%'  },
 ];
 
 // ─── Section definitions ──────────────────────────────────────────────────────
@@ -70,12 +63,13 @@ export const SECTION_DEFS: SectionDef[] = [
   { page: 'home',    key: 'tasksCategories',      label: 'Категории задач',   desc: '4 карточки с % дня',       example: 'Рутина 80%, Фокус 45%, Тонус 60%' },
   { page: 'home',    key: 'transactions',          label: 'Транзакции',        desc: 'Список денег за день',      example: '−450 кофе, +5000 доход' },
   { page: 'home',    key: 'dailyPlans',            label: 'Планы дня',         desc: 'Утренний/вечерний текст',   example: 'Утром: 3 главные задачи' },
-  { page: 'home',    key: 'categoryProgressChart', label: 'График прогресса',  desc: 'Мини-график активности',    example: 'Неделя по категориям' },
   { page: 'rituals', key: 'rituals',               label: 'Ритуалы',           desc: 'Чек-лист утра/вечера',      example: 'Вода, зарядка, чтение' },
   { page: 'rituals', key: 'vows',                  label: 'Обеты',             desc: 'Длинные обещания',          example: '30 дней без сахара' },
   { page: 'rituals', key: 'goals',                 label: 'Цели',              desc: 'Проекты со стадиями',       example: 'Курс → модуль → задача' },
   { page: 'diary',   key: 'entryPanel',            label: 'Запись дневника',   desc: 'Текст + настроение',        example: 'Что понял сегодня?' },
   { page: 'diary',   key: 'contentNutrition',      label: 'Питание',           desc: 'КБЖУ за день',              example: '1820 ккал, белки 120г' },
+  { page: 'stats',   key: 'chart',                 label: 'График',            desc: 'Визуальная динамика',       example: 'Неделя, месяц, год' },
+  { page: 'stats',   key: 'table',                 label: 'Таблица',           desc: 'Числа по сериям',           example: 'Категории и элементы' },
   { page: 'ranks',   key: 'rank',                  label: 'Ранг',              desc: 'Текущий уровень',           example: 'Воин, 4800 очков' },
   { page: 'ranks',   key: 'pointsHistory',         label: 'История очков',     desc: 'Таблица результатов',       example: '+72 сегодня, −15 вчера' },
 ];
@@ -84,6 +78,7 @@ export const PAGE_LABELS: Record<keyof PageSectionsVisibility, string> = {
   home:    'Главная',
   rituals: 'Ритуалы',
   diary:   'Дневник',
+  stats:   'Статистика',
   ranks:   'Очки',
 };
 
@@ -91,6 +86,7 @@ export const PAGE_HINTS: Record<keyof PageSectionsVisibility, { title: string; d
   home:    { title: 'Центр дня',       desc: 'Быстрый обзор задач, планов, денег и прогресса.' },
   rituals: { title: 'Стабильность',    desc: 'Утро, вечер, обеты и цели держат систему в ритме.' },
   diary:   { title: 'Память и питание',desc: 'Записи, настроение и КБЖУ собираются в дневник.' },
+  stats:   { title: 'Разбор данных',    desc: 'Графики и таблицы строятся из уже добавленных задач, финансов, питания и очков.' },
   ranks:   { title: 'Игра в долгую',   desc: 'Очки дня превращаются в прогресс ранга.' },
 };
 
@@ -127,9 +123,9 @@ export const PRESET_GROUPS: Array<{
   {
     key:    'diary',
     title:  'Дневник',
-    desc:   'Категории записей, настроения и быстрые шаблоны.',
+    desc:   'Категории записей и быстрые шаблоны.',
     icon:   BookOpen,
-    tables: ['cfg_diary_categories', 'cfg_diary_moods', 'cfg_diary_entry_presets'],
+    tables: ['cfg_diary_categories', 'cfg_diary_entry_presets'],
   },
   {
     key:    'nutrition',
@@ -155,7 +151,6 @@ export const WELCOME_FEATURE_ICONS = [
   { icon: Wallet,    label: 'Финансы'    },
   { icon: Apple,     label: 'Питание'    },
   { icon: BarChart3, label: 'Статистика' },
-  { icon: Smile,     label: 'Настроение' },
   { icon: Award,     label: 'Ранги'      },
 ];
 

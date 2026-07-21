@@ -15,6 +15,18 @@ import { MobilePageShell } from '@/shared/ui/mobile';
 import { GoalsManagementPanel } from '@/features/rituals/GoalsManagementPanel';
 import { RitualsChecklistPanel } from '@/features/rituals/RitualsChecklistPanel';
 import { VowsSingleViewer } from '@/features/rituals/VowsSingleViewer';
+import { STORAGE_KEYS } from '@/shared/config/storage-keys';
+
+type RitualsMobileTab = 'rituals' | 'vows' | 'goals';
+
+function readRitualsMobileTab(): RitualsMobileTab {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.RITUALS_MOBILE_TAB);
+    return raw === 'rituals' || raw === 'vows' || raw === 'goals' ? raw : 'rituals';
+  } catch {
+    return 'rituals';
+  }
+}
 
 function LeftStackRitualsVows({
   showRituals,
@@ -28,15 +40,15 @@ function LeftStackRitualsVows({
   useAuraDb();
   if (!showRituals && !showVows) return null;
 
-  // Both sections visible: split equally
+  // Both sections visible: compact rituals row, vows take the remaining height.
   if (showRituals && showVows) {
     return (
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col divide-y divide-border/60 overflow-hidden">
-        <div className="aura-col">
+      <div className="grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(9rem,10rem)_minmax(0,1fr)] divide-y divide-border/60 overflow-hidden xl:grid-rows-[minmax(9.5rem,10.5rem)_minmax(0,1fr)]">
+        <div className="aura-col min-h-0">
           <RitualsChecklistPanel />
         </div>
-        <div className="aura-col">
-      <VowsSingleViewer vows={vows} />
+        <div className="aura-col min-h-0 flex-1">
+          <VowsSingleViewer vows={vows} />
         </div>
       </div>
     );
@@ -61,7 +73,11 @@ function LeftStackRitualsVows({
 
 export function RitualsPage() {
   const { db } = useAuraDb();
-  const [mobileTab, setMobileTab] = useState<'rituals' | 'vows' | 'goals'>('rituals');
+  const [mobileTab, setMobileTab] = useState<RitualsMobileTab>(readRitualsMobileTab);
+  const setStoredMobileTab = (next: RitualsMobileTab) => {
+    setMobileTab(next);
+    try { localStorage.setItem(STORAGE_KEYS.RITUALS_MOBILE_TAB, next); } catch { /* ignore */ }
+  };
 
   const visibility = useMemo(() => {
     if (!db) return getPageSectionsFromSettings(null);
@@ -95,7 +111,7 @@ export function RitualsPage() {
 
   useEffect(() => {
     if (!mobileSections.some((section) => section.id === mobileTab)) {
-      setMobileTab(mobileSections[0]?.id ?? 'rituals');
+      setStoredMobileTab(mobileSections[0]?.id ?? 'rituals');
     }
   }, [mobileSections, mobileTab]);
 
@@ -103,7 +119,7 @@ export function RitualsPage() {
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
       <Card className={MEGA_SHELL_CARD_CN}>
         <CardContent className={`${MEGA_SHELL_CONTENT_CN} aura-content-fade-in`}>
-          <MobilePageShell sections={mobileSections} value={mobileTab} onChange={setMobileTab} />
+          <MobilePageShell sections={mobileSections} value={mobileTab} onChange={(value) => setStoredMobileTab(value as RitualsMobileTab)} />
           {twoColumns ? (
             <div className="hidden min-h-0 flex-1 overflow-hidden lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:divide-x lg:divide-border/60">
               <LeftStackRitualsVows showRituals={showRituals} showVows={showVows} vows={vows} />

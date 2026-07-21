@@ -103,11 +103,11 @@ export const AURA_STATIC_SEMANTIC = {
 } as const;
 
 export const NUTRITION_SEMANTIC = {
-  proteins: 'hsl(145, 58%, 42%)',
-  fats: 'hsl(35, 82%, 52%)',
-  carbs: 'hsl(214, 70%, 54%)',
-  calories: 'hsl(0, 72%, 54%)',
-  dish: 'hsl(214, 70%, 54%)',
+  proteins: 'hsl(4, 72%, 52%)',
+  fats: 'hsl(35, 76%, 50%)',
+  carbs: 'hsl(142, 58%, 42%)',
+  calories: 'hsl(24, 72%, 52%)',
+  dish: 'hsl(142, 58%, 42%)',
 } as const;
 
 export const MOOD_SCALE: Record<number, string> = {

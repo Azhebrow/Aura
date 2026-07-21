@@ -120,6 +120,16 @@ export function buildStatsMeta(db: AuraDatabase, mode: StatsMode, groupBy: Stats
       }
     } else {
       meta.financeCategoryTypes = {};
+      if (allKeys.has('+ Без категории')) {
+        meta.financeCategoryTypes['+ Без категории'] = 'income';
+        meta.icons['+ Без категории'] = 'circle-help';
+        meta.colors['+ Без категории'] = FINANCE_SEMANTIC.income;
+      }
+      if (allKeys.has('- Без категории')) {
+        meta.financeCategoryTypes['- Без категории'] = 'expense';
+        meta.icons['- Без категории'] = 'circle-help';
+        meta.colors['- Без категории'] = FINANCE_SEMANTIC.expense;
+      }
       for (const category of db.getAll('cfg_income_categories')) {
         const categoryTitle = String(category.title ?? category.id);
         const keyWithPrefix = `+ ${categoryTitle}`;

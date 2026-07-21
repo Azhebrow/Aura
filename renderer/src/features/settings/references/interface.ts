@@ -1,19 +1,19 @@
 // ─── Settings References: Interface ────────────────────────────────────────
-// Справочные данные для раздела настроек «interface».
+// Справочные данные для системного раздела настроек.
 // Используются в SettingsReferenceBlock для отображения документации.
 
 import { Settings2 } from 'lucide-react';
 
 import type { SettingsReference } from './types';
 
-/** Справочники секций конфига: interface */
+/** Справочники секций конфига: system */
 export const INTERFACE_REFERENCES: Record<string, SettingsReference> = {
   'interface-data': {
     id: 'interface-data',
     icon: Settings2,
-    title: 'Оформление и данные',
+    title: 'Система',
     definition:
-      'Основные настройки приложения: внешний вид, валюта, целевые показатели питания и другие параметры, которые влияют на всё приложение.',
+      'Основные настройки приложения: внешний вид, секции страниц, очки, база данных и параметры, которые влияют на всё приложение.',
     usedOn: [
       {
         page: 'Главная',
@@ -31,7 +31,7 @@ export const INTERFACE_REFERENCES: Record<string, SettingsReference> = {
         description: 'Целевые показатели калорий и макронутриентов влияют на прогресс в разделе "Питание" и рассчитываемые проценты.',
       },
       {
-        title: 'Оформление интерфейса',
+        title: 'Внешний вид',
         description: 'Тема и цветовая схема применяется ко всему приложению и влияет на видимость всех элементов.',
       },
     ],

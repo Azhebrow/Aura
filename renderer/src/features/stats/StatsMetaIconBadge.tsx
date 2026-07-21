@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
+import { AuraIconBadge } from '@/widgets/aura-icon/AuraIconBadge';
 
 type Props = {
   icon?: string | null;
@@ -13,14 +13,12 @@ const FALLBACK_ICON = 'layers';
 export function StatsMetaIconBadge({ icon, tint, size = 14, className }: Props) {
   const name = icon && String(icon).trim() ? String(icon).trim() : FALLBACK_ICON;
   return (
-    <div
-      className={cn(
-        'aura-surface-control inline-flex shrink-0 items-center justify-center rounded-md border',
-        size <= 12 ? 'p-0.5' : 'p-1',
-        className
-      )}
-    >
-      <ColoredAuraIcon name={name} tint={tint && String(tint).trim() ? tint : 'var(--foreground)'} size={size} />
-    </div>
+    <AuraIconBadge
+      name={name}
+      tint={tint && String(tint).trim() ? tint : 'var(--primary)'}
+      size={size <= 12 ? 6 : 7}
+      iconSize={size}
+      className={cn('inline-flex', className)}
+    />
   );
 }

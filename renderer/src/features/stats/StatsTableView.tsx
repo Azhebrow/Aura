@@ -102,7 +102,6 @@ function makeCellStyle(mode: StatsMode, colColor: string | undefined, raw: numbe
   return undefined;
 }
 
-
 export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props) {
   const { ref: scrollRef, isDragging, dragScrollHandlers } = useDragScroll<HTMLDivElement>();
   const cols = visibleColumns(table.columns, selectedSeriesKeys);
@@ -127,12 +126,11 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
   }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
-      <div className="aura-surface-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-soft/80">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div
           ref={scrollRef}
           className={cn(
-            'aura-data-table-scroll h-full min-h-0 min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]',
+            'aura-data-table-scroll aura-operator-table h-full min-h-0 min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]',
             'cursor-grab select-none active:cursor-grabbing',
             isDragging && 'cursor-grabbing'
           )}
@@ -229,7 +227,6 @@ export function StatsTableView({ mode, table, meta, selectedSeriesKeys }: Props)
             </tbody>
           </table>
         </div>
-      </div>
     </div>
   );
 }

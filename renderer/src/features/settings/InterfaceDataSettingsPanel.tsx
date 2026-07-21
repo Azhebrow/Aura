@@ -2,16 +2,16 @@ import { AppSettingsTechnicalCard } from '@/features/app-settings/AppSettingsTec
 import { AppearanceSettingsCard } from '@/features/settings/AppearanceSettingsCard';
 import { PageSectionsSettingsCard } from '@/features/settings/PageSectionsSettingsCard';
 import { PointsSettingsCard } from '@/features/settings/PointsSettingsCard';
-import { SidebarWidgetSettingsCard } from '@/features/settings/SidebarWidgetSettingsCard';
 
 export function InterfaceDataSettingsPanel() {
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
       <AppearanceSettingsCard />
-      <PointsSettingsCard />
-      <AppSettingsTechnicalCard />
+      <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2">
+        <PointsSettingsCard />
+        <AppSettingsTechnicalCard />
+      </div>
       <PageSectionsSettingsCard />
-      <SidebarWidgetSettingsCard />
     </div>
   );
 }

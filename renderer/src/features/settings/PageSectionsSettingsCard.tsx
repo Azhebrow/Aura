@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Apple,
+  BarChart3,
   BookOpen,
-  ChartPie,
   CheckSquare,
   CreditCard,
   FileText,
@@ -13,6 +13,7 @@ import {
   ListTodo,
   Medal,
   PenLine,
+  Table2,
   Scroll,
   Target,
   Trophy,
@@ -80,9 +81,11 @@ function VisibilityChip({ item }: { item: VisibilityItem }) {
 
 function PageVisibilityRow({ page }: { page: VisibilityPage }) {
   return (
-    <section className="grid min-w-0 grid-cols-1 gap-2 border-t border-soft py-3 first:border-t-0 first:pt-0 last:pb-0 md:grid-cols-[7rem_minmax(0,1fr)]">
+    <section className="grid min-w-0 grid-cols-1 gap-2 border-t border-soft/55 px-3 py-3 first:border-t-0 md:grid-cols-[8rem_minmax(0,1fr)] md:items-start">
       <div className="flex min-w-0 items-center gap-2">
-        <page.Icon className="size-3.5 shrink-0 text-dim" aria-hidden />
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-control/60 text-subtle">
+          <page.Icon className="size-4" aria-hidden />
+        </span>
         <p className="min-w-0 truncate text-xs font-bold uppercase tracking-[0.13em] text-dim">{page.title}</p>
       </div>
       <div className="flex min-w-0 flex-wrap gap-1.5">
@@ -130,7 +133,6 @@ export function PageSectionsSettingsCard(props: PageSectionsSettingsCardProps = 
         { id: 'page-vis-home-tasksCategories',      Icon: CheckSquare, label: 'Категории задач',    checked: vis.home.tasksCategories,        onChange: (v) => patch({ ...vis, home: { ...vis.home, tasksCategories: v } }) },
         { id: 'page-vis-home-dailyPlans',            Icon: ListTodo,    label: 'Планы на день',      checked: vis.home.dailyPlans,              onChange: (v) => patch({ ...vis, home: { ...vis.home, dailyPlans: v } }) },
         { id: 'page-vis-home-transactions',          Icon: CreditCard,  label: 'Финансы',            checked: vis.home.transactions,            onChange: (v) => patch({ ...vis, home: { ...vis.home, transactions: v } }) },
-        { id: 'page-vis-home-categoryProgressChart', Icon: ChartPie,    label: 'Диаграмма прогресса', checked: vis.home.categoryProgressChart, onChange: (v) => patch({ ...vis, home: { ...vis.home, categoryProgressChart: v } }) },
       ],
     },
     {
@@ -152,6 +154,14 @@ export function PageSectionsSettingsCard(props: PageSectionsSettingsCardProps = 
       ],
     },
     {
+      title: 'Статистика',
+      Icon: BarChart3,
+      items: [
+        { id: 'page-vis-stats-chart', Icon: BarChart3, label: 'График',  checked: vis.stats.chart, onChange: (v) => patch({ ...vis, stats: { ...vis.stats, chart: v } }) },
+        { id: 'page-vis-stats-table', Icon: Table2,    label: 'Таблица', checked: vis.stats.table, onChange: (v) => patch({ ...vis, stats: { ...vis.stats, table: v } }) },
+      ],
+    },
+    {
       title: 'Ранги',
       Icon: Trophy,
       items: [
@@ -165,7 +175,7 @@ export function PageSectionsSettingsCard(props: PageSectionsSettingsCardProps = 
 
   return (
     <SettingsSectionCard title="Секции страниц" leadingIcon={Home} contentClassName="gap-0">
-      <div className="flex flex-col">
+      <div className="flex flex-col overflow-hidden rounded-xl border border-soft/70 bg-card/60">
         {pages.map((page) => <PageVisibilityRow key={page.title} page={page} />)}
       </div>
     </SettingsSectionCard>

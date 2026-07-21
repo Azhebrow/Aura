@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { PageFrame } from '@/widgets/page-frame/PageFrame';
 import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
-import { useSelectedDate, dateToYmd } from '@/features/selected-date/selected-date-context';
+import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { usePointsService } from '@/shared/hooks/use-points-service';
 import {
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { MegaPanelHeader } from '@/shared/ui/mega-panel-header';
 import { STORAGE_KEYS } from '@/shared/config/storage-keys';
 import { useAuraDataRefresh } from '@/shared/hooks/use-aura-data-refresh';
+import { dateToYmd, monthCells, parseYmd } from '@/shared/lib/calendar-date';
 
 type DataType = 'completion' | 'points' | 'rituals' | 'mood' | 'income' | 'expense' | 'finance' | 'calories';
 type DayStatus = 'future' | 'open' | 'locked';
@@ -53,32 +54,6 @@ const TYPE_ICON = {
   finance: Banknote,
   calories: Flame,
 } as const;
-
-function parseYmd(s: string): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-  if (!m) return null;
-  const y = Number(m[1]);
-  const mo = Number(m[2]) - 1;
-  const day = Number(m[3]);
-  const d = new Date(y, mo, day, 0, 0, 0, 0);
-  if (d.getFullYear() !== y || d.getMonth() !== mo || d.getDate() !== day) return null;
-  return d;
-}
-
-function monthCells(year: number, monthIndex: number): { d: Date; inMonth: boolean }[] {
-  const first = new Date(year, monthIndex, 1);
-  const offset = (first.getDay() + 6) % 7;
-  const start = new Date(year, monthIndex, 1 - offset);
-  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-  const total = Math.ceil((offset + daysInMonth) / 7) * 7;
-  const cells: { d: Date; inMonth: boolean }[] = [];
-  const cur = new Date(start);
-  for (let i = 0; i < total; i++) {
-    cells.push({ d: new Date(cur), inMonth: cur.getMonth() === monthIndex });
-    cur.setDate(cur.getDate() + 1);
-  }
-  return cells;
-}
 
 export function CalendarPage({ inModal = false, onRequestClose }: { inModal?: boolean; onRequestClose?: () => void }) {
   const { dateString, setDateString, todayString } = useSelectedDate();

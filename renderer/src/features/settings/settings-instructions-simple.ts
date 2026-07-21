@@ -13,7 +13,7 @@ export type SettingsInstruction = {
 
 export const SETTINGS_INSTRUCTIONS: Record<string, SettingsInstruction> = {
   'rituals-morning': {
-    title: 'Утренние ритуалы',
+    title: 'Утро',
     whatIs: 'Структурированный список действий, которые ты делаешь каждое утро. Система отслеживает выполнение и показывает прогресс.',
     whereInApp: 'Главное меню → Главная → Левая панель "Сегодня" → Карточка "Утро" → кнопка ⚙',
     howToUse: [
@@ -30,7 +30,7 @@ export const SETTINGS_INSTRUCTIONS: Record<string, SettingsInstruction> = {
   },
 
   'rituals-evening': {
-    title: 'Вечерние ритуалы',
+    title: 'Вечер',
     whatIs: 'То же, что утренние, но для вечера. Выполняются перед сном или в конце дня.',
     whereInApp: 'Главное меню → Главная → Левая панель "Сегодня" → Карточка "Вечер" → кнопка ⚙',
     howToUse: [
@@ -209,7 +209,7 @@ export const SETTINGS_INSTRUCTIONS: Record<string, SettingsInstruction> = {
   },
 
   'diary-categories': {
-    title: 'Категории дневника',
+    title: 'Категории',
     whatIs: 'Метки для классификации записей — не темы (работа, дом), а значимые моменты (достижение, урок, счастье).',
     whereInApp: 'Главное меню → Дневник → "Заметки" → При записи выбор категории внизу → В настройках редактировать',
     howToUse: [
@@ -244,7 +244,7 @@ export const SETTINGS_INSTRUCTIONS: Record<string, SettingsInstruction> = {
   },
 
   'diary-entry-presets': {
-    title: 'Цитаты записи',
+    title: 'Цитаты',
     whatIs: 'Фразы и подсказки, которые ротируют в пустом поле дневника. Помогают войти в запись без трения.',
     whereInApp: 'Главное меню → Дневник → "Заметки" → Открыть новую запись → Видно подсказку в пустом поле',
     howToUse: [
@@ -296,7 +296,7 @@ export const SETTINGS_INSTRUCTIONS: Record<string, SettingsInstruction> = {
   },
 
   'ambient-music': {
-    title: 'Фоновая музыка',
+    title: 'Музыка',
     whatIs: 'Музыкальные треки для разных состояний (фокус, перерыв, вечер). Помогает управлять состоянием через звук.',
     whereInApp: 'Главное меню → Главная / Фокус → Плеер музыки → В настройках редактировать',
     howToUse: [

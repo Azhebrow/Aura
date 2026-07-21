@@ -12,6 +12,13 @@ import { cn } from '@/lib/utils';
 type ModalPresentation = 'centered' | 'fullscreen';
 type ModalScrollMode = 'content' | 'none';
 
+export const UNIVERSAL_MODAL_COMPACT_PICKER_CN = 'flex max-h-[min(92svh,48rem)] flex-col gap-0 p-0';
+export const UNIVERSAL_MODAL_FORM_BODY_CN = 'min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-6 pb-4';
+export const UNIVERSAL_MODAL_INSET_BODY_CN = 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-5';
+export const UNIVERSAL_MODAL_LAYOUT_CN = 'flex min-h-0 w-full flex-1 flex-col overflow-hidden';
+export const UNIVERSAL_MODAL_HEADER_CN = 'border-border/80 shrink-0 border-b px-3 py-2 sm:px-3.5 sm:py-2.5';
+export const UNIVERSAL_MODAL_BODY_CN = 'min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-2 sm:px-3.5 sm:py-2.5';
+
 type UniversalModalContentProps = React.ComponentProps<typeof DialogContent> & {
   size?: ModalSizePreset;
   presentation?: ModalPresentation;
@@ -54,9 +61,9 @@ export function UniversalModalLayout({
   bodyClassName,
 }: UniversalModalLayoutProps) {
   return (
-    <div className={cn('flex min-h-0 w-full flex-1 flex-col overflow-hidden', className)}>
-      {header ? <div className={cn('border-border/80 shrink-0 border-b px-3 py-2 sm:px-3.5 sm:py-2.5', headerClassName)}>{header}</div> : null}
-      <div className={cn('min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-2 sm:px-3.5 sm:py-2.5', bodyClassName)}>
+    <div className={cn(UNIVERSAL_MODAL_LAYOUT_CN, className)}>
+      {header ? <div className={cn(UNIVERSAL_MODAL_HEADER_CN, headerClassName)}>{header}</div> : null}
+      <div className={cn(UNIVERSAL_MODAL_BODY_CN, bodyClassName)}>
         {children}
       </div>
       {footer ? <div className="shrink-0">{footer}</div> : null}

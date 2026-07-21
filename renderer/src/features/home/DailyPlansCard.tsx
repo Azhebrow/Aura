@@ -1,14 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AddListButton } from '@/components/ui/add-list-button';
-import { Dialog } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronUp, ClipboardList, Trash2 } from 'lucide-react';
-import { ActField, ActFormTable, ActModal, ActModalFooter, ActTableBox } from '@/features/act/ActModal';
-import { LoadingShell } from '@/shared/ui/data-states';
+import { ActList, type ActItem } from '@/features/act-system';
+import { IconWithBadge } from '@/components/ui/icon-with-badge';
 import { useAsyncData } from '@/shared/hooks/use-async-data';
 import { useFormMutation } from '@/shared/hooks/use-form-mutation';
 
@@ -17,7 +13,39 @@ type DailyPlansCardProps = {
   contentClassName?: string;
 };
 
-const DEFAULT_PLAN_ICON = '📝';
+const DEFAULT_PLAN_ICON = 'notebook';
+const PLAN_ICON_OPTIONS = [
+  'notebook',
+  'calendar',
+  'clock',
+  'alarm-clock',
+  'house',
+  'shopping-cart',
+  'utensils',
+  'cooking-pot',
+  'salad',
+  'apple',
+  'glass-water',
+  'droplet',
+  'washing-machine',
+  'shirt',
+  'brush',
+  'bath',
+  'bed',
+  'person-standing',
+  'bike',
+  'dumbbell',
+  'heart',
+  'hand-heart',
+  'phone',
+  'book-open',
+  'car',
+  'bus',
+  'package',
+  'trash-2',
+  'recycle',
+  'sprout',
+];
 
 function firstGrapheme(value: string) {
   const trimmed = value.trim();
@@ -60,7 +88,7 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
     { events: ['task-progress'] }
   );
   const [title, setTitle] = useState('');
-  const [addOpen, setAddOpen] = useState(false);
+  const [icon, setIcon] = useState(DEFAULT_PLAN_ICON);
   const rowsList = useMemo(() => rows ?? [], [rows]);
   const { submit: submitMutation } = useFormMutation(
     (action: { kind: 'toggle' | 'add' | 'delete' | 'move'; payload?: unknown }) => {
@@ -122,9 +150,9 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
     const parsed = splitLeadingEmojiTitle(title.trim());
     const nextTitle = parsed.title.trim();
     if (!nextTitle) return;
-    submitMutation({ kind: 'add', payload: { dateString, title: nextTitle, icon: normalizePlanIcon(parsed.icon) } });
+    const parsedHasIcon = parsed.icon !== DEFAULT_PLAN_ICON;
+    submitMutation({ kind: 'add', payload: { dateString, title: nextTitle, icon: normalizePlanIcon(parsedHasIcon ? parsed.icon : icon) } });
     setTitle('');
-    setAddOpen(false);
   };
 
   const move = (index: number, direction: -1 | 1) => {
@@ -138,147 +166,61 @@ export function DailyPlansCard({ cardClassName, contentClassName }: DailyPlansCa
       },
     });
   };
+  const items: ActItem[] = rowsList.map((p, idx) => {
+    const id = String(p.id);
+    const done = p.completed === 1 || p.completed === true;
+    const rawTitle = String(p.title ?? '');
+    const legacy = splitLeadingEmojiTitle(rawTitle);
+    const label = legacy.title || rawTitle;
+    const storedIcon = typeof p.icon === 'string' && p.icon.trim() ? p.icon.trim() : '';
+    const rowIcon = legacy.icon !== DEFAULT_PLAN_ICON ? legacy.icon : storedIcon || DEFAULT_PLAN_ICON;
+    return {
+      id,
+      kind: 'daily-plan',
+      title: label,
+      state: done ? 'done' : 'default',
+      checked: done,
+      leading: isEmojiGrapheme(rowIcon) ? (
+        <div className={cn('flex size-8 items-center justify-center rounded-md border border-soft bg-control text-base', done && 'opacity-55')} aria-hidden>
+          {rowIcon}
+        </div>
+      ) : (
+        <IconWithBadge
+          iconName={rowIcon}
+          tint="var(--muted-foreground)"
+          size="lg"
+          className={cn(done && 'opacity-55')}
+          surfaceClassName="border-soft bg-control"
+        />
+      ),
+      onToggle: (next) => toggle(id, next),
+      onMoveUp: idx > 0 ? () => move(idx, -1) : undefined,
+      onMoveDown: idx < rowsList.length - 1 ? () => move(idx, 1) : undefined,
+      onDelete: () => submitMutation({ kind: 'delete', payload: { id } }),
+    };
+  });
 
   return (
     <>
       <div className={cn('flex min-h-0 flex-1 flex-col', cardClassName)}>
-        <ul className={cn('flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain', contentClassName)}>
-          {status === 'loading' ? (
-            <li className="flex-1"><LoadingShell /></li>
-          ) : (
-            <>
-              {rowsList.map((p, idx) => {
-                const id = String(p.id);
-                const done = p.completed === 1 || p.completed === true;
-	                const rawTitle = String(p.title ?? '');
-	                const legacy = splitLeadingEmojiTitle(rawTitle);
-	                const label = legacy.title || rawTitle;
-	                const storedIcon = typeof p.icon === 'string' && p.icon.trim() ? p.icon.trim() : '';
-	                const rowIcon = legacy.icon !== DEFAULT_PLAN_ICON ? legacy.icon : storedIcon || DEFAULT_PLAN_ICON;
-                const isFirst = idx === 0;
-                const isLast = idx === rowsList.length - 1;
-                return (
-                  <li key={id}>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={done}
-                      onClick={() => toggle(id, !done)}
-                      onKeyDown={(event) => {
-                        if (event.key !== 'Enter' && event.key !== ' ') return;
-                        event.preventDefault();
-                        toggle(id, !done);
-                      }}
-                      className={cn(
-                        'group grid cursor-pointer grid-cols-[auto_1fr_auto] overflow-hidden rounded-xl border border-soft bg-card shadow-xs aura-tx-surface',
-                        'hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
-                      )}
-                    >
-                      <div className="flex h-full shrink-0 items-center justify-center px-2 py-2">
-                        <div
-                          className={cn(
-                            'flex size-8 items-center justify-center rounded-md border border-soft bg-control text-base',
-                            done && 'opacity-55'
-                          )}
-                          aria-hidden
-                        >
-                          {rowIcon}
-                        </div>
-                      </div>
-                      <div className="flex w-full min-w-0 items-center gap-3 px-3 py-2 text-left">
-                        <div className="min-w-0 flex-1">
-                          <div
-                            className={cn(
-                              'text-sm font-semibold leading-snug text-foreground',
-                              done && 'line-through text-faint'
-                            )}
-                          >
-                            {label}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex min-h-0 shrink-0 items-center border-l border-soft opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
-                        <div className="flex h-full items-center gap-0">
-                          {!isFirst ? (
-	                            <button
-	                              type="button"
-	                              className="flex h-full items-center justify-center px-2 py-2 text-dim aura-tx-interactive hover:bg-hover hover:text-foreground"
-	                              aria-label={t('aria.move_up')}
-	                              onClick={(event) => {
-	                                event.stopPropagation();
-	                                move(idx, -1);
-	                              }}
-	                            >
-                              <ChevronUp className="size-4" />
-                            </button>
-                          ) : null}
-                          {!isLast ? (
-	                            <button
-	                              type="button"
-	                              className="flex h-full items-center justify-center px-2 py-2 text-dim aura-tx-interactive hover:bg-hover hover:text-foreground"
-	                              aria-label={t('aria.move_down')}
-	                              onClick={(event) => {
-	                                event.stopPropagation();
-	                                move(idx, 1);
-	                              }}
-	                            >
-                              <ChevronDown className="size-4" />
-                            </button>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="flex h-full items-center justify-center px-2 py-2 text-dim aura-tx-interactive hover:bg-destructive/10 hover:text-destructive"
-                            aria-label={t('aria.delete_item')}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (!db) return;
-                              submitMutation({ kind: 'delete', payload: { id } });
-                            }}
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-              <li>
-                <AddListButton onClick={() => setAddOpen(true)} />
-              </li>
-            </>
-          )}
-        </ul>
+        <ActList
+          items={items}
+          loading={status === 'loading'}
+          className={contentClassName}
+          emptyTitle="На этот день пока нет планов."
+          composer={{
+            iconOptions: PLAN_ICON_OPTIONS,
+            iconValue: icon,
+            onIconChange: setIcon,
+            inputValue: title,
+            onInputChange: setTitle,
+            placeholder: t('placeholder.new_item'),
+            submitLabel: t('action.add'),
+            submitDisabled: !splitLeadingEmojiTitle(title.trim()).title.trim(),
+            onSubmit: add,
+          }}
+        />
       </div>
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <ActModal
-          icon={ClipboardList}
-          title={t('field.name')}
-          footer={
-	            <ActModalFooter
-	              onCancel={() => setAddOpen(false)}
-	              onSubmit={add}
-	              submitDisabled={!splitLeadingEmojiTitle(title.trim()).title.trim()}
-	              submitLabel={t('action.add')}
-	            />
-          }
-        >
-	          <ActTableBox>
-	            <ActFormTable>
-	              <ActField id="daily-plan-title" label={t('field.name')}>
-                <Input
-                  id="daily-plan-title"
-                  autoFocus
-                  className="h-10 text-sm"
-                  placeholder={t('placeholder.new_item')}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </ActField>
-            </ActFormTable>
-          </ActTableBox>
-        </ActModal>
-      </Dialog>
     </>
   );
 }

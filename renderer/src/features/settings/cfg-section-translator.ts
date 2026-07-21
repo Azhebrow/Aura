@@ -7,7 +7,7 @@ function translateMaybeI18nKey(value: string | undefined, t: typeof i18n.t): str
   if (!key.includes(':')) return value;
   const leading = value.match(/^\s*/)?.[0] ?? '';
   const trailing = value.match(/\s*$/)?.[0] ?? '';
-  return `${leading}${t(key, { ns: 'settings_cfg' })}${trailing}`;
+  return `${leading}${String(t(key as never, { ns: 'settings_cfg' } as never))}${trailing}`;
 }
 
 export function translateCfgFieldDef(field: CfgFieldDef, t: typeof i18n.t): CfgFieldDef {
@@ -15,12 +15,12 @@ export function translateCfgFieldDef(field: CfgFieldDef, t: typeof i18n.t): CfgF
 
   return {
     ...field,
-    label: isI18nKey(field.label) ? t(field.label, { ns: 'settings_cfg' }) : field.label,
+    label: isI18nKey(field.label) ? String(t(field.label as never, { ns: 'settings_cfg' } as never)) : field.label,
     hint: translateMaybeI18nKey(field.hint, t),
     suffix: translateMaybeI18nKey(field.suffix, t),
     options: field.options?.map((opt) => ({
       ...opt,
-      label: isI18nKey(opt.label) ? t(opt.label, { ns: 'settings_cfg' }) : opt.label,
+      label: isI18nKey(opt.label) ? String(t(opt.label as never, { ns: 'settings_cfg' } as never)) : opt.label,
     })),
   };
 }
@@ -30,7 +30,7 @@ export function translateCfgSectionSpec(spec: CfgSectionSpec, t: typeof i18n.t):
 
   return {
     ...spec,
-    title: isI18nKey(spec.title) ? t(spec.title, { ns: 'settings_cfg' }) : spec.title,
+    title: isI18nKey(spec.title) ? String(t(spec.title as never, { ns: 'settings_cfg' } as never)) : spec.title,
     fields: spec.fields.map((field) => translateCfgFieldDef(field, t)),
   };
 }

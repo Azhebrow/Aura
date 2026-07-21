@@ -35,9 +35,9 @@ export type GoalsDbApi = {
 
 export const RAW_BUTTON_FOCUS_CN = 'focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none';
 export const CFG_DIALOG_INPUT_CN =
-  'border-input bg-background h-9 w-full min-w-0 rounded-md border px-3 text-center text-sm shadow-xs';
+  'border-soft bg-control/55 h-9 w-full min-w-0 rounded-lg border px-3 text-left text-sm shadow-none focus-visible:bg-control/75';
 export const CFG_DIALOG_ICON_TRIGGER_CN =
-  `border-input bg-background hover:bg-muted/30 flex h-9 w-full min-w-0 flex-row items-center justify-center gap-2 rounded-md border px-3 text-center aura-tx-colors shadow-xs ${RAW_BUTTON_FOCUS_CN}`;
+  `border-soft bg-control/55 hover:bg-hover flex h-9 w-full min-w-0 flex-row items-center justify-start gap-2 rounded-lg border px-3 text-left text-sm aura-tx-colors shadow-none ${RAW_BUTTON_FOCUS_CN}`;
 /** Icon-кнопки в панели целей ритуалов: один вариант и размер на цели / этапы / задачи. */
 export const GOALS_RITUALS_ICON_BTN_CN =
   'aura-action-icon disabled:pointer-events-none disabled:opacity-[var(--aura-disabled-opacity)]';

@@ -36,7 +36,7 @@ function RankRibbonCard({ tier, reached, isCurrent, isSelected, onSelect }: Card
     return (
       <div
         className={cn(
-          'isolate flex h-full flex-col items-center justify-center rounded-xl border border-soft/50 bg-panel p-2 text-center',
+          'aura-operator-row isolate flex h-full flex-col items-center justify-center rounded-xl border border-soft/50 bg-panel p-2 text-center',
           'transition-[box-shadow,background-color] duration-aura-base ease-aura'
         )}
         title={`${tier.name} — ${tier.threshold}+`}
@@ -52,7 +52,7 @@ function RankRibbonCard({ tier, reached, isCurrent, isSelected, onSelect }: Card
       type="button"
       onClick={() => onSelect(tier.id)}
       className={cn(
-        'isolate relative flex h-full flex-col items-center justify-center rounded-xl border border-soft px-2 py-2 text-center gap-2',
+        'aura-operator-row isolate relative flex h-full flex-col items-center justify-center rounded-xl border border-soft px-2 py-2 text-center gap-2',
         'transition-[box-shadow,background-color] duration-aura-base ease-aura',
         'w-full',
         !isCurrent && 'bg-card/85 opacity-95',
@@ -66,7 +66,7 @@ function RankRibbonCard({ tier, reached, isCurrent, isSelected, onSelect }: Card
             src={rankImageSrc(tier.imageNumber)}
             alt=""
             ariaHidden
-            className="size-full object-contain"
+            className="aura-operator-visual size-full object-contain"
             loading="eager"
           />
         </div>
@@ -116,7 +116,9 @@ export function RankLadder({ points, currentId, selectedId, onSelect, showHeader
   }, []);
 
   const scrollBy = useCallback((dir: -1 | 1) => {
-    stripRef.current?.scrollBy({ left: dir * 180, behavior: 'smooth' });
+    const el = stripRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(180, el.clientWidth * 0.75), behavior: 'smooth' });
   }, []);
 
   return (
@@ -127,7 +129,7 @@ export function RankLadder({ points, currentId, selectedId, onSelect, showHeader
             <MegaPanelHeader
               title="Все ранги"
               right={
-                <div className="flex gap-1 lg:hidden">
+                <div className="flex gap-1">
                   <Button type="button" variant="outline" size="icon-sm" className="size-8 shrink-0" aria-label="Прокрутить влево" onClick={() => scrollBy(-1)}>
                     <ChevronLeft className="size-4" />
                   </Button>
@@ -142,22 +144,23 @@ export function RankLadder({ points, currentId, selectedId, onSelect, showHeader
           <div
             ref={stripRef}
             className={cn(
-              'h-full min-h-0 flex-1 overflow-hidden p-3 sm:p-4',
-              'grid gap-2',
-              'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-              'auto-rows-fr'
+              'min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-3 sm:p-4',
+              'max-w-full [scrollbar-width:thin]'
             )}
           >
-            {RANK_TIERS.map((tier) => (
-              <RankRibbonCard
-                key={tier.id}
-                tier={tier}
-                reached={points >= tier.threshold}
-                isCurrent={tier.id === currentId}
-                isSelected={tier.id === selectedId}
-                onSelect={onSelect}
-              />
-            ))}
+            <ul className="flex h-full min-h-[11rem] w-max max-w-none gap-3 pr-1">
+              {RANK_TIERS.map((tier) => (
+                <li key={tier.id} className="w-36 shrink-0 sm:w-40">
+                  <RankRibbonCard
+                    tier={tier}
+                    reached={points >= tier.threshold}
+                    isCurrent={tier.id === currentId}
+                    isSelected={tier.id === selectedId}
+                    onSelect={onSelect}
+                  />
+                </li>
+              ))}
+            </ul>
           </div>
         </>
       ) : null}

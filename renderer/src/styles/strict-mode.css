@@ -1,0 +1,1309 @@
+/* ─── Operator / strict visual mode ───────────────────────────────────────────
+   This file is intentionally isolated. Removing the strict mode should mostly
+   mean deleting this file plus the theme context toggle/storage wiring. */
+
+html[data-strict-mode='on'] {
+  --radius: 0;
+  --aura-radius-control: 0;
+  --aura-radius-card: 0;
+  --aura-radius-dialog: 0;
+  --aura-radius-chip: 0;
+  --aura-radius-icon: 0;
+
+  --background: oklch(0.985 0 0) !important;
+  --foreground: oklch(0.095 0 0) !important;
+  --card: oklch(1 0 0) !important;
+  --card-foreground: var(--foreground) !important;
+  --popover: oklch(1 0 0) !important;
+  --popover-foreground: var(--foreground) !important;
+  --secondary: oklch(0.935 0 0) !important;
+  --secondary-foreground: var(--foreground) !important;
+  --muted: oklch(0.925 0 0) !important;
+  --muted-foreground: oklch(0.32 0 0) !important;
+  --border: oklch(0.62 0 0 / 0.28) !important;
+  --input: oklch(0.62 0 0 / 0.22) !important;
+  --sidebar: oklch(0.965 0 0) !important;
+  --sidebar-foreground: var(--foreground) !important;
+  --surface: oklch(0.965 0 0) !important;
+  --surface-foreground: var(--foreground) !important;
+  --code: oklch(0.94 0 0) !important;
+  --code-foreground: var(--foreground) !important;
+  --code-highlight: oklch(0.9 0 0) !important;
+  --code-number: oklch(0.28 0 0) !important;
+  --selection: var(--foreground) !important;
+  --selection-foreground: var(--background) !important;
+
+  --aura-strict-accent: var(--foreground);
+  --aura-strict-accent-foreground: var(--background);
+  --primary: var(--aura-strict-accent) !important;
+  --primary-foreground: var(--aura-strict-accent-foreground) !important;
+  --ring: var(--foreground) !important;
+  --accent: oklch(0.9 0 0) !important;
+  --accent-foreground: var(--foreground) !important;
+  --sidebar-primary: var(--aura-strict-accent) !important;
+  --sidebar-primary-foreground: var(--aura-strict-accent-foreground) !important;
+  --sidebar-accent: oklch(0.9 0 0) !important;
+  --sidebar-accent-foreground: var(--foreground) !important;
+  --sidebar-border: var(--border) !important;
+  --sidebar-ring: var(--foreground) !important;
+
+  --aura-border-soft: oklch(0.5 0 0 / 0.18) !important;
+  --aura-border-strong: oklch(0.42 0 0 / 0.28) !important;
+  --aura-surface-shell: var(--background) !important;
+  --aura-surface-panel: oklch(0.955 0 0) !important;
+  --aura-surface-control: oklch(0.92 0 0) !important;
+  --aura-surface-item: var(--card) !important;
+  --aura-surface-raised: oklch(0.88 0 0) !important;
+  --aura-action-hover-bg: oklch(0.86 0 0) !important;
+  --aura-action-active-bg: oklch(0.78 0 0) !important;
+  --aura-text-muted: oklch(0.28 0 0) !important;
+  --aura-text-subtle: oklch(0.42 0 0) !important;
+  --aura-text-disabled: oklch(0.58 0 0) !important;
+  --aura-strict-header-bg: oklch(0.13 0 0) !important;
+  --aura-strict-header-fg: oklch(0.97 0 0) !important;
+  --aura-strict-header-muted: oklch(0.78 0 0) !important;
+  --aura-strict-header-border: oklch(0.04 0 0 / 0.72) !important;
+  --aura-strict-subheader-bg: oklch(0.9 0 0) !important;
+  --aura-strict-subheader-fg: oklch(0.11 0 0) !important;
+
+  --task-rituals: var(--aura-strict-accent) !important;
+  --task-time: var(--aura-strict-accent) !important;
+  --task-body: var(--aura-strict-accent) !important;
+  --task-deps: var(--aura-strict-accent) !important;
+  --rituals-morning: var(--aura-strict-accent) !important;
+  --rituals-evening: var(--aura-strict-accent) !important;
+  --rituals-vows: var(--aura-strict-accent) !important;
+  --ambient-music: var(--aura-strict-accent) !important;
+  --finance-income: var(--aura-strict-accent) !important;
+  --finance-expense: var(--aura-strict-accent) !important;
+  --finance-transfer: var(--aura-strict-accent) !important;
+  --leisure-filling: var(--aura-strict-accent) !important;
+  --leisure-escape: var(--aura-strict-accent) !important;
+  --semantic-negative: var(--aura-strict-accent) !important;
+  --semantic-success: var(--aura-strict-accent) !important;
+  --semantic-warning: var(--aura-strict-accent) !important;
+  --semantic-info: var(--aura-strict-accent) !important;
+  --nutrition-proteins: var(--aura-strict-accent) !important;
+  --nutrition-fats: var(--aura-strict-accent) !important;
+  --nutrition-carbs: var(--aura-strict-accent) !important;
+  --nutrition-calories: var(--aura-strict-accent) !important;
+  --chart-1: var(--aura-strict-accent) !important;
+  --chart-2: var(--aura-strict-accent) !important;
+  --chart-3: var(--aura-strict-accent) !important;
+  --chart-4: var(--aura-strict-accent) !important;
+  --chart-5: var(--aura-strict-accent) !important;
+  --chart-6: var(--aura-strict-accent) !important;
+  --chart-7: var(--aura-strict-accent) !important;
+  --chart-8: var(--aura-strict-accent) !important;
+  --chart-9: var(--aura-strict-accent) !important;
+  --chart-10: var(--aura-strict-accent) !important;
+  --chart-11: var(--aura-strict-accent) !important;
+  --chart-12: var(--aura-strict-accent) !important;
+}
+
+html.dark[data-strict-mode='on'],
+html[data-theme='tinted'][data-strict-mode='on'] {
+  --background: oklch(0.09 0 0) !important;
+  --foreground: oklch(0.96 0 0) !important;
+  --card: oklch(0.135 0 0) !important;
+  --card-foreground: var(--foreground) !important;
+  --popover: oklch(0.12 0 0) !important;
+  --popover-foreground: var(--foreground) !important;
+  --secondary: oklch(0.18 0 0) !important;
+  --secondary-foreground: var(--foreground) !important;
+  --muted: oklch(0.18 0 0) !important;
+  --muted-foreground: oklch(0.75 0 0) !important;
+  --border: oklch(0.8 0 0 / 0.18) !important;
+  --input: oklch(0.8 0 0 / 0.16) !important;
+  --sidebar: oklch(0.105 0 0) !important;
+  --sidebar-foreground: var(--foreground) !important;
+  --surface: oklch(0.14 0 0) !important;
+  --surface-foreground: var(--foreground) !important;
+  --code: oklch(0.16 0 0) !important;
+  --code-foreground: var(--foreground) !important;
+  --code-highlight: oklch(0.22 0 0) !important;
+  --code-number: oklch(0.78 0 0) !important;
+  --selection: var(--foreground) !important;
+  --selection-foreground: var(--background) !important;
+
+  --aura-strict-accent: var(--foreground);
+  --aura-strict-accent-foreground: var(--background);
+  --accent: oklch(0.2 0 0) !important;
+  --sidebar-accent: oklch(0.18 0 0) !important;
+  --sidebar-border: var(--border) !important;
+  --sidebar-ring: var(--foreground) !important;
+  --aura-border-soft: oklch(0.82 0 0 / 0.14) !important;
+  --aura-border-strong: oklch(0.9 0 0 / 0.24) !important;
+  --aura-surface-shell: var(--background) !important;
+  --aura-surface-panel: oklch(0.13 0 0) !important;
+  --aura-surface-control: oklch(0.18 0 0) !important;
+  --aura-surface-item: var(--card) !important;
+  --aura-surface-raised: oklch(0.23 0 0) !important;
+  --aura-action-hover-bg: oklch(0.24 0 0) !important;
+  --aura-action-active-bg: oklch(0.32 0 0) !important;
+  --aura-text-muted: oklch(0.86 0 0) !important;
+  --aura-text-subtle: oklch(0.72 0 0) !important;
+  --aura-text-disabled: oklch(0.54 0 0) !important;
+  --aura-strict-header-bg: oklch(0.92 0 0) !important;
+  --aura-strict-header-fg: oklch(0.08 0 0) !important;
+  --aura-strict-header-muted: oklch(0.28 0 0) !important;
+  --aura-strict-header-border: oklch(1 0 0 / 0.22) !important;
+  --aura-strict-subheader-bg: oklch(0.19 0 0) !important;
+  --aura-strict-subheader-fg: oklch(0.94 0 0) !important;
+}
+
+html[data-strict-mode='on'] *,
+html[data-strict-mode='on'] *::before,
+html[data-strict-mode='on'] *::after {
+  accent-color: var(--aura-strict-accent) !important;
+}
+
+html[data-strict-mode='on'] *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect),
+html[data-strict-mode='on'] *::before,
+html[data-strict-mode='on'] *::after {
+  border-radius: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-data-fill,
+html[data-strict-mode='on'] [data-slot='progress-indicator'] {
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+html[data-strict-mode='on'] .aura-timer-halo {
+  display: none !important;
+}
+
+html[data-strict-mode='on'] .ranks-hero-aura-flow {
+  display: none !important;
+}
+
+html[data-strict-mode='on'] [style*='--rank-aura'] [style*='radial-gradient'],
+html[data-strict-mode='on'] [style*='--rank-aura'] [style*='background: radial-gradient'],
+html[data-strict-mode='on'] [style*='--rank-aura'] [class*='blur-'],
+html[data-strict-mode='on'] [style*='--rank-tint'] .aura-data-fill {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  opacity: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-row[style*='background-color: color-mix'],
+html[data-strict-mode='on'] .aura-operator-row[style*='background-color'] {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-task-checkbox-mark {
+  display: contents !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-task-checkbox-mark svg {
+  color: var(--foreground) !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  stroke-width: 2.25 !important;
+}
+
+html[data-strict-mode='on'] [style*='color: rgb'],
+html[data-strict-mode='on'] [style*='color: #'],
+html[data-strict-mode='on'] [style*='color: hsl'],
+html[data-strict-mode='on'] [style*='color: oklch'],
+html[data-strict-mode='on'] [style*='color: color-mix'],
+html[data-strict-mode='on'] [style*='color: var('] {
+  color: var(--foreground) !important;
+}
+
+html[data-strict-mode='on'] [style*='background-color: rgb'],
+html[data-strict-mode='on'] [style*='background-color: #'],
+html[data-strict-mode='on'] [style*='background-color: hsl'],
+html[data-strict-mode='on'] [style*='background-color: oklch'],
+html[data-strict-mode='on'] [style*='background-color: color-mix'],
+html[data-strict-mode='on'] [style*='background: color-mix'],
+html[data-strict-mode='on'] [style*='background: linear-gradient'],
+html[data-strict-mode='on'] [style*='background: radial-gradient'] {
+  background-color: var(--foreground) !important;
+  background-image: none !important;
+  color: var(--background) !important;
+}
+
+html[data-strict-mode='on'] [style*='box-shadow'],
+html[data-strict-mode='on'] [style*='text-shadow'] {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html[data-strict-mode='on'] [style*='--aura-icon-paint'] {
+  --aura-icon-paint: currentColor !important;
+}
+
+html[data-strict-mode='on'] [class*='text-white'] {
+  color: var(--background) !important;
+}
+
+html[data-strict-mode='on'] .aura-icon-plate,
+html[data-strict-mode='on'] .aura-icon-preview-chip,
+html[data-strict-mode='on'] .aura-inline-icon {
+  --aura-list-icon-tint: color-mix(in oklab, var(--foreground) 78%, var(--muted-foreground) 22%) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: color-mix(in oklab, var(--foreground) 78%, var(--muted-foreground) 22%) !important;
+}
+
+html[data-strict-mode='on'] .aura-icon-plate .aura-colored-icon,
+html[data-strict-mode='on'] .aura-icon-preview-chip .aura-colored-icon,
+html[data-strict-mode='on'] .aura-inline-icon .aura-colored-icon,
+html[data-strict-mode='on'] .aura-icon-plate .lucide,
+html[data-strict-mode='on'] .aura-icon-preview-chip .lucide,
+html[data-strict-mode='on'] .aura-inline-icon .lucide {
+  transform: none;
+}
+
+html[data-strict-mode='on'] .aura-colored-icon {
+  background-image: none !important;
+  background-color: currentColor !important;
+  opacity: 0.92 !important;
+  color: color-mix(in oklab, var(--foreground) 78%, var(--muted-foreground) 22%) !important;
+}
+
+html[data-strict-mode='on'] [style*='--aura-list-icon-tint'],
+html[data-strict-mode='on'] [style*='--shell-nav-accent'],
+html[data-strict-mode='on'] [style*='--goal-tint'],
+html[data-strict-mode='on'] [style*='--task-color'] {
+  --aura-list-icon-tint: var(--aura-strict-accent) !important;
+  --shell-nav-accent: var(--aura-strict-accent) !important;
+  --goal-tint: var(--aura-strict-accent) !important;
+  --task-color: var(--aura-strict-accent) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-panel {
+  background: var(--aura-surface-panel) !important;
+  border-color: var(--aura-border-strong) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-row {
+  background: var(--background) !important;
+  border-color: var(--aura-border-soft) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-row:hover,
+html[data-strict-mode='on'] .aura-operator-row:focus-within {
+  background: var(--background) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-header {
+  background: var(--aura-strict-subheader-bg) !important;
+  border-color: var(--aura-strict-border-section) !important;
+  box-shadow: none !important;
+  color: var(--aura-strict-subheader-fg) !important;
+  font-weight: 700 !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-header *,
+html[data-strict-mode='on'] .aura-operator-header [style*='color'] {
+  color: inherit !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-visual {
+  filter: grayscale(1) contrast(1.08) !important;
+  opacity: 0.86;
+}
+
+html[data-strict-mode='on'] .aura-operator-signal {
+  background: var(--background) !important;
+  border-color: var(--aura-border-strong) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-signal [style*='color'],
+html[data-strict-mode='on'] .aura-operator-signal [style*='background'] {
+  color: var(--foreground) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-signal img {
+  opacity: 0.08 !important;
+  filter: grayscale(1) contrast(1.12) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-list-meter {
+  background: var(--aura-surface-control) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-list-meter .aura-data-fill {
+  opacity: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-swatch {
+  background: transparent !important;
+  border-color: var(--foreground) !important;
+  box-shadow: inset 0 0 0 1px var(--background) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-toolbar {
+  background: var(--background) !important;
+  border-color: var(--aura-border-strong) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-primary-action {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+  border: 1px solid var(--foreground) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-primary-action:hover {
+  opacity: 0.88;
+}
+
+html[data-strict-mode='on'] .aura-operator-secondary-action {
+  background: transparent !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--aura-border-soft) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-control {
+  background: transparent !important;
+  color: var(--foreground) !important;
+  border-color: var(--aura-border-soft) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-control[aria-pressed='true'],
+html[data-strict-mode='on'] .aura-operator-control[data-state='active'],
+html[data-strict-mode='on'] .aura-operator-control.is-active {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+  border-color: var(--foreground) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-control:hover {
+  background: var(--aura-action-hover-bg) !important;
+  color: var(--foreground) !important;
+}
+
+html[data-strict-mode='on'] [data-slot='select-trigger'],
+html[data-strict-mode='on'] [data-slot='select-trigger']:hover,
+html[data-strict-mode='on'] [data-slot='select-trigger']:focus,
+html[data-strict-mode='on'] [data-slot='select-trigger']:focus-visible,
+html[data-strict-mode='on'] [data-slot='select-trigger'][data-state='open'],
+html[data-strict-mode='on'] [role='combobox'],
+html[data-strict-mode='on'] [role='combobox']:hover,
+html[data-strict-mode='on'] [role='combobox']:focus,
+html[data-strict-mode='on'] [role='combobox']:focus-visible,
+html[data-strict-mode='on'] [role='combobox'][data-state='open'] {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] [data-slot='select-trigger'] [data-slot='select-value'],
+html[data-strict-mode='on'] [data-slot='select-trigger'] [data-slot='select-value'] *,
+html[data-strict-mode='on'] [role='combobox'] [data-slot='select-value'],
+html[data-strict-mode='on'] [role='combobox'] [data-slot='select-value'] * {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--foreground) !important;
+}
+
+html[data-strict-mode='on'] [data-slot='select-trigger'] .aura-colored-icon,
+html[data-strict-mode='on'] [role='combobox'] .aura-colored-icon {
+  --aura-icon-paint: var(--foreground) !important;
+  background-color: var(--foreground) !important;
+  color: var(--foreground) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-control[aria-pressed='true']:hover,
+html[data-strict-mode='on'] .aura-operator-control[data-state='active']:hover,
+html[data-strict-mode='on'] .aura-operator-control.is-active:hover {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-primary-action svg,
+html[data-strict-mode='on'] .aura-operator-control[aria-pressed='true'] svg,
+html[data-strict-mode='on'] .aura-operator-control.is-active svg {
+  color: currentColor !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-kpi {
+  color: var(--foreground) !important;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: 0;
+}
+
+/* Numeric readouts use the operator face everywhere in serious mode. */
+html[data-strict-mode='on'] .tabular-nums,
+html[data-strict-mode='on'] [class*='tabular-nums'],
+html[data-strict-mode='on'] [data-slot='input'],
+html[data-strict-mode='on'] [data-slot='textarea'],
+html[data-strict-mode='on'] [data-slot='select-value'],
+html[data-strict-mode='on'] [data-act-affix-field],
+html[data-strict-mode='on'] [data-act-affix-input],
+html[data-strict-mode='on'] [data-act-composer-value-input],
+html[data-strict-mode='on'] input[type='number'],
+html[data-strict-mode='on'] input[inputmode='numeric'],
+html[data-strict-mode='on'] input[inputmode='decimal'],
+html[data-strict-mode='on'] [data-value],
+html[data-strict-mode='on'] [aria-valuenow],
+html[data-strict-mode='on'] time {
+  font-family: var(--font-mono) !important;
+  font-variant-numeric: tabular-nums slashed-zero !important;
+  letter-spacing: 0 !important;
+}
+
+html[data-strict-mode='on'] [data-act-affix-field] *,
+html[data-strict-mode='on'] [data-act-composer-value-input] + *,
+html[data-strict-mode='on'] [data-slot='select-value'] * {
+  font-family: inherit !important;
+  font-variant-numeric: inherit !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-table table {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-size: 0.75rem;
+}
+
+html[data-strict-mode='on'] .aura-operator-table th,
+html[data-strict-mode='on'] .aura-operator-table td {
+  background: var(--background) !important;
+  border-color: var(--aura-border-soft) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-table [style*='background'] {
+  background: transparent !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-table [style*='color'] {
+  color: var(--foreground) !important;
+}
+
+/* Dense application shell: only the outer workspace gets compacted. */
+html[data-strict-mode='on'] .aura-app-root {
+  background: var(--background) !important;
+}
+
+html[data-strict-mode='on'] .aura-shell-reveal {
+  opacity: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transition: none !important;
+  transition-delay: 0ms !important;
+  transform: none !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar-shell,
+html[data-strict-mode='on'] .aura-app-header-shell,
+html[data-strict-mode='on'] .aura-app-content-shell,
+html[data-strict-mode='on'] .aura-app-mobile-shell {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--background) !important;
+}
+
+html[data-strict-mode='on'] .aura-app-main-scroll {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--background) !important;
+  scrollbar-gutter: stable;
+}
+
+html[data-strict-mode='on'] .aura-mega-shell-card {
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header {
+  height: 2.25rem !important;
+  min-height: 2.25rem !important;
+  padding-inline: 0.75rem !important;
+  background: var(--aura-strict-header-bg) !important;
+  color: var(--aura-strict-header-fg) !important;
+  border-bottom: 1px solid var(--aura-strict-header-border) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header *,
+html[data-strict-mode='on'] .aura-mega-panel-header [style*='color'] {
+  color: inherit !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header .aura-meta,
+html[data-strict-mode='on'] .aura-mega-panel-header [data-slot='card-description'] {
+  color: var(--aura-strict-header-muted) !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header .text-dim,
+html[data-strict-mode='on'] .aura-mega-panel-header .text-subtle,
+html[data-strict-mode='on'] .aura-mega-panel-header .text-muted-foreground,
+html[data-strict-mode='on'] .aura-mega-panel-header .text-faint {
+  color: var(--aura-strict-header-muted) !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header > div:last-child {
+  height: 100% !important;
+  gap: 0.25rem !important;
+  align-items: stretch !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header button,
+html[data-strict-mode='on'] .aura-mega-panel-header [role='button'],
+html[data-strict-mode='on'] .aura-mega-panel-header [role='radio'] {
+  height: 100% !important;
+  min-height: 0 !important;
+  background: transparent !important;
+  color: var(--aura-strict-header-muted) !important;
+  border-color: color-mix(in oklab, var(--aura-strict-header-fg) 24%, transparent) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header button:hover,
+html[data-strict-mode='on'] .aura-mega-panel-header [role='button']:hover,
+html[data-strict-mode='on'] .aura-mega-panel-header [role='radio']:hover {
+  background: transparent !important;
+  color: var(--aura-strict-header-fg) !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header [aria-checked='true'],
+html[data-strict-mode='on'] .aura-mega-panel-header [aria-pressed='true'],
+html[data-strict-mode='on'] .aura-mega-panel-header [data-state='active'] {
+  background: var(--aura-strict-header-fg) !important;
+  color: var(--aura-strict-header-bg) !important;
+  border-color: var(--aura-strict-header-fg) !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header [role='radiogroup'] {
+  height: 100% !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  background: transparent !important;
+}
+
+html[data-strict-mode='on'] .aura-app-header {
+  min-height: 2.25rem !important;
+  margin: 0 !important;
+  padding: env(safe-area-inset-top, 0px) 0 0 !important;
+  background: var(--background) !important;
+  border-bottom: 1px solid var(--aura-strict-border-section) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-app-header .aura-mini-header-strip {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-app-header .aura-date-strip {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar {
+  width: 11.25rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--background) !important;
+  border-right: 1px solid var(--aura-strict-border-section) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar > div:first-child {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-bottom: 1px solid var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar > div:first-child > div {
+  height: 2.25rem !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar > div:not(:first-child) {
+  margin: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar nav {
+  padding: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar nav > div {
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar nav > div > div {
+  border-top: 1px solid var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-app-sidebar nav > div > div:first-child {
+  border-top: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-shell-brand-button,
+html[data-strict-mode='on'] .aura-shell-brand-button:hover,
+html[data-strict-mode='on'] .aura-shell-brand-button:active,
+html[data-strict-mode='on'] .aura-shell-nav-item,
+html[data-strict-mode='on'] .aura-shell-nav-item:hover,
+html[data-strict-mode='on'] .aura-shell-nav-item:active,
+html[data-strict-mode='on'] .aura-mobile-dock-item,
+html[data-strict-mode='on'] .aura-mobile-dock-item:hover,
+html[data-strict-mode='on'] .aura-mobile-dock-item:active {
+  transform: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+html[data-strict-mode='on'] .aura-shell-brand-button {
+  height: 2.25rem !important;
+  padding-inline: 0.5rem !important;
+}
+
+html[data-strict-mode='on'] .aura-shell-brand-button [class*='bg-primary'] {
+  background: transparent !important;
+}
+
+html[data-strict-mode='on'] .aura-shell-nav-item {
+  min-height: 2.25rem !important;
+  gap: 0.5rem !important;
+  padding: 0.375rem 0.5rem !important;
+  color: var(--aura-text-subtle) !important;
+}
+
+html[data-strict-mode='on'] .aura-shell-nav-item[aria-current='page'] {
+  color: var(--foreground) !important;
+  border-left: 2px solid var(--foreground) !important;
+  padding-left: calc(0.5rem - 2px) !important;
+  font-weight: 650 !important;
+}
+
+html[data-strict-mode='on'] .aura-shell-nav-item[aria-current='page'] * {
+  color: inherit !important;
+}
+
+html[data-strict-mode='on'] .aura-mobile-dock {
+  padding: 0 !important;
+  background: var(--background) !important;
+  border-top: 1px solid var(--aura-strict-border-section) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-mobile-dock .aura-surface-panel {
+  width: 100% !important;
+  max-width: none !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-mobile-dock .aura-surface-panel > div {
+  gap: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-mobile-dock-item {
+  min-height: 2.5rem !important;
+  padding: 0.25rem !important;
+  color: var(--aura-text-subtle) !important;
+  border-left: 1px solid var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-mobile-dock-item:first-child {
+  border-left: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-mobile-dock-item[aria-current='page'] {
+  color: var(--foreground) !important;
+  background: transparent !important;
+}
+
+html[data-strict-mode='on'] [data-slot='dialog-header'],
+html[data-strict-mode='on'] .aura-card-section-header {
+  min-height: 2.25rem !important;
+  margin: 0 !important;
+  padding: 0.5rem 0.75rem !important;
+  gap: 0.25rem !important;
+  background: var(--aura-strict-header-bg) !important;
+  color: var(--aura-strict-header-fg) !important;
+  border-bottom: 1px solid var(--aura-strict-header-border) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] [data-slot='dialog-header'] *,
+html[data-strict-mode='on'] .aura-card-section-header *,
+html[data-strict-mode='on'] [data-slot='dialog-header'] [style*='color'],
+html[data-strict-mode='on'] .aura-card-section-header [style*='color'] {
+  color: inherit !important;
+}
+
+html[data-strict-mode='on'] [data-slot='dialog-title'],
+html[data-strict-mode='on'] .aura-card-section-header [data-slot='card-title'],
+html[data-strict-mode='on'] .aura-mega-panel-header p,
+html[data-strict-mode='on'] .aura-operator-header p {
+  font-family: var(--font-heading) !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+}
+
+html[data-strict-mode='on'] [data-slot='dialog-description'],
+html[data-strict-mode='on'] .aura-card-section-header [data-slot='card-description'] {
+  color: var(--aura-strict-header-muted) !important;
+}
+
+html[data-strict-mode='on'] [data-slot='dialog-header'] button,
+html[data-strict-mode='on'] .aura-card-section-header button,
+html[data-strict-mode='on'] [data-slot='dialog-close'] {
+  background: transparent !important;
+  color: var(--aura-strict-header-muted) !important;
+  border-color: color-mix(in oklab, var(--aura-strict-header-fg) 22%, transparent) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+html[data-strict-mode='on'] [data-slot='dialog-header'] button:hover,
+html[data-strict-mode='on'] .aura-card-section-header button:hover,
+html[data-strict-mode='on'] [data-slot='dialog-close']:hover {
+  background: transparent !important;
+  color: var(--aura-strict-header-fg) !important;
+}
+
+html[data-strict-mode='on'] [data-slot='dialog-close'] {
+  top: 0.125rem !important;
+  right: 0.125rem !important;
+}
+
+html[data-strict-mode='on'] .aura-page-switch {
+  position: relative;
+  isolation: isolate;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  will-change: auto;
+}
+
+html[data-strict-mode='on'] .aura-page-switch-up {
+  animation: none !important;
+}
+
+html[data-strict-mode='on'] .aura-page-switch-down {
+  animation: none !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-control:hover,
+html[data-strict-mode='on'] .aura-operator-primary-action:hover,
+html[data-strict-mode='on'] .aura-operator-secondary-action:hover {
+  transform: none !important;
+  background: transparent !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-primary-action:hover {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+}
+
+/* Final border normalizer: serious mode must not inherit colored rings/borders
+   from task categories, validation states, primary accents, charts, or inline styles. */
+html[data-strict-mode='on'] {
+  --aura-strict-border: var(--aura-border-soft);
+  --aura-strict-border-strong: var(--aura-border-strong);
+  --aura-strict-border-section: color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+
+html[data-strict-mode='on'] [class*='border-primary'],
+html[data-strict-mode='on'] [class*='border-destructive'],
+html[data-strict-mode='on'] [class*='border-semantic-'],
+html[data-strict-mode='on'] [class*='border-nutrition-'],
+html[data-strict-mode='on'] [class*='border-soft'],
+html[data-strict-mode='on'] [class*='border-border'],
+html[data-strict-mode='on'] [class*='ring-primary'],
+html[data-strict-mode='on'] [class*='ring-destructive'],
+html[data-strict-mode='on'] [class*='ring-semantic-'],
+html[data-strict-mode='on'] [class*='ring-nutrition-'],
+html[data-strict-mode='on'] [class*='ring-ring'],
+html[data-strict-mode='on'] [style*='border-color'],
+html[data-strict-mode='on'] [style*='box-shadow'] {
+  border-color: var(--aura-strict-border) !important;
+  --tw-ring-color: var(--aura-strict-border-strong) !important;
+  --tw-ring-offset-color: var(--background) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] [data-slot='dialog-content'],
+html[data-strict-mode='on'] [data-slot='select-content'],
+html[data-strict-mode='on'] [data-slot='popover-content'] {
+  border-color: var(--aura-strict-border-strong) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-panel,
+html[data-strict-mode='on'] .aura-operator-toolbar,
+html[data-strict-mode='on'] .aura-operator-signal,
+html[data-strict-mode='on'] [data-slot='card'],
+html[data-strict-mode='on'] .group\/card,
+html[data-strict-mode='on'] [class*='border-r'],
+html[data-strict-mode='on'] [class*='border-l'],
+html[data-strict-mode='on'] [class*='border-b'],
+html[data-strict-mode='on'] [class*='border-t'] {
+  border-color: var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-row,
+html[data-strict-mode='on'] [data-slot='select-trigger'],
+html[data-strict-mode='on'] [role='combobox'],
+html[data-strict-mode='on'] input,
+html[data-strict-mode='on'] textarea,
+html[data-strict-mode='on'] button {
+  border-color: var(--aura-strict-border) !important;
+}
+
+html[data-strict-mode='on'] [aria-invalid='true'],
+html[data-strict-mode='on'] [data-invalid='true'] {
+  border-color: var(--aura-strict-border-strong) !important;
+  --tw-ring-color: var(--aura-strict-border-strong) !important;
+}
+
+/* Header date strip: flat operator rail, no bubbly cells/progress pills. */
+html[data-strict-mode='on'] .aura-date-strip {
+  gap: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-color: var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-date-strip-cell {
+  min-height: 2.25rem !important;
+  padding: 0.25rem 0.125rem !important;
+  background: transparent !important;
+  border-left: 1px solid var(--aura-strict-border-section) !important;
+  color: var(--aura-text-subtle) !important;
+}
+
+html[data-strict-mode='on'] .aura-date-strip-cell:hover {
+  background: var(--aura-action-hover-bg) !important;
+  color: var(--foreground) !important;
+}
+
+html[data-strict-mode='on'] .aura-date-strip-cell.bg-primary,
+html[data-strict-mode='on'] .aura-date-strip-cell[class*='bg-primary'] {
+  background: var(--foreground) !important;
+  color: var(--background) !important;
+}
+
+html[data-strict-mode='on'] .aura-date-strip-cell.bg-primary *,
+html[data-strict-mode='on'] .aura-date-strip-cell[class*='bg-primary'] * {
+  color: inherit !important;
+}
+
+html[data-strict-mode='on'] .aura-date-strip-meter {
+  display: none !important;
+}
+
+/* Final icon normalizer: in serious mode icons are glyphs, not tiles. */
+html[data-strict-mode='on'] .aura-icon-plate,
+html[data-strict-mode='on'] .aura-icon-preview-chip,
+html[data-strict-mode='on'] .aura-inline-icon,
+html[data-strict-mode='on'] [class*='aura-icon-plate'],
+html[data-strict-mode='on'] [class*='aura-inline-icon'] {
+  --aura-icon-paint: var(--foreground) !important;
+  --aura-list-icon-tint: var(--foreground) !important;
+  --task-rituals: var(--foreground) !important;
+  --task-time: var(--foreground) !important;
+  --task-body: var(--foreground) !important;
+  --task-deps: var(--foreground) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-icon-plate,
+html[data-strict-mode='on'] [class*='aura-icon-plate'] {
+  display: contents !important;
+}
+
+html[data-strict-mode='on'] .aura-icon-plate::before,
+html[data-strict-mode='on'] .aura-icon-plate::after,
+html[data-strict-mode='on'] .aura-icon-preview-chip::before,
+html[data-strict-mode='on'] .aura-icon-preview-chip::after,
+html[data-strict-mode='on'] .aura-inline-icon::before,
+html[data-strict-mode='on'] .aura-inline-icon::after {
+  content: none !important;
+  display: none !important;
+}
+
+html[data-strict-mode='on'] .aura-icon-plate svg,
+html[data-strict-mode='on'] .aura-icon-preview-chip svg,
+html[data-strict-mode='on'] .aura-inline-icon svg,
+html[data-strict-mode='on'] .aura-icon-plate .lucide,
+html[data-strict-mode='on'] .aura-icon-preview-chip .lucide,
+html[data-strict-mode='on'] .aura-inline-icon .lucide {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: currentColor !important;
+}
+
+html[data-strict-mode='on'] .aura-icon-plate .aura-colored-icon,
+html[data-strict-mode='on'] .aura-icon-preview-chip .aura-colored-icon,
+html[data-strict-mode='on'] .aura-inline-icon .aura-colored-icon {
+  --aura-icon-paint: var(--foreground) !important;
+  background: currentColor !important;
+  background-color: currentColor !important;
+  color: var(--foreground) !important;
+  opacity: 1 !important;
+}
+
+/* Joined section surfaces should meet cleanly in serious mode. */
+html[data-strict-mode='on'] [data-slot='card'],
+html[data-strict-mode='on'] [data-slot='card-header'],
+html[data-strict-mode='on'] [data-slot='card-content'],
+html[data-strict-mode='on'] [data-slot='card-footer'],
+html[data-strict-mode='on'] .aura-operator-panel,
+html[data-strict-mode='on'] .aura-operator-header,
+html[data-strict-mode='on'] .aura-operator-row,
+html[data-strict-mode='on'] [class*='rounded-'],
+html[data-strict-mode='on'] [class*='sm:rounded-'],
+html[data-strict-mode='on'] [class*='md:rounded-'],
+html[data-strict-mode='on'] [class*='lg:rounded-'],
+html[data-strict-mode='on'] [class*='xl:rounded-'] {
+  border-radius: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-strict-only-header {
+  display: flex !important;
+}
+
+html[data-strict-mode='on'] .aura-task-category-meter {
+  height: 0 !important;
+  opacity: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-strict-section-card {
+  overflow: hidden !important;
+  background: var(--background) !important;
+  border-color: var(--aura-strict-border-section) !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-strict-section-card:has(> .aura-strict-section-title),
+html[data-strict-mode='on'] .aura-strict-section-card:has(> button:first-child) {
+  padding: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-strict-section-title {
+  min-height: 2rem !important;
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 0.625rem !important;
+  background: var(--aura-strict-subheader-bg) !important;
+  color: var(--aura-strict-subheader-fg) !important;
+  border-bottom: 1px solid var(--aura-strict-border-section) !important;
+  font-family: var(--font-heading) !important;
+  font-size: 0.625rem !important;
+  font-weight: 780 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+html[data-strict-mode='on'] .aura-strict-section-card > button:first-child {
+  min-height: 2.25rem !important;
+  padding: 0 0.625rem !important;
+  background: var(--aura-strict-subheader-bg) !important;
+  color: var(--aura-strict-subheader-fg) !important;
+  border-bottom: 1px solid var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-strict-section-card > button:first-child:hover {
+  background: var(--aura-strict-subheader-bg) !important;
+  color: var(--aura-strict-subheader-fg) !important;
+}
+
+/* Strict section grammar: one deliberate system instead of stacked overrides. */
+html[data-strict-mode='on'] .aura-section-title,
+html[data-strict-mode='on'] .aura-section-actions {
+  min-width: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+html[data-strict-mode='on'] .aura-section-title {
+  flex: 0 1 auto !important;
+  justify-content: center !important;
+  padding-inline: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-section-actions {
+  flex: 1 1 0 !important;
+  justify-content: flex-end !important;
+  gap: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-section-title > p,
+html[data-strict-mode='on'] .aura-mega-panel-header > div:first-child > p,
+html[data-strict-mode='on'] .aura-operator-header > div:first-child > p,
+html[data-strict-mode='on'] .aura-operator-header h3,
+html[data-strict-mode='on'] .aura-task-category-header h3,
+html[data-strict-mode='on'] .aura-strict-section-title {
+  margin: 0 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.055em !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header,
+html[data-strict-mode='on'] .aura-section-tab-header,
+html[data-strict-mode='on'] .aura-mode-switch-header {
+  height: 2.375rem !important;
+  min-height: 2.375rem !important;
+  display: grid !important;
+  grid-template-columns: minmax(7.5rem, max-content) minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: var(--aura-strict-header-bg) !important;
+  color: var(--aura-strict-header-fg) !important;
+  border-bottom: 1px solid var(--aura-strict-header-border) !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header > :first-child,
+html[data-strict-mode='on'] .aura-section-tab-header > :first-child {
+  height: 100% !important;
+  padding-inline: 0.75rem !important;
+  border-right: 1px solid color-mix(in oklab, var(--aura-strict-header-fg) 18%, transparent) !important;
+}
+
+html[data-strict-mode='on'] .aura-mega-panel-header > :last-child,
+html[data-strict-mode='on'] .aura-section-tab-header > :last-child,
+html[data-strict-mode='on'] .aura-mode-switch-header > :last-child {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-mode-switch-header {
+  grid-template-columns: 1fr !important;
+}
+
+html[data-strict-mode='on'] .aura-mode-switch-header > :first-child {
+  min-width: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-header-radio-group,
+html[data-strict-mode='on'] .aura-section-tab-actions [role='radiogroup'],
+html[data-strict-mode='on'] .aura-section-tab-actions [data-slot='button-group'],
+html[data-strict-mode='on'] .aura-section-tab-actions > div {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-strict-mode='on'] .aura-header-radio-button,
+html[data-strict-mode='on'] .aura-section-tab-actions button,
+html[data-strict-mode='on'] .aura-section-tab-actions [role='radio'] {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  justify-content: center !important;
+  padding: 0 0.625rem !important;
+  border: 0 !important;
+  border-left: 1px solid color-mix(in oklab, var(--aura-strict-header-fg) 18%, transparent) !important;
+  background: transparent !important;
+  color: var(--aura-strict-header-muted) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: color 90ms linear, background-color 90ms linear !important;
+}
+
+html[data-strict-mode='on'] .aura-header-radio-button:first-child,
+html[data-strict-mode='on'] .aura-section-tab-actions button:first-child,
+html[data-strict-mode='on'] .aura-section-tab-actions [role='radio']:first-child {
+  border-left: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-header-radio-button[aria-checked='true'],
+html[data-strict-mode='on'] .aura-section-tab-actions button[aria-checked='true'],
+html[data-strict-mode='on'] .aura-section-tab-actions [role='radio'][aria-checked='true'],
+html[data-strict-mode='on'] .aura-section-tab-actions button[aria-pressed='true'],
+html[data-strict-mode='on'] .aura-section-tab-actions button[data-state='active'] {
+  background: color-mix(in oklab, var(--aura-strict-header-fg) 14%, transparent) !important;
+  color: var(--aura-strict-header-fg) !important;
+}
+
+html[data-strict-mode='on'] .aura-header-radio-button:hover,
+html[data-strict-mode='on'] .aura-section-tab-actions button:hover,
+html[data-strict-mode='on'] .aura-section-tab-actions [role='radio']:hover {
+  background: color-mix(in oklab, var(--aura-strict-header-fg) 8%, transparent) !important;
+  color: var(--aura-strict-header-fg) !important;
+}
+
+html[data-strict-mode='on'] .aura-operator-header,
+html[data-strict-mode='on'] .aura-task-category-header {
+  min-height: 2.375rem !important;
+  height: 2.375rem !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.625rem !important;
+  padding: 0 0.75rem !important;
+  background: var(--aura-strict-subheader-bg) !important;
+  color: var(--aura-strict-subheader-fg) !important;
+  border-bottom: 1px solid var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-task-category-header .aura-icon-plate {
+  width: 1.125rem !important;
+  height: 1.125rem !important;
+}
+
+html[data-strict-mode='on'] .aura-task-category-header h3 {
+  font-size: 0.75rem !important;
+  font-weight: 820 !important;
+}
+
+html[data-strict-mode='on'] .aura-task-category-header p {
+  margin-top: 0.125rem !important;
+  color: color-mix(in oklab, currentColor 64%, transparent) !important;
+  font-size: 0.625rem !important;
+}
+
+html[data-strict-mode='on'] .aura-task-category-header .aura-operator-kpi {
+  font-size: 1.05rem !important;
+  font-weight: 820 !important;
+}
+
+html[data-strict-mode='on'] .aura-stats-toolbar {
+  gap: 0 !important;
+  padding: 0 !important;
+  background: var(--background) !important;
+}
+
+html[data-strict-mode='on'] .aura-stats-control-grid {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  width: 100% !important;
+  border-bottom: 1px solid var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-stats-control-cell {
+  min-width: 0 !important;
+  min-height: 2.875rem !important;
+  display: grid !important;
+  grid-template-rows: 0.875rem 1fr !important;
+  gap: 0 !important;
+  padding: 0.25rem 0.375rem 0.375rem !important;
+  border-left: 1px solid var(--aura-strict-border-section) !important;
+}
+
+html[data-strict-mode='on'] .aura-stats-control-cell:first-child {
+  border-left: 0 !important;
+}
+
+html[data-strict-mode='on'] .aura-stats-control-label {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--aura-text-subtle) !important;
+  font-size: 0.5625rem !important;
+  line-height: 1 !important;
+  letter-spacing: 0.08em !important;
+}
+
+html[data-strict-mode='on'] .aura-stats-control-cell [data-slot='select-trigger'],
+html[data-strict-mode='on'] .aura-stats-control-cell [role='combobox'],
+html[data-strict-mode='on'] .aura-stats-control-cell > button,
+html[data-strict-mode='on'] .aura-stats-control-cell > div {
+  height: 100% !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+html[data-strict-mode='on'] .aura-stats-chip {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--aura-text-subtle) !important;
+  transform: none !important;
+}
+
+html[data-strict-mode='on'] .aura-stats-chip:hover,
+html[data-strict-mode='on'] .aura-stats-chip[aria-pressed='true'],
+html[data-strict-mode='on'] .aura-stats-chip[class*='bg-primary'],
+html[data-strict-mode='on'] .aura-stats-chip[class*='ring-'] {
+  background: color-mix(in oklab, var(--foreground) 10%, transparent) !important;
+  color: var(--foreground) !important;
+}
+
+@media (max-width: 1279px) {
+  html[data-strict-mode='on'] .aura-stats-control-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-strict-mode='on'] .aura-stats-control-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@keyframes aura-page-strict-in-up {
+  from { opacity: 0; transform: translate3d(0, 4px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes aura-page-strict-in-down {
+  from { opacity: 0; transform: translate3d(0, -4px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}

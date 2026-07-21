@@ -77,6 +77,19 @@ export function CategoryProgressCard({ cardClassName, contentClassName }: Catego
     });
   }, []);
 
+  const labelPoints = useMemo(() => {
+    const center = 50;
+    const r = 45;
+    return CATEGORIES.map((cat, index) => {
+      const angle = -Math.PI / 2 + (index * 2 * Math.PI) / CATEGORIES.length;
+      return {
+        cat,
+        x: center + Math.cos(angle) * r,
+        y: center + Math.sin(angle) * r,
+      };
+    });
+  }, []);
+
   const gridPolygons = useMemo(() => {
     const center = 50;
     const levels = [0.25, 0.5, 0.75, 1];
@@ -98,7 +111,7 @@ export function CategoryProgressCard({ cardClassName, contentClassName }: Catego
         {!db || !todayData || !displayData ? (
           <LoadingShell />
         ) : (
-          <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-transparent p-1.5 sm:p-2">
+          <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-transparent p-3 sm:p-3.5">
             <div className="relative aspect-square h-full min-h-0 max-h-full max-w-full">
               <svg viewBox="0 0 100 100" className="h-full w-full text-border" aria-label="Прогресс по категориям">
                   {gridPolygons.map((poly, idx) => (
@@ -122,30 +135,35 @@ export function CategoryProgressCard({ cardClassName, contentClassName }: Catego
                       />
                     );
                   })}
+                  {labelPoints.map((p, index) => {
+                    const cat = CATEGORIES[index];
+                    const Icon = CATEGORY_ICONS[cat];
+                    const color = `var(${CATEGORY_COLORS[cat]})`;
+                    return (
+                      <g key={cat} aria-label={`${LABELS[cat]}: ${Math.round(displayData[index] ?? 0)}%`}>
+                        <circle
+                          cx={p.x}
+                          cy={p.y}
+                          r="5.2"
+                          fill={color}
+                          opacity="0.12"
+                          stroke={color}
+                          strokeOpacity="0.4"
+                          strokeWidth="0.8"
+                        />
+                        <Icon
+                          x={p.x - 3.25}
+                          y={p.y - 3.25}
+                          width="6.5"
+                          height="6.5"
+                          color={color}
+                          strokeWidth="2.3"
+                          aria-hidden
+                        />
+                      </g>
+                    );
+                  })}
                 </svg>
-                {CATEGORIES.map((cat, index) => {
-                  const Icon = CATEGORY_ICONS[cat];
-                  const pos =
-                    index === 0
-                      ? 'left-1/2 top-1 -translate-x-1/2'
-                      : index === 1
-                        ? 'right-1 top-1/2 -translate-y-1/2'
-                        : index === 2
-                          ? 'bottom-1 left-1/2 -translate-x-1/2'
-                          : 'left-1 top-1/2 -translate-y-1/2';
-                  return (
-                    <span
-                      key={cat}
-                      className={cn(
-                        'absolute inline-flex size-5 items-center justify-center rounded-full bg-panel',
-                        pos
-                      )}
-                      title={`${LABELS[cat]}: ${Math.round(displayData[index] ?? 0)}%`}
-                    >
-                      <Icon className="size-3.5" style={{ color: `var(${CATEGORY_COLORS[cat]})` }} />
-                    </span>
-                  );
-                })}
             </div>
           </div>
         )}

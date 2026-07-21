@@ -16,6 +16,7 @@ import { ActAffixValueField } from '@/features/act/ActModal';
 import { calculateProductNutrition } from '@/shared/lib/nutrition-calc';
 import type { AuraRow } from '@/types/aura';
 import { parseLocalFloat, type PresetIngredientDraft } from './cfg-field-utils';
+import { CFG_INPUT_CN } from './cfg-primitives';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ export function CfgPresetProductsPanel({
                     )
                   }
                 >
-                  <SelectTrigger contentAlign="center" className="h-8 w-full text-xs">
+                  <SelectTrigger contentAlign="start" className={CFG_INPUT_CN}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

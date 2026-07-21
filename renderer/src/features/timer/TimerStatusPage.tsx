@@ -1,15 +1,23 @@
 // ─── TimerStatusPage ──────────────────────────────────────────────────────────
-// Страница таймера: три панели (задачи, таймер, сессии) + диалоги создания/удаления.
-// Вспомогательные утилиты — в timer-utils.ts, форма сессии — в TimerSessionForm.tsx.
+// Страница таймера: три панели (задачи, таймер, сессии) + редактирование.
+// Вспомогательные утилиты — в timer-utils.ts.
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Clock, ListTodo, Timer, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, Clock, ListTodo, Timer } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { AddListButton } from '@/components/ui/add-list-button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useTimerSession } from '@/features/timer/use-timer-session';
@@ -18,8 +26,8 @@ import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import { useDayLocked } from '@/shared/hooks/use-day-locked';
 import { getIpcRenderer } from '@/shared/bridge/ipc';
 import { PageFrame } from '@/widgets/page-frame/PageFrame';
-import { TimerSessionHero } from '@/features/timer/TimerSessionHero';
-import { ListItem } from '@/components/ui/list-item';
+import { TimerSessionHero, type TimerShareSegment } from '@/features/timer/TimerSessionHero';
+import { ColoredAuraIcon } from '@/widgets/aura-icon/ColoredAuraIcon';
 import { cn } from '@/lib/utils';
 import { runAuraMutation } from '@/shared/lib/run-aura-mutation';
 import { TimerFullscreenDialog } from '@/features/timer/TimerFullscreenDialog';
@@ -46,17 +54,26 @@ import { getCategoryColor } from '@/shared/config/task-categories-settings';
 import { buildTimerTaskGroupById, getSessionGroup } from '@/features/timer/timer-session-groups';
 import { MobileSectionTabs } from '@/shared/ui/mobile';
 import { LoadingShell } from '@/shared/ui/data-states';
+import { ProgressFillRow } from '@/shared/ui/progress-fill-row';
 import { ANIM } from '@/shared/lib/animation-classes';
 import { getNavigationIntent } from '@/shared/lib/navigation-intent';
 import { STORAGE_KEYS } from '@/shared/config/storage-keys';
 import type { AuraRow } from '@/types/aura';
 
 import { loadPickerTasks, newSessionId, sameSessions, timerTaskDailyProgressPct } from './timer-utils';
-import { TimerSessionForm } from './TimerSessionForm';
+import { ActComposerValueField, ActList, ActSelectOptionLabel, type ActItem } from '@/features/act-system';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const QUICK_MINUTES = [5, 15, 25, 45, 60, 120];
+
+function readTimerTaskIntentId(): string | null {
+  const detail = getNavigationIntent(STORAGE_KEYS.TIMER_TASK_ID);
+  const taskId = detail?.taskId;
+  if (typeof taskId !== 'string' && typeof taskId !== 'number') return null;
+  const normalized = String(taskId).trim();
+  return normalized ? normalized : null;
+}
 
 /** CSS-переменные цвета каждой группы задач — статичны, не зависят от БД. */
 const GROUP_ACCENT_BY_KEY: Record<TimerTaskTab, string> = {
@@ -71,6 +88,25 @@ const TIMER_TASK_GROUPS: readonly { key: TimerTaskTab; title: string }[] = [
   { key: 'escape',  title: 'Эскапизм'    },
   { key: 'filling', title: 'Наполнение'  },
 ];
+const TIMER_TASK_GROUP_ICON: Record<TimerTaskTab, string> = {
+  tasks: 'timer',
+  escape: 'gamepad-2',
+  filling: 'sparkles',
+};
+
+const TIMER_PICKER_GROUP_COLOR: Record<string, string> = {
+  'Фокус': 'var(--task-time)',
+  'Эскапизм': 'var(--leisure-escape)',
+  'Наполнение': 'var(--leisure-filling)',
+};
+
+function formatTimerTaskHours(hours: number): string {
+  const safe = Math.max(0, Number(hours) || 0);
+  if (safe <= 0) return '0ч';
+  if (safe < 1) return `${Math.round(safe * 60)}м`;
+  const rounded = Math.round(safe * 10) / 10;
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}ч`;
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -103,6 +139,14 @@ export function TimerStatusPage() {
 
   const pickerTasks = useMemo(() => (db ? loadPickerTasks(db) : []), [db]);
 
+  useEffect(() => {
+    if (!pickerTasks.length) {
+      setComposerTaskId('');
+      return;
+    }
+    setComposerTaskId((prev) => (prev && pickerTasks.some((task) => task.id === prev) ? prev : pickerTasks[0].id));
+  }, [pickerTasks]);
+
   const taskMetaById = useMemo(() => {
     const m = new Map<string, { title: string; icon?: string; color?: string }>();
     for (const t of pickerTasks) m.set(t.id, { title: t.title, icon: t.icon, color: t.color });
@@ -111,69 +155,63 @@ export function TimerStatusPage() {
 
   // ─── Dialog state ─────────────────────────────────────────────────────────
 
-  const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
-  const [editingSession, setEditingSession]       = useState<AuraRow | null>(null);
-  const [formTaskId, setFormTaskId]               = useState('');
-  const [formMinutes, setFormMinutes]             = useState('25');
-  const [formTimerType, setFormTimerType]         = useState<'timer' | 'stopwatch'>('timer');
   const [formError, setFormError]                 = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget]           = useState<AuraRow | null>(null);
+  const [composerEditingSessionId, setComposerEditingSessionId] = useState<string | null>(null);
+  const [composerTaskId, setComposerTaskId]       = useState('');
+  const [composerMinutes, setComposerMinutes]     = useState('25');
 
   // ─── UI state ─────────────────────────────────────────────────────────────
 
   const [fullscreenOpen, setFullscreenOpen]           = useState(false);
   const [sessionHeroExpanded, setSessionHeroExpanded] = useState(true);
   const [mobileSection, setMobileSection]             = useState<'tasks' | 'timer' | 'sessions'>('timer');
-  const [pendingIntentTaskId, setPendingIntentTaskId] = useState<string | null>(null);
+  const [pendingIntentTaskId, setPendingIntentTaskId] = useState<string | null>(() => readTimerTaskIntentId());
 
   const wasRunningRef = useRef(timer.model.isRunning);
   const timerHydrating = !!ipc && !timer.isHydrated;
 
   // ─── Dialog handlers ──────────────────────────────────────────────────────
 
-  const openCreateSession = () => {
-    setEditingSession(null);
-    const first = pickerTasks[0];
-    setFormTaskId(first?.id ?? '');
-    setFormMinutes('25');
-    setFormTimerType('timer');
-    setFormError(null);
-    setSessionDialogOpen(true);
-  };
-
   const openEditSession = (row: AuraRow) => {
-    setEditingSession(row);
-    setFormTaskId(String(row.task_id ?? ''));
+    setComposerEditingSessionId(String(row.id));
+    setComposerTaskId(String(row.task_id ?? ''));
     const sec = Number(row.duration) || 0;
-    setFormMinutes(String(Math.max(1, Math.round(sec / 60))));
-    setFormTimerType(String(row.timer_type ?? 'timer') === 'stopwatch' ? 'stopwatch' : 'timer');
+    setComposerMinutes(String(Math.max(1, Math.round(sec / 60))));
+    timer.setTimerType(String(row.timer_type ?? 'timer') === 'stopwatch' ? 'stopwatch' : 'timer');
     setFormError(null);
-    setSessionDialogOpen(true);
   };
 
-  const saveSession = () => {
+  const saveComposerSession = () => {
     setFormError(null);
     if (!db || dayLocked) return;
-    const minutes = parseInt(formMinutes, 10);
-    if (!Number.isFinite(minutes) || minutes < 1) { setFormError('Укажите длительность в минутах (≥ 1).'); return; }
-    if (!formTaskId) { setFormError('Выберите задачу.'); return; }
+    const minutes = parseInt(composerMinutes, 10);
+    if (!Number.isFinite(minutes) || minutes < 1) {
+      setFormError('Укажите длительность в минутах (≥ 1).');
+      return;
+    }
+    if (!composerTaskId) {
+      setFormError('Выберите задачу.');
+      return;
+    }
     const durationSec = minutes * 60;
     try {
       runAuraMutation('timer', () => {
-        if (editingSession) {
-          db.updateTimerSession(String(editingSession.id), {
-            task_id: formTaskId, duration: durationSec, timer_type: formTimerType,
-            target_duration: formTimerType === 'timer' ? durationSec : null,
-          });
-        } else {
+        const payload = {
+          task_id: composerTaskId,
+          duration: durationSec,
+          timer_type: timer.model.timerType,
+          target_duration: timer.model.timerType === 'timer' ? durationSec : null,
+        };
+        if (composerEditingSessionId) db.updateTimerSession(composerEditingSessionId, payload);
+        else {
           db.addTimerSession({
-            id: newSessionId(), date: dateString, task_id: formTaskId,
-            duration: durationSec, timer_type: formTimerType,
-            target_duration: formTimerType === 'timer' ? durationSec : null,
+            id: newSessionId(),
+            date: dateString,
+            ...payload,
           });
         }
       });
-      setSessionDialogOpen(false);
+      setComposerEditingSessionId(null);
       refreshSessions();
       reloadTasks();
     } catch (e) {
@@ -181,11 +219,12 @@ export function TimerStatusPage() {
     }
   };
 
-  const confirmDelete = () => {
-    if (!db || !deleteTarget || dayLocked) return;
+  const deleteSession = (row: AuraRow) => {
+    if (!db || dayLocked) return;
+    const id = String(row.id);
     try {
-      runAuraMutation('timer', () => db.deleteTimerSession(String(deleteTarget.id)));
-      setDeleteTarget(null);
+      runAuraMutation('timer', () => db.deleteTimerSession(id));
+      if (composerEditingSessionId === id) setComposerEditingSessionId(null);
       refreshSessions();
       reloadTasks();
     } catch { /* ignore */ }
@@ -228,10 +267,12 @@ export function TimerStatusPage() {
         color: getTaskColor(group, task.color), icon: task.icon,
       });
       setMobileSection('timer');
+      setPendingIntentTaskId(null);
+      try { localStorage.removeItem(STORAGE_KEYS.TIMER_TASK_ID); } catch { /* ignore */ }
       return true;
     }
     return false;
-  }, [byGroup, dayLocked, getTaskColor, timer]);
+  }, [byGroup, dayLocked, getTaskColor, timer.isHydrated, timer.model.isRunning, timer.selectTask]);
 
   // Обработка navigation intent (приход со страницы главной)
   useEffect(() => {
@@ -242,25 +283,18 @@ export function TimerStatusPage() {
       setPendingIntentTaskId(String(taskId));
     };
 
-    applyIntent(getNavigationIntent(STORAGE_KEYS.TIMER_TASK_ID));
+    const initialTaskId = readTimerTaskIntentId();
+    if (initialTaskId) setPendingIntentTaskId(initialTaskId);
     const onIntent = (event: Event) => applyIntent((event as CustomEvent).detail);
     window.addEventListener(STORAGE_KEYS.TIMER_TASK_INTENT_EVENT, onIntent);
     return () => window.removeEventListener(STORAGE_KEYS.TIMER_TASK_INTENT_EVENT, onIntent);
-  }, [selectTimerTaskById]);
+  }, []);
 
   // Применяем отложенный intent как только задачи загружены
   useEffect(() => {
     if (!pendingIntentTaskId) return;
     selectTimerTaskById(pendingIntentTaskId);
   }, [pendingIntentTaskId, selectTimerTaskById]);
-
-  // Очищаем intent после успешного применения
-  useEffect(() => {
-    if (!pendingIntentTaskId) return;
-    if (timer.model.selectedTask?.id !== pendingIntentTaskId) return;
-    setPendingIntentTaskId(null);
-    try { localStorage.removeItem(STORAGE_KEYS.TIMER_TASK_ID); } catch { /* ignore */ }
-  }, [pendingIntentTaskId, timer.model.selectedTask?.id]);
 
   // Синхронизируем мета-данные выбранной задачи при изменении списка задач
   useEffect(() => {
@@ -292,7 +326,7 @@ export function TimerStatusPage() {
       id: found.task.id, title: found.task.title, cfg_target_hours: found.task.cfg_target_hours,
       color: getTaskColor(found.group, found.task.color), icon: found.task.icon,
     });
-  }, [byGroup, getTaskColor, timer]);
+  }, [byGroup, getTaskColor, selectedTaskGroup, timer.model.selectedTask, timer.selectTask]);
 
   // Автовыбор первой задачи если ничего не выбрано
   useEffect(() => {
@@ -307,7 +341,7 @@ export function TimerStatusPage() {
         return;
       }
     }
-  }, [byGroup, getTaskColor, pendingIntentTaskId, timer]);
+  }, [byGroup, getTaskColor, pendingIntentTaskId, timer.model.selectedTask, timer.selectTask]);
 
   // ─── Progress state ───────────────────────────────────────────────────────
 
@@ -330,7 +364,8 @@ export function TimerStatusPage() {
   }, [dateString, rawDailyProgressByTaskId, db]);
 
   useEffect(() => {
-    window.requestAnimationFrame(() => setVisibleDailyProgressByTaskId(new Map(rawDailyProgressByTaskId)));
+    const id = window.requestAnimationFrame(() => setVisibleDailyProgressByTaskId(new Map(rawDailyProgressByTaskId)));
+    return () => window.cancelAnimationFrame(id);
   }, [dateString, rawDailyProgressByTaskId]);
 
   // ─── Session share bar data ────────────────────────────────────────────────
@@ -354,6 +389,58 @@ export function TimerStatusPage() {
       fillingPct:  totalSec > 0 ? (fillingSec / totalSec) * 100 : 0,
     };
   }, [sessionTaskGroupById, sessions]);
+  const timerShareSegments = useMemo<TimerShareSegment[]>(() => {
+    const taskBuckets: Record<TimerTaskTab, Map<string, { id: string; title: string; icon?: string | null; seconds: number }>> = {
+      tasks: new Map(),
+      escape: new Map(),
+      filling: new Map(),
+    };
+    for (const session of sessions) {
+      const duration = Math.max(0, Number(session.duration) || 0);
+      if (duration <= 0) continue;
+      const group = getSessionGroup(session, sessionTaskGroupById);
+      if (group !== 'tasks' && group !== 'escape' && group !== 'filling') continue;
+      const taskId = String(session.task_id ?? '');
+      const meta = taskMetaById.get(taskId);
+      const current = taskBuckets[group].get(taskId) ?? {
+        id: taskId || `unknown_${group}`,
+        title: meta?.title ?? (taskId || 'Без задачи'),
+        icon: meta?.icon ?? null,
+        seconds: 0,
+      };
+      current.seconds += duration;
+      taskBuckets[group].set(taskId, current);
+    }
+    const tasksFor = (group: TimerTaskTab) => [...taskBuckets[group].values()].sort((a, b) => b.seconds - a.seconds);
+    return [
+      { key: 'tasks', label: 'Фокус', icon: TIMER_TASK_GROUP_ICON.tasks, seconds: timerShare.focusSec, pct: timerShare.focusPct, color: GROUP_ACCENT_BY_KEY.tasks, tasks: tasksFor('tasks') },
+      { key: 'escape', label: 'Эскапизм', icon: TIMER_TASK_GROUP_ICON.escape, seconds: timerShare.escapeSec, pct: timerShare.escapePct, color: GROUP_ACCENT_BY_KEY.escape, tasks: tasksFor('escape') },
+      { key: 'filling', label: 'Наполнение', icon: TIMER_TASK_GROUP_ICON.filling, seconds: timerShare.fillingSec, pct: timerShare.fillingPct, color: GROUP_ACCENT_BY_KEY.filling, tasks: tasksFor('filling') },
+    ];
+  }, [sessionTaskGroupById, sessions, taskMetaById, timerShare]);
+  const sessionItems = useMemo<ActItem[]>(() => sessions.map((session) => {
+    const tid = String(session.task_id ?? '');
+    const meta = taskMetaById.get(tid);
+    const label = meta?.title ?? tid;
+    const mins = Math.floor(Number(session.duration) / 60);
+    const sessionGroup = getSessionGroup(session, sessionTaskGroupById);
+    const rowTint = sessionGroup === 'tasks' || sessionGroup === 'escape' || sessionGroup === 'filling'
+      ? (GROUP_ACCENT_BY_KEY[sessionGroup] ?? 'var(--primary)')
+      : 'var(--primary)';
+    const isStopwatch = String(session.timer_type ?? '') === 'stopwatch';
+    return {
+      id: String(session.id),
+      kind: 'timer-session',
+      icon: meta?.icon != null ? String(meta.icon) : null,
+      iconTint: rowTint,
+      title: label,
+      value: `${mins} мин`,
+      description: isStopwatch ? 'секундомер' : 'таймер',
+      disabled: dayLocked,
+      onEdit: () => { if (!dayLocked) openEditSession(session); },
+      onDelete: () => { if (!dayLocked) deleteSession(session); },
+    };
+  }), [dayLocked, sessionTaskGroupById, sessions, taskMetaById]);
 
   // ─── Timer hero expand/collapse ───────────────────────────────────────────
 
@@ -405,7 +492,7 @@ export function TimerStatusPage() {
             {/* ── Левая панель: задачи ─────────────────────────────────────── */}
             <section className={cn('h-full min-h-0 min-w-0 flex-col', mobileSection === 'tasks' ? 'flex' : 'hidden', 'lg:flex', ANIM.enterFade)}>
               <MegaPanelHeader title={t('field.task')} locked={dayLocked} />
-              <div className={cn(MEGA_PANEL_BODY_CN, 'relative')}>
+              <div className={cn(MEGA_PANEL_BODY_CN, 'relative flex flex-col overflow-hidden')}>
                 {dayLocked ? <div className="absolute inset-0 z-20 bg-background/30 backdrop-blur-[1px]" aria-hidden /> : null}
 
                 {!db ? (
@@ -426,7 +513,7 @@ export function TimerStatusPage() {
                         {byGroup[key].length === 0 ? (
                           <EmptyState title={t('hint.no_tasks')} hint={t('hint.add_task_settings')} className="mx-auto w-full max-w-sm" compact />
                         ) : (
-                          <ul className="flex flex-col gap-2.5">
+                          <ul className="flex flex-col gap-2">
                             {byGroup[key].map((task) => {
                               const selected    = timer.model.selectedTask?.id === task.id;
                               const targetH     = task.cfg_target_hours ?? 0;
@@ -434,46 +521,47 @@ export function TimerStatusPage() {
                               const rowAccent   = getTaskColor(key, task.color);
                               const dailyPct    = visibleDailyProgressByTaskId.get(task.id) ?? 0;
                               const hasTarget   = targetH > 0;
+                              const amount      = `${formatTimerTaskHours(curH)} / ${hasTarget ? formatTimerTaskHours(targetH) : '—'}`;
                               return (
                                 <li
                                   key={task.id}
                                   className={cn(
-                                    'overflow-hidden rounded-lg border bg-transparent aura-tx-colors cursor-pointer',
-                                    selected
-                                      ? 'border-primary/45 bg-primary/6'
-                                      : 'border-soft hover:bg-hover',
+                                    'aura-operator-row aura-tx-colors cursor-pointer rounded-lg',
                                     dayLocked && 'pointer-events-none opacity-55'
                                   )}
+                                  role="button"
+                                  tabIndex={dayLocked ? -1 : 0}
+                                  aria-disabled={dayLocked || timer.model.isRunning}
+                                  aria-pressed={selected}
                                   onClick={() => {
                                     if (timer.model.isRunning || dayLocked) return;
                                     timer.selectTask({ id: task.id, title: task.title, cfg_target_hours: task.cfg_target_hours, color: rowAccent, icon: task.icon });
                                   }}
+                                  onKeyDown={(event) => {
+                                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                                    event.preventDefault();
+                                    if (timer.model.isRunning || dayLocked) return;
+                                    timer.selectTask({ id: task.id, title: task.title, cfg_target_hours: task.cfg_target_hours, color: rowAccent, icon: task.icon });
+                                  }}
                                 >
-                                  <ListItem
-                                    mode="edit-delete"
-                                    icon={typeof task.icon === 'string' ? task.icon : null}
-                                    iconTint={rowAccent}
-                                    title={task.title}
-                                    amount={`${curH.toFixed(1)}ч / ${hasTarget ? `${targetH}ч` : '—'}`}
-                                    className={cn('rounded-none border-0 bg-transparent shadow-none pointer-events-none', 'hover:border-0 hover:bg-transparent hover:shadow-none', 'aura-tx-surface', dayLocked && 'opacity-65')}
-                                    onEdit={undefined}
-                                  />
-                                  <div className="space-y-1.5 border-t border-soft bg-panel px-2.5 py-2 sm:px-3">
-                                    <div className="text-subtle flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide">
-                                      <span>Цель за день</span>
-                                      <span className="tabular-nums text-foreground">{hasTarget ? `${dailyPct}%` : '—'}</span>
-                                    </div>
-                                    {hasTarget ? (
-                                      <div
-                                        className="[&_[data-slot=progress-indicator]]:transition-transform [&_[data-slot=progress-indicator]]:duration-aura-glide [&_[data-slot=progress-indicator]]:ease-aura"
-                                        style={{ ['--row-accent' as string]: rowAccent } as CSSProperties}
-                                      >
-                                        <Progress value={dailyPct} className="h-1.5 bg-control [&_[data-slot=progress-indicator]]:bg-[var(--row-accent)]" />
-                                      </div>
-                                    ) : (
-                                      <p className="text-subtle text-xs leading-snug">Цель не задана в CFG</p>
+                                  <ProgressFillRow
+                                    icon={<ColoredAuraIcon name={typeof task.icon === 'string' ? task.icon : null} size={14} tint={rowAccent} />}
+                                    title={
+                                      <span className="flex min-w-0 items-center gap-1.5">
+                                        <span className="min-w-0 truncate">{task.title}</span>
+                                        {selected ? <Check className="aura-operator-kpi size-3 shrink-0" style={{ color: rowAccent }} aria-hidden /> : null}
+                                      </span>
+                                    }
+                                    value={amount}
+                                    valueTitle={amount}
+                                    color={rowAccent}
+                                    progress={hasTarget ? dailyPct : 0}
+                                    className={cn(
+                                      'min-h-12',
+                                      timer.model.isRunning && !selected && 'opacity-70'
                                     )}
-                                  </div>
+                                    titleClassName={selected ? 'text-foreground' : undefined}
+                                  />
                                 </li>
                               );
                             })}
@@ -500,30 +588,11 @@ export function TimerStatusPage() {
                 ]}
               />
               <div className={cn(MEGA_PANEL_INSET_CN, 'gap-3')}>
-                {/* Полоса соотношения фокус/эскапизм/наполнение */}
                 <div className="flex shrink-0 flex-col items-center gap-2 text-center">
-                  <div className="flex w-full max-w-md flex-col gap-1.5 rounded-lg border border-soft/60 bg-control/60 px-2 py-1.5">
-                    <div className="bg-panel h-1.5 w-full overflow-hidden rounded-full" role="img" aria-label="Соотношение времени: фокус, эскапизм, наполнение">
-                      {timerShare.totalSec > 0 ? (
-                        <div className="flex h-full w-full">
-                          <span className="h-full" style={{ width: `${timerShare.focusPct}%`,   background: GROUP_ACCENT_BY_KEY.tasks   }} title={`Фокус: ${Math.round(timerShare.focusPct)}%`} />
-                          <span className="h-full" style={{ width: `${timerShare.escapePct}%`,  background: GROUP_ACCENT_BY_KEY.escape  }} title={`Эскапизм: ${Math.round(timerShare.escapePct)}%`} />
-                          <span className="h-full" style={{ width: `${timerShare.fillingPct}%`, background: GROUP_ACCENT_BY_KEY.filling }} title={`Наполнение: ${Math.round(timerShare.fillingPct)}%`} />
-                        </div>
-                      ) : (
-                        <div className="bg-soft/40 h-full w-full" />
-                      )}
-                    </div>
-                    <p className="text-subtle text-center text-xs leading-none tabular-nums">
-                      {timerShare.totalSec > 0
-                        ? `${Math.round(timerShare.focusPct)} / ${Math.round(timerShare.escapePct)} / ${Math.round(timerShare.fillingPct)}`
-                        : '0 / 0 / 0'}
-                    </p>
-                  </div>
-                  {dayLocked ? <Badge variant="secondary" className="rounded-md px-2 py-0.5 text-xs font-medium">Заблокировано</Badge> : null}
+                  {dayLocked ? <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-medium">Только текущий день</Badge> : null}
                   {!sel ? (
                     <p className="text-muted-foreground w-full max-w-md min-w-0 text-center text-xs leading-relaxed">
-                      Выберите задачу слева — без задачи сессия не сохраняется в базу.
+                      Выберите задачу слева
                     </p>
                   ) : null}
                 </div>
@@ -534,13 +603,13 @@ export function TimerStatusPage() {
                     type="button"
                     onClick={() => setSessionHeroExpanded(true)}
                     className={cn(
-                      'text-foreground flex w-full min-w-0 shrink-0 items-center gap-3 rounded-lg border border-soft bg-control px-3 py-2.5 text-left shadow-sm',
+                      'aura-operator-row text-foreground flex w-full min-w-0 shrink-0 items-center gap-3 rounded-lg border border-soft bg-control px-3 py-2.5 text-left shadow-sm',
                       'motion-safe:transition-[transform,box-shadow,opacity] motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]',
                       'hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
                       'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.99] motion-safe:duration-300'
                     )}
                   >
-                    <span className="font-heading text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl" style={{ color: accent }}>
+                    <span className="aura-operator-kpi font-heading text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl" style={{ color: accent }}>
                       {timer.displayTime}
                     </span>
                     <span className="text-muted-foreground min-w-0 flex-1 truncate text-sm font-medium">{sel?.title ?? '—'}</span>
@@ -570,6 +639,7 @@ export function TimerStatusPage() {
                       sessionPct={sessionPct}
                       durationInputMinutes={durationInputMinutes}
                       elapsedTimeSec={timer.model.elapsedTime}
+                      shareSegments={timerShareSegments}
                       onDurationMinutesChange={(m) => timer.setTargetDuration(m * 60)}
                       onQuickMinutes={(m) => timer.setTargetDuration(m * 60)}
                       onStart={timer.start}
@@ -588,38 +658,61 @@ export function TimerStatusPage() {
               <MegaPanelHeader title={t('label.sessions_per_day')} locked={dayLocked} />
               <div className={cn(MEGA_PANEL_BODY_CN, 'relative')}>
                 {dayLocked ? <div className="absolute inset-0 z-20 bg-background/30 backdrop-blur-[1px]" aria-hidden /> : null}
-                {sessions.length === 0 ? (
-                  <EmptyState title={t('placeholder.no_items')} hint={t('hint.run_timer')} compact />
-                ) : (
-                  <ul className="mb-2 flex flex-col gap-2">
-                    {sessions.map((session) => {
-                      const tid         = String(session.task_id ?? '');
-                      const meta        = taskMetaById.get(tid);
-                      const label       = meta?.title ?? tid;
-                      const mins        = Math.floor(Number(session.duration) / 60);
-                      const sessionGroup = getSessionGroup(session, sessionTaskGroupById);
-                      const rowTint     = sessionGroup === 'tasks' || sessionGroup === 'escape' || sessionGroup === 'filling'
-                        ? (GROUP_ACCENT_BY_KEY[sessionGroup] ?? 'var(--primary)')
-                        : 'var(--primary)';
-                      const isStopwatch = String(session.timer_type ?? '') === 'stopwatch';
-                      return (
-                        <li key={String(session.id)}>
-                          <ListItem
-                            mode="edit-delete"
-                            icon={meta?.icon != null ? String(meta.icon) : null}
-                            iconTint={rowTint}
-                            title={label}
-                            amount={`${mins} мин · ${isStopwatch ? 'секундомер' : 'таймер'}`}
-                            className={cn('aura-tx-surface', dayLocked && 'opacity-65')}
-                            onEdit={() => { if (!dayLocked) openEditSession(session); }}
-                            onDelete={() => { if (!dayLocked) setDeleteTarget(session); }}
-                          />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                <AddListButton onClick={openCreateSession} disabled={dayLocked || !db || pickerTasks.length === 0} />
+                <ActList
+                  items={sessionItems}
+                  emptyTitle={t('placeholder.no_items')}
+                  emptyHint={t('hint.run_timer')}
+                  composer={{
+                    options: [
+                      { value: 'timer', label: 'Таймер', icon: Timer, color: 'var(--primary)' },
+                      { value: 'stopwatch', label: 'Секундомер', icon: Clock, color: 'var(--task-time)' },
+                    ],
+                    value: timer.model.timerType,
+                    onValueChange: (value) => timer.setTimerType(value as 'timer' | 'stopwatch'),
+                    fields: (
+                      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_6.5rem] [&>*+*]:border-l [&>*+*]:border-soft/50">
+                        <Select value={composerTaskId} onValueChange={setComposerTaskId} disabled={dayLocked || !db || pickerTasks.length === 0}>
+                          <SelectTrigger className="h-8 w-full min-w-0 rounded-none border-0 bg-transparent px-2.5 shadow-none focus:bg-background/45 focus:ring-0">
+                            <SelectValue placeholder={t('placeholder.select_task')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['Фокус', 'Эскапизм', 'Наполнение'].map((groupLabel) => {
+                              const items = pickerTasks.filter((task) => task.group === groupLabel);
+                              if (!items.length) return null;
+                              return (
+                                <SelectGroup key={groupLabel}>
+                                  <SelectLabel>{groupLabel}</SelectLabel>
+                                  {items.map((task) => (
+                                    <SelectItem key={task.id} value={task.id} textValue={task.title}>
+                                      <ActSelectOptionLabel
+                                        label={task.title}
+                                        icon={task.icon}
+                                        color={task.color ?? TIMER_PICKER_GROUP_COLOR[task.group] ?? 'var(--primary)'}
+                                      />
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                        <ActComposerValueField
+                          id="act-timer-minutes"
+                          ariaLabel={t('field.duration_min')}
+                          value={composerMinutes}
+                          suffix="мин"
+                          inputKind="integer"
+                          placeholder="25"
+                          onCommit={(next) => setComposerMinutes(next.replace(/\D/g, '').slice(0, 4))}
+                        />
+                      </div>
+                    ),
+                    disabled: dayLocked || !db || pickerTasks.length === 0,
+                    submitDisabled: !composerTaskId || !composerMinutes,
+                    submitLabel: composerEditingSessionId ? 'Сохранить' : 'Добавить',
+                    onSubmit: saveComposerSession,
+                  }}
+                />
               </div>
             </section>
           </div>
@@ -637,50 +730,6 @@ export function TimerStatusPage() {
           />
         </CardContent>
       </Card>
-
-      {/* ── Диалог создания / редактирования сессии ──────────────────────── */}
-      <TimerSessionForm
-        open={sessionDialogOpen}
-        onOpenChange={(o) => { setSessionDialogOpen(o); if (!o) { setFormError(null); setEditingSession(null); } }}
-        isEditing={!!editingSession}
-        dayLocked={dayLocked}
-        formTaskId={formTaskId}
-        formMinutes={formMinutes}
-        formTimerType={formTimerType}
-        formError={formError}
-        onTaskIdChange={setFormTaskId}
-        onMinutesChange={setFormMinutes}
-        onTimerTypeChange={setFormTimerType}
-        onSave={saveSession}
-        onCancel={() => { setSessionDialogOpen(false); setFormError(null); setEditingSession(null); }}
-        pickerTasks={pickerTasks}
-        getTaskColor={getTaskColor}
-      />
-
-      {/* ── Диалог подтверждения удаления сессии ─────────────────────────── */}
-      <Dialog open={deleteTarget != null} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <ActModal
-          icon={Trash2}
-          title={t('dialog.delete_session')}
-          footer={
-            <ActModalFooter
-              onCancel={() => setDeleteTarget(null)}
-              onSubmit={confirmDelete}
-              submitDisabled={dayLocked}
-              submitVariant="destructive"
-              submitLabel={t('action.delete')}
-            />
-          }
-        >
-          <ActTableBox>
-            <ActFormTable>
-              <ActField label={t('field.entry')}>
-                <p className="text-sm">Подтвердите удаление выбранной сессии.</p>
-              </ActField>
-            </ActFormTable>
-          </ActTableBox>
-        </ActModal>
-      </Dialog>
 
       {/* ── Полноэкранный диалог активной сессии ─────────────────────────── */}
       <TimerFullscreenDialog
@@ -701,6 +750,66 @@ export function TimerStatusPage() {
         onPause={timer.pause}
         onStopAndSave={timer.stopAndSave}
       />
+
+      <Dialog open={composerEditingSessionId != null} onOpenChange={(open) => { if (!open) setComposerEditingSessionId(null); }}>
+        <ActModal
+          title="Редактировать сессию"
+          icon={Clock}
+          size="md"
+          footer={
+            <ActModalFooter
+              onCancel={() => setComposerEditingSessionId(null)}
+              onSubmit={saveComposerSession}
+              submitDisabled={dayLocked || !composerTaskId || !composerMinutes}
+              submitLabel="Сохранить"
+            />
+          }
+        >
+          <ActTableBox>
+            <ActFormTable>
+              <ActField label="Задача">
+                <Select value={composerTaskId} onValueChange={setComposerTaskId} disabled={dayLocked || !db || pickerTasks.length === 0}>
+                  <SelectTrigger className="h-8 w-full min-w-0 border-0 bg-transparent px-2.5 shadow-none focus:bg-background/45 focus:ring-0">
+                    <SelectValue placeholder={t('placeholder.select_task')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['Фокус', 'Эскапизм', 'Наполнение'].map((groupLabel) => {
+                      const items = pickerTasks.filter((task) => task.group === groupLabel);
+                      if (!items.length) return null;
+                      return (
+                        <SelectGroup key={groupLabel}>
+                          <SelectLabel>{groupLabel}</SelectLabel>
+                          {items.map((task) => (
+                            <SelectItem key={task.id} value={task.id} textValue={task.title}>
+                              <ActSelectOptionLabel
+                                label={task.title}
+                                icon={task.icon}
+                                color={task.color ?? TIMER_PICKER_GROUP_COLOR[task.group] ?? 'var(--primary)'}
+                              />
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </ActField>
+              <ActField label="Длительность">
+                <ActComposerValueField
+                  id="timer-session-edit-minutes"
+                  ariaLabel={t('field.duration_min')}
+                  value={composerMinutes}
+                  suffix="мин"
+                  inputKind="integer"
+                  placeholder="25"
+                  controlClassName="h-9 rounded-md border border-soft bg-control/45 px-3 shadow-none hover:bg-hover/50 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/45"
+                  onCommit={(next) => setComposerMinutes(next.replace(/\D/g, '').slice(0, 4))}
+                />
+              </ActField>
+            </ActFormTable>
+          </ActTableBox>
+        </ActModal>
+      </Dialog>
     </PageFrame>
   );
 }

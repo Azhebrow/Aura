@@ -11,7 +11,7 @@ export default {
   },
   theme: {
     light: 'Light',
-    dim: 'Dim',
+    tinted: 'Tinted',
     dark: 'Dark',
   },
   accent: {

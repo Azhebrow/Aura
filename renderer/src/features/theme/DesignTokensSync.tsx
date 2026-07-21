@@ -17,7 +17,7 @@ export function DesignTokensSync() {
     applyFinanceSemanticCssVars();
   }, []);
 
-  const apply = () => {
+  const apply = async () => {
     const getDB = window.getDB;
     if (typeof getDB !== 'function') {
       applyTaskCategoryCssVarsFromSettings(null);
@@ -28,16 +28,22 @@ export function DesignTokensSync() {
       applyTaskCategoryCssVarsFromSettings(null);
       return;
     }
-    applyTaskCategoryCssVarsFromSettings(instance.getAppSettings() as Record<string, unknown> | null);
+    try {
+      const settings = await instance.getAppSettings();
+      applyTaskCategoryCssVarsFromSettings(settings as Record<string, unknown> | null);
+    } catch (error) {
+      console.warn('[AURA] Failed to sync design tokens from settings, using defaults.', error);
+      applyTaskCategoryCssVarsFromSettings(null);
+    }
   };
 
   useEffect(() => {
-    apply();
+    void apply();
   }, [db]);
 
   useEffect(() => {
-    const onDbReady = () => apply();
-    const onCfg = () => apply();
+    const onDbReady = () => void apply();
+    const onCfg = () => void apply();
     window.addEventListener('aura-db-ready', onDbReady);
     window.addEventListener('task-categories-config-changed', onCfg);
     return () => {
@@ -51,7 +57,7 @@ export function DesignTokensSync() {
     (async () => {
       try {
         await waitForAuraDatabase();
-        if (!cancelled) apply();
+        if (!cancelled) void apply();
       } catch {
         /* ignore */
       }

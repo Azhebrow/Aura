@@ -4,10 +4,14 @@ import { waitForAuraDatabase } from '@/shared/bridge/wait-for-database';
 import { prefetchBootstrap } from '@/shared/hooks/use-bootstrap-data';
 import { ensureAuraFontsStylesheet } from '@/features/theme/load-google-fonts';
 import { loadIconsManifest } from '@/features/settings/load-icons-manifest';
-import { RANK_TIERS, rankImageSrc } from '@/shared/config/ranks-model';
+import { getCurrentRank, RANK_TIERS, rankImageSrc } from '@/shared/config/ranks-model';
 import { loadTaskCategoryConfig } from '@/shared/config/task-categories-settings';
 import { applyAppearanceScales, readAppearanceScaleSettings } from '@/features/theme/appearance-scale';
 import { todayIsoDate } from '@/shared/lib/dates';
+import { buildTimerDaySnapshot, timerTaskDailyProgressPct as snapshotTimerTaskDailyProgressPct } from '@/shared/lib/timer-day-snapshot';
+import { loadPickerTasks, sameSessions, timerTaskDailyProgressPct } from '@/features/timer/timer-utils';
+import { buildTimerTaskGroupById, getSessionGroup } from '@/features/timer/timer-session-groups';
+import { parseAmbientDefaults, parseAmbientTracks } from '@/features/timer/use-ambient-audio';
 import { setStartupReadiness, type StartupTask } from './startup-readiness';
 import {
   startupLoggerInit,
@@ -85,7 +89,6 @@ function preloadIconNames(names: string[], available: Set<string>) {
 async function preloadRankArt(db: AuraDatabase) {
   // Only preload the user's current rank + neighbours (max 3 images).
   // All 14 tiers at once took ~6s and competed with the main thread.
-  const { getCurrentRank } = await import('@/shared/config/ranks-model');
   let points = 0;
   try {
     points = (db.getLastCumulativePointsBefore?.('9999-12-31') as number | undefined) ?? 0;
@@ -139,13 +142,6 @@ function warmDatabaseDialogData(db: AuraDatabase) {
 }
 
 async function warmHeavyModalSurfaces(db: AuraDatabase) {
-  await Promise.allSettled([
-    import('@/widgets/date-strip/CalendarPickerDialog'),
-    import('@/features/app-settings/DatabaseManagementDialog'),
-    import('@/features/settings/icon-picker-panel'),
-    import('@/components/ui/universal-modal'),
-    import('@/components/ui/dialog'),
-  ]);
   warmDatabaseDialogData(db);
 }
 
@@ -162,30 +158,22 @@ function warmTimerAnimationPrimitives() {
 }
 
 async function warmTimerSurfaces(db: AuraDatabase, date: string, availableIcons: Set<string>) {
-  // Phase A: core data modules only — fast, no UI parsing
-  const [snapshotModule, timerUtils, timerGroups, ambientAudio] = await Promise.all([
-    import('@/shared/lib/timer-day-snapshot'),
-    import('@/features/timer/timer-utils'),
-    import('@/features/timer/timer-session-groups'),
-    import('@/features/timer/use-ambient-audio'),
-  ]);
-
   // Warm data caches
-  const snapshot = snapshotModule.buildTimerDaySnapshot(db, date);
-  const pickerTasks = timerUtils.loadPickerTasks(db);
-  const groupByTaskId = timerGroups.buildTimerTaskGroupById(db);
-  timerUtils.sameSessions(snapshot.sessions, snapshot.sessions);
+  const snapshot = buildTimerDaySnapshot(db, date);
+  const pickerTasks = loadPickerTasks(db);
+  const groupByTaskId = buildTimerTaskGroupById(db);
+  sameSessions(snapshot.sessions, snapshot.sessions);
   for (const session of snapshot.sessions.slice(0, 12)) {
-    timerGroups.getSessionGroup(session, groupByTaskId);
+    getSessionGroup(session, groupByTaskId);
   }
   for (const task of Object.values(snapshot.byGroup).flat().slice(0, 24)) {
-    snapshotModule.timerTaskDailyProgressPct(task);
-    timerUtils.timerTaskDailyProgressPct(task);
+    snapshotTimerTaskDailyProgressPct(task);
+    timerTaskDailyProgressPct(task);
   }
 
   const taskIcons = pickerTasks.flatMap((task) => (task.icon ? [task.icon] : []));
-  const tracks = ambientAudio.parseAmbientTracks(db);
-  const defaults = ambientAudio.parseAmbientDefaults((db.getAppSettings?.() ?? null) as AuraRow | null);
+  const tracks = parseAmbientTracks(db);
+  const defaults = parseAmbientDefaults((db.getAppSettings?.() ?? null) as AuraRow | null);
   const defaultTrackIds = new Set([defaults.timer, defaults.stopwatch, defaults.break].filter(Boolean));
   const orderedTracks = [
     ...tracks.filter((t) => defaultTrackIds.has(t.id)),
@@ -203,23 +191,6 @@ async function warmTimerSurfaces(db: AuraDatabase, date: string, availableIcons:
       orderedTracks.flatMap((t) => (t.coverImage ? [preloadImage(t.coverImage)] : []))
     ),
     warmTimerAnimationPrimitives(),
-    // Phase C: heavy UI chunks deferred to idle — load lazily, don't block background phase
-    new Promise<void>((resolve) => {
-      const schedule = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : (fn: () => void) => setTimeout(fn, 300);
-      schedule(() => {
-        void Promise.allSettled([
-          import('@/features/timer/TimerStatusPage'),
-          import('@/features/timer/TimerSessionHero'),
-          import('@/features/timer/TimerSessionForm'),
-          import('@/features/timer/timer-sounds'),
-          import('@/features/timer/use-timer-session'),
-          import('@/features/timer/use-timer-tasks'),
-          import('@/components/ui/progress'),
-          import('@/components/ui/slider'),
-        ]);
-        resolve(); // resolve immediately — don't wait for idle imports to complete
-      });
-    }),
   ]);
 }
 
@@ -249,8 +220,8 @@ function buildBackgroundTasks(): StartupTask[] {
   return [
     { id: 'icons-assets',  label: 'Иконки UI',       detail: 'Preload 32 SVG в браузерный кеш',          status: 'pending' },
     { id: 'ranks-art',     label: 'Арт рангов',       detail: 'Кеш изображений всех уровней рангов',      status: 'pending' },
-    { id: 'heavy-modals',  label: 'Тяжёлые модалки',  detail: 'CalendarPicker, DBDialog, IconPicker',     status: 'pending' },
-    { id: 'timer-warmup',  label: 'Таймер',           detail: 'Fullscreen, Vinyl, звуки, 15 модулей',     status: 'pending' },
+    { id: 'heavy-modals',  label: 'Данные модалок',    detail: 'DB metadata без UI-chunk прогрева',        status: 'pending' },
+    { id: 'timer-warmup',  label: 'Таймер',            detail: 'Снимок дня, иконки, обложки, анимация',    status: 'pending' },
   ];
 }
 

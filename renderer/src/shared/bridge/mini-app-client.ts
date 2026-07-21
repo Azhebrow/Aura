@@ -80,6 +80,45 @@ function isMutationMethod(method: string) {
   return /^(add|create|update|save|delete|clear|reload|move|set)/i.test(method);
 }
 
+export function getReadFallback(method: string): unknown {
+  if (method === 'getAppSettings') return null;
+  if (
+    method === 'getAll' ||
+    method === 'getAllTransactions' ||
+    method === 'getTransactions' ||
+    method === 'getTransactionsBetween' ||
+    method === 'getNutritionEntries' ||
+    method === 'getRitualsMorning' ||
+    method === 'getRitualsEvening' ||
+    method === 'getTimerSessions' ||
+    method === 'getGoalTasksProgressByDate' ||
+    method === 'getAllGoals' ||
+    method === 'getStagesByGoal' ||
+    method === 'getTasksByStage' ||
+    method === 'getTimerTasks'
+  ) {
+    return [];
+  }
+  if (
+    method === 'getTaskTimerTotal' ||
+    method === 'calculateRitualProgress' ||
+    method === 'getTaskTotalTimeSince' ||
+    method === 'getPreviousCumulativePoints'
+  ) {
+    return 0;
+  }
+  if (
+    method === 'getDiaryEntry' ||
+    method === 'getTaskProgress' ||
+    method === 'getGoalTaskProgress' ||
+    method === 'getById'
+  ) {
+    return null;
+  }
+  if (method === 'getCategoryProgresses') return {};
+  return undefined;
+}
+
 function asDbAny(db: unknown): Record<string, unknown> {
   return db as Record<string, unknown>;
 }
@@ -131,6 +170,9 @@ async function flushBatch() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operations: chunk.map(({ method, args }) => ({ method, args })) }),
       });
+      if (!response.ok) {
+        throw new Error(`Batch HTTP ${response.status}`);
+      }
       const json = await response.json();
       const results: BatchResult[] = json.results ?? [];
       for (const [index, pending] of chunk.entries()) {
@@ -140,7 +182,16 @@ async function flushBatch() {
         else pending.reject(new Error(r.error ?? 'DB error'));
       }
     } catch (error) {
-      chunk.forEach((p) => p.reject(error));
+      console.warn('[mini-app-client] DB batch unavailable; using read-only fallbacks where possible.', error);
+      chunk.forEach((p) => {
+        if (isMutationMethod(p.method)) {
+          p.reject(error);
+          return;
+        }
+        const fallback = getReadFallback(p.method);
+        if (fallback !== undefined) p.resolve(fallback);
+        else p.reject(error);
+      });
     }
     return;
   }
@@ -385,7 +436,7 @@ export async function fetchBootstrap(
 
       return {};
     } catch (error) {
-      console.error(`[fetchBootstrap] Error loading ${screen}:`, error);
+      console.warn(`[fetchBootstrap] Error loading ${screen}; using empty bootstrap payload.`, error);
       return {};
     }
   })();

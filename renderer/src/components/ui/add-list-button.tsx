@@ -33,7 +33,7 @@ export function AddListButton({
         className
       )}
     >
-      <Plus className="size-4 shrink-0 text-dim group-hover/button:text-foreground" strokeWidth={2} />
+      <Plus className="size-4 shrink-0 text-dim group-hover/button:text-foreground" />
       <span className="truncate">{displayLabel}</span>
     </Button>
   );

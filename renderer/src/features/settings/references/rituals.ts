@@ -15,7 +15,7 @@ export const RITUALS_REFERENCES: Record<string, SettingsReference> = {
   'rituals-morning': {
     id: 'rituals-morning',
     icon: Sun,
-    title: 'Утренние ритуалы',
+    title: 'Утро',
     definition:
       'Список действий, которые вы хотите выполнить каждое утро. Отслеживание выполнения помогает развивать привычку.',
     usedOn: [
@@ -93,7 +93,7 @@ export const RITUALS_REFERENCES: Record<string, SettingsReference> = {
   'rituals-evening': {
     id: 'rituals-evening',
     icon: Moon,
-    title: 'Вечерние ритуалы',
+    title: 'Вечер',
     definition:
       'Список действий для вечера, которые помогают расслабиться и подготовиться к сну. Отслеживание выполнения вечерних привычек.',
     usedOn: [

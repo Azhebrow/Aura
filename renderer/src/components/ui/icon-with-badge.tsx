@@ -32,15 +32,13 @@ export function IconWithBadge({
   const config = sizeConfig[size];
   const defaultSurfaceStyle = {
     ['--aura-list-icon-tint' as string]: tint,
-    backgroundColor: 'color-mix(in oklab, var(--aura-list-icon-tint) 10%, transparent)',
-    borderColor: 'color-mix(in oklab, var(--aura-list-icon-tint) 20%, transparent)',
   } satisfies CSSProperties;
 
   return (
     <div className={cn('relative shrink-0', className)}>
       <span
         className={cn(
-          'flex items-center justify-center rounded-lg border',
+          'aura-icon-plate flex items-center justify-center rounded-lg border',
           config.container,
           surfaceClassName
         )}

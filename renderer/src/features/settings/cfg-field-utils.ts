@@ -102,6 +102,11 @@ export function cleanupRow(table: string, payload: AuraRow): AuraRow {
 
 // ─── Payload builder ──────────────────────────────────────────────────────────
 
+function newCfgRowId(table: string): string {
+  const prefix = table.replace(/^cfg_/, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'cfg';
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
 /**
  * Собирает объект для create/update из значений формы.
  * Применяет фильтры, extra-поля и очистку от несовместимых ключей.
@@ -114,7 +119,7 @@ export function buildPayloadFromForm(
 ): AuraRow {
   const out: AuraRow = {};
   if (mode === 'create') {
-    Object.assign(out, spec.filter ?? {}, spec.createExtra ?? {});
+    Object.assign(out, { id: newCfgRowId(spec.table) }, spec.filter ?? {}, spec.createExtra ?? {});
   }
   if (mode === 'edit' && editId != null) out.id = editId;
   for (const f of spec.fields) {

@@ -13,6 +13,16 @@ function createDatabaseAdapter(db, _dbPath) {
       if (!columns.includes('cover_image')) {
         db.prepare('ALTER TABLE cfg_ambient_music ADD COLUMN cover_image TEXT').run();
       }
+      if (!columns.includes('level')) {
+        db.prepare('ALTER TABLE cfg_ambient_music ADD COLUMN level INTEGER DEFAULT 0').run();
+      }
+      db.prepare("UPDATE cfg_ambient_music SET id = 'ambient_' || rowid WHERE id IS NULL OR id = ''").run();
+      db.prepare(`
+        UPDATE cfg_ambient_music
+        SET level = rowid
+        WHERE level IS NULL
+           OR (SELECT COUNT(DISTINCT COALESCE(level, 0)) FROM cfg_ambient_music) <= 1
+      `).run();
     } catch { /* silent */ }
   }
 
@@ -32,12 +42,112 @@ function createDatabaseAdapter(db, _dbPath) {
     } catch { /* silent */ }
   }
 
+  let _taskProgressMigrated = false;
+  function ensureTaskProgressTable() {
+    if (_taskProgressMigrated) return;
+    _taskProgressMigrated = true;
+    try {
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS act_task_progress (
+          id TEXT PRIMARY KEY,
+          date TEXT NOT NULL,
+          task_id TEXT NOT NULL,
+          value TEXT,
+          completed INTEGER DEFAULT 0,
+          current_value TEXT,
+          selected_list_item TEXT,
+          completion_percent REAL DEFAULT 0,
+          updated_at TEXT DEFAULT (datetime('now')),
+          UNIQUE(date, task_id)
+        )
+      `).run();
+      db.prepare('CREATE INDEX IF NOT EXISTS idx_act_task_progress_date ON act_task_progress(date)').run();
+      db.prepare('CREATE INDEX IF NOT EXISTS idx_act_task_progress_task ON act_task_progress(task_id)').run();
+    } catch { /* silent */ }
+
+    try {
+      const legacyRows = db.prepare('SELECT * FROM act_tasks').all();
+      const tasks = db.prepare('SELECT id, category_type, level FROM cfg_tasks').all();
+      const insert = db.prepare(`
+        INSERT OR IGNORE INTO act_task_progress
+          (id, date, task_id, value, completed, current_value, selected_list_item, completion_percent)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const row of legacyRows) {
+        const date = String(row.date ?? '');
+        if (!date) continue;
+        for (const task of tasks) {
+          const taskId = String(task.id ?? '');
+          const cat = String(task.category_type ?? '');
+          const level = String(task.level ?? '');
+          if (!taskId || !cat || !level) continue;
+          const colVal = `${cat}_${level}_value`;
+          const colPct = `${cat}_${level}_completion_percent`;
+          const rawValue = row[colVal];
+          const rawPct = row[colPct];
+          const pct = Number(rawPct ?? 0);
+          const hasValue = rawValue !== undefined && rawValue !== null && rawValue !== '';
+          const hasPct = Number.isFinite(pct) && Math.abs(pct) > 0.000001;
+          if (!hasValue && !hasPct) continue;
+          const id = `tp_${date.replace(/-/g, '')}_${taskId}`;
+          insert.run(id, date, taskId, rawValue ?? null, pct >= 100 ? 1 : 0, rawValue ?? null, null, Number.isFinite(pct) ? pct : 0);
+        }
+      }
+    } catch { /* legacy table may not exist */ }
+  }
+
+  function accountExists(accountId) {
+    if (!accountId) return false;
+    try {
+      return Boolean(db.prepare('SELECT id FROM cfg_accounts WHERE id = ? LIMIT 1').get(accountId));
+    } catch {
+      return false;
+    }
+  }
+
+  function updateAccountBalance(accountId, delta) {
+    if (!accountId || !Number.isFinite(delta) || delta === 0) return;
+    db.prepare('UPDATE cfg_accounts SET balance = COALESCE(balance, 0) + ? WHERE id = ?').run(delta, accountId);
+  }
+
+  function validateTransaction(tx) {
+    const type = String(tx?.type ?? 'expense');
+    const amount = Number(tx?.amount ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error('Transaction amount must be positive');
+    if (type === 'transfer') {
+      const fromId = String(tx?.from_id ?? '');
+      const toId = String(tx?.to_id ?? '');
+      if (!fromId || !toId) throw new Error('Transfer requires both accounts');
+      if (fromId === toId) throw new Error('Transfer accounts must differ');
+      if (!accountExists(fromId) || !accountExists(toId)) throw new Error('Transfer account not found');
+      return;
+    }
+    const accountId = String(tx?.account_id ?? '');
+    if (!accountId) throw new Error('Transaction account is required');
+    if (!accountExists(accountId)) throw new Error('Transaction account not found');
+  }
+
+  function applyTransactionBalance(tx, direction) {
+    if (!tx) return;
+    const type = String(tx.type ?? 'expense');
+    const amount = Number(tx.amount ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    if (type === 'income') {
+      updateAccountBalance(String(tx.account_id ?? ''), amount * direction);
+    } else if (type === 'transfer') {
+      updateAccountBalance(String(tx.from_id ?? ''), -amount * direction);
+      updateAccountBalance(String(tx.to_id ?? ''), amount * direction);
+    } else {
+      updateAccountBalance(String(tx.account_id ?? ''), -amount * direction);
+    }
+  }
+
   // ─── Core day-progress computation ─────────────────────────────────────────
-  // Single source of truth: reads from act_tasks, act_timer_sessions,
+  // Single source of truth: reads from act_task_progress, act_timer_sessions,
   // act_rituals_morning/evening. Never reads from act_task_completions.
   function computeDayProgress(date) {
+    ensureTaskProgressTable();
     const CATEGORIES = ['rituals', 'time', 'body', 'deps'];
-    const actRow = (() => { try { return db.prepare('SELECT * FROM act_tasks WHERE date = ? LIMIT 1').get(date); } catch { return null; } })();
     const categoryPercents = {};
 
     for (const cat of CATEGORIES) {
@@ -79,8 +189,8 @@ function createDatabaseAdapter(db, _dbPath) {
               }
             } catch { pct = 0; }
           } else {
-            const col = `${cat}_${t.level}_completion_percent`;
-            const raw = actRow ? Number(actRow[col] ?? 0) : 0;
+            const progress = db.prepare('SELECT completion_percent FROM act_task_progress WHERE date = ? AND task_id = ? LIMIT 1').get(date, String(t.id));
+            const raw = Number(progress?.completion_percent ?? 0);
             pct = Number.isFinite(raw) ? raw : 0;
           }
           sum += pct;
@@ -136,6 +246,26 @@ function createDatabaseAdapter(db, _dbPath) {
     } catch { /* silent */ }
   }
 
+  function recomputePointsCumulative() {
+    try {
+      const rows = db.prepare(
+        'SELECT date, completion_percent, daily_points, cumulative_points FROM act_daily_points ORDER BY date ASC'
+      ).all();
+      const updateStmt = db.prepare(
+        'UPDATE act_daily_points SET daily_points=?, cumulative_points=? WHERE date=?'
+      );
+      let running = 0;
+      for (const row of rows) {
+        const pct = Number(row.completion_percent ?? 0);
+        const daily = Math.round(2 * pct - 100);
+        running = Math.max(0, running + daily);
+        if (Number(row.daily_points) !== daily || Number(row.cumulative_points) !== running) {
+          updateStmt.run(daily, running, row.date);
+        }
+      }
+    } catch { /* silent */ }
+  }
+
   return {
     // ─── Settings ────────────────────────────────────────────────────────────
     getAppSettings() {
@@ -158,25 +288,10 @@ function createDatabaseAdapter(db, _dbPath) {
           // Полный пересчёт цепочки очков по всем дням в порядке возрастания даты.
           // daily_points = 2×completion − 100; cumulative_points — бегущая сумма,
           // ограниченная снизу нулём (накопленные очки ранга не могут быть < 0).
-          try {
-            const rows = db.prepare(
-              'SELECT date, completion_percent, daily_points, cumulative_points FROM act_daily_points ORDER BY date ASC'
-            ).all();
-            const updateStmt = db.prepare(
-              'UPDATE act_daily_points SET daily_points=?, cumulative_points=? WHERE date=?'
-            );
-            let running = 0;
-            for (const row of rows) {
-              const pct = Number(row.completion_percent ?? 0);
-              const daily = Math.round(2 * pct - 100);
-              running = Math.max(0, running + daily);
-              if (Number(row.daily_points) !== daily || Number(row.cumulative_points) !== running) {
-                updateStmt.run(daily, running, row.date);
-              }
-            }
-          } catch { /* silent */ }
+          recomputePointsCumulative();
         }
         ensureAmbientMusicColumns(tableName);
+        if (tableName === 'act_task_progress') ensureTaskProgressTable();
         let query = `SELECT * FROM ${tableName}`;
         if (filters && Object.keys(filters).length > 0) {
           const conditions = Object.keys(filters).map(k => `${k} = ?`).join(' AND ');
@@ -190,6 +305,7 @@ function createDatabaseAdapter(db, _dbPath) {
     getById(tableName, id) {
       try {
         ensureAmbientMusicColumns(tableName);
+        if (tableName === 'act_task_progress') ensureTaskProgressTable();
         return db.prepare(`SELECT * FROM ${tableName} WHERE id = ? LIMIT 1`).get(id);
       } catch { return undefined; }
     },
@@ -197,6 +313,7 @@ function createDatabaseAdapter(db, _dbPath) {
     create(tableName, data) {
       try {
         ensureAmbientMusicColumns(tableName);
+        if (tableName === 'act_task_progress') ensureTaskProgressTable();
         const keys = Object.keys(data);
         const placeholders = keys.map(() => '?').join(',');
         db.prepare(`INSERT INTO ${tableName} (${keys.join(',')}) VALUES (${placeholders})`).run(...Object.values(data));
@@ -207,6 +324,7 @@ function createDatabaseAdapter(db, _dbPath) {
     update(tableName, id, data) {
       try {
         ensureAmbientMusicColumns(tableName);
+        if (tableName === 'act_task_progress') ensureTaskProgressTable();
         const keys = Object.keys(data);
         const updates = keys.map(k => `${k} = ?`).join(',');
         db.prepare(`UPDATE ${tableName} SET ${updates} WHERE id = ?`).run(...Object.values(data), id);
@@ -245,24 +363,43 @@ function createDatabaseAdapter(db, _dbPath) {
 
     addTransaction(data) {
       try {
-        const keys = Object.keys(data);
-        const placeholders = keys.map(() => '?').join(',');
-        db.prepare(`INSERT INTO act_transactions (${keys.join(',')}) VALUES (${placeholders})`).run(...Object.values(data));
-      } catch { /* silent */ }
+        validateTransaction(data);
+        db.transaction(() => {
+          const keys = Object.keys(data);
+          const placeholders = keys.map(() => '?').join(',');
+          db.prepare(`INSERT INTO act_transactions (${keys.join(',')}) VALUES (${placeholders})`).run(...Object.values(data));
+          applyTransactionBalance(data, 1);
+        })();
+        return true;
+      } catch { return false; }
     },
 
     updateTransaction(transactionId, data) {
       try {
-        const keys = Object.keys(data);
-        const updates = keys.map(k => `${k} = ?`).join(',');
-        db.prepare(`UPDATE act_transactions SET ${updates} WHERE id = ?`).run(...Object.values(data), transactionId);
-      } catch { /* silent */ }
+        validateTransaction(data);
+        db.transaction(() => {
+          const previous = db.prepare('SELECT * FROM act_transactions WHERE id = ? LIMIT 1').get(transactionId);
+          if (!previous) throw new Error('Transaction not found');
+          applyTransactionBalance(previous, -1);
+          const keys = Object.keys(data);
+          const updates = keys.map(k => `${k} = ?`).join(',');
+          db.prepare(`UPDATE act_transactions SET ${updates} WHERE id = ?`).run(...Object.values(data), transactionId);
+          applyTransactionBalance(data, 1);
+        })();
+        return true;
+      } catch { return false; }
     },
 
     deleteTransaction(transactionId) {
       try {
-        db.prepare('DELETE FROM act_transactions WHERE id = ?').run(transactionId);
-      } catch { /* silent */ }
+        db.transaction(() => {
+          const previous = db.prepare('SELECT * FROM act_transactions WHERE id = ? LIMIT 1').get(transactionId);
+          if (!previous) return;
+          applyTransactionBalance(previous, -1);
+          db.prepare('DELETE FROM act_transactions WHERE id = ?').run(transactionId);
+        })();
+        return true;
+      } catch { return false; }
     },
 
     // ─── Diary (act_diary_entries) ────────────────────────────────────────────
@@ -380,72 +517,75 @@ function createDatabaseAdapter(db, _dbPath) {
       } catch { return 0; }
     },
 
-    // ─── Daily task progress (act_tasks, indexed columns) ────────────────────
+    // ─── Daily task progress (act_task_progress, keyed by date + task_id) ─────
     /**
-     * Reads task progress from act_tasks using indexed columns.
-     * act_tasks stores progress as ${category_type}_${level}_value and
-     * ${category_type}_${level}_completion_percent, where level is the
-     * task's order within its category from cfg_tasks.
+     * Reads task progress from act_task_progress using a stable task_id.
+     * This replaces the legacy act_tasks category_level columns, which broke
+     * when cfg task order changed.
      */
     getTaskProgress(taskId, date) {
       try {
-        const task = db.prepare('SELECT category_type, level FROM cfg_tasks WHERE id = ?').get(taskId);
-        if (!task) return null;
-        const { category_type: cat, level } = task;
-        const colVal = `${cat}_${level}_value`;
-        const colPct = `${cat}_${level}_completion_percent`;
-        const row = db.prepare(`SELECT ${colVal}, ${colPct} FROM act_tasks WHERE date = ? LIMIT 1`).get(date);
-        const pct = Number(row?.[colPct] ?? 0);
-        const val = row?.[colVal] ?? null;
-        return { value: val, completed: pct >= 100 ? 1 : 0, current_value: val, selected_list_item: null, completion_percent: pct };
+        ensureTaskProgressTable();
+        const row = db.prepare('SELECT * FROM act_task_progress WHERE date = ? AND task_id = ? LIMIT 1').get(date, taskId);
+        const pct = Number(row?.completion_percent ?? 0);
+        const val = row?.current_value ?? row?.value ?? null;
+        return {
+          value: val,
+          completed: Number(row?.completed ?? 0) || (pct >= 100 ? 1 : 0),
+          current_value: val,
+          selected_list_item: row?.selected_list_item ?? null,
+          completion_percent: Number.isFinite(pct) ? pct : 0,
+        };
       } catch { return null; }
     },
 
     /**
-     * Writes task progress to the indexed columns of act_tasks.
-     * Maps generic fields (completed, current_value, value, completion_percent)
-     * to the correct ${category_type}_${level}_* columns.
+     * Writes task progress to act_task_progress keyed by date + task_id.
      */
     saveTaskProgress(taskId, date, data) {
       try {
-        const task = db.prepare('SELECT category_type, level FROM cfg_tasks WHERE id = ?').get(taskId);
+        ensureTaskProgressTable();
+        const task = db.prepare('SELECT * FROM cfg_tasks WHERE id = ? LIMIT 1').get(taskId);
         if (!task) return;
-        const { category_type: cat, level } = task;
-        const colVal = `${cat}_${level}_value`;
-        const colPct = `${cat}_${level}_completion_percent`;
 
-        // Resolve what to write
-        const updates = {};
-        if (data.current_value !== undefined) updates[colVal] = data.current_value;
-        if (data.value !== undefined) updates[colVal] = data.value;
-        if (data.completed !== undefined) updates[colPct] = Number(data.completed) >= 1 ? 100 : 0;
-        if (data.completion_percent !== undefined) updates[colPct] = data.completion_percent;
+        const previous = db.prepare('SELECT * FROM act_task_progress WHERE date = ? AND task_id = ? LIMIT 1').get(date, taskId);
+        const isExplicitReset = data.completed !== undefined && Number(data.completed) < 1 && data.current_value === undefined && data.value === undefined;
+        const nextValue = isExplicitReset
+          ? null
+          : data.current_value !== undefined
+          ? data.current_value
+          : data.value !== undefined
+            ? data.value
+            : previous?.current_value ?? previous?.value ?? null;
+        let pct = data.completion_percent !== undefined
+          ? Number(data.completion_percent)
+          : data.completed !== undefined
+            ? (Number(data.completed) >= 1 ? 100 : 0)
+            : Number(previous?.completion_percent ?? 0);
 
-        // When only current_value is written (number task), also persist completion_percent
-        // so getTaskProgress() returns a consistent value and fill bars don't flash.
-        if (updates[colVal] !== undefined && updates[colPct] === undefined) {
-          try {
-            const fullTask = db.prepare('SELECT cfg_target_number FROM cfg_tasks WHERE id = ?').get(taskId);
-            const target = Number(fullTask?.cfg_target_number) || 0;
-            if (target > 0) {
-              updates[colPct] = Math.min(100, Math.round((Number(updates[colVal]) / target) * 100));
-            }
-          } catch { /* ignore — colPct simply won't be updated */ }
+        if ((data.current_value !== undefined || data.value !== undefined) && data.completion_percent === undefined && data.completed === undefined) {
+          const target = Number(task?.cfg_target_value) || Number(task?.cfg_target_number) || 0;
+          if (target > 0) pct = Math.min(100, Math.round((Number(nextValue) / target) * 100));
         }
 
-        if (Object.keys(updates).length === 0) return;
-
-        // Upsert the row — act_tasks uses (id = date) as PK or date as unique
-        const setClause = Object.keys(updates).map(k => `${k} = ?`).join(', ');
-        const affected = db.prepare(`UPDATE act_tasks SET ${setClause} WHERE date = ?`).run(...Object.values(updates), date);
-        if (affected.changes === 0) {
-          // Insert a new row — act_tasks uses id = 'day_YYYYMMDD'
-          const rowId = 'day_' + date.replace(/-/g, '');
-          const cols = ['id', 'date', ...Object.keys(updates)];
-          const vals = [rowId, date, ...Object.values(updates)];
-          db.prepare(`INSERT OR IGNORE INTO act_tasks (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`).run(...vals);
-          db.prepare(`UPDATE act_tasks SET ${setClause} WHERE date = ?`).run(...Object.values(updates), date);
-        }
+        pct = Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
+        const completed = pct >= 100 ? 1 : 0;
+        const rowId = `tp_${date.replace(/-/g, '')}_${taskId}`;
+        const selected = isExplicitReset
+          ? null
+          : data.selected_list_item !== undefined ? data.selected_list_item : previous?.selected_list_item ?? null;
+        db.prepare(`
+          INSERT INTO act_task_progress
+            (id, date, task_id, value, completed, current_value, selected_list_item, completion_percent, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(date, task_id) DO UPDATE SET
+            value = excluded.value,
+            completed = excluded.completed,
+            current_value = excluded.current_value,
+            selected_list_item = excluded.selected_list_item,
+            completion_percent = excluded.completion_percent,
+            updated_at = datetime('now')
+        `).run(rowId, date, taskId, nextValue ?? null, completed, nextValue ?? null, selected, pct);
 
         // Recompute aggregated category progress and daily points after any task save.
         this.recomputeDailyAggregates(date);
@@ -762,6 +902,7 @@ function createDatabaseAdapter(db, _dbPath) {
     // ─── Points (act_daily_points) ────────────────────────────────────────────
     getDailyPointsBetween(startDate, endDate) {
       try {
+        recomputePointsCumulative();
         return db.prepare('SELECT * FROM act_daily_points WHERE date >= ? AND date <= ? ORDER BY date ASC').all(startDate, endDate) || [];
       } catch { return []; }
     },

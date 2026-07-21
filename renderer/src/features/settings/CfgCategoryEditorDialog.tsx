@@ -2,7 +2,7 @@
 // Диалог редактирования внешнего вида категории задач на главной:
 // название, иконка, цвет из палитры.
 
-import { Settings, XIcon } from 'lucide-react';
+import { ChevronRight, Settings, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,7 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { UniversalModalContent } from '@/components/ui/universal-modal';
+import {
+  UNIVERSAL_MODAL_COMPACT_PICKER_CN,
+  UniversalModalContent,
+} from '@/components/ui/universal-modal';
 import { AuraThemedIcon } from '@/widgets/aura-icon/AuraThemedIcon';
 import { SettingsDialogHeader } from '@/features/settings/settings-form-primitives';
 import { IconPickerPanel } from '@/features/settings/icon-picker-panel';
@@ -19,7 +22,7 @@ import { SettingsDialogLayout } from '@/features/settings/settings-dialog-layout
 import { ActModalFooter } from '@/features/act/ActModal';
 import { TASK_CATEGORY_PALETTE } from '@/shared/config/aura-palette';
 import { cn } from '@/lib/utils';
-import { CfgModalGridRow, CFG_INPUT_CN, CFG_ICON_TRIGGER_CN } from './cfg-primitives';
+import { CfgModalGridRow, CFG_INPUT_CN, CFG_ICON_TRIGGER_CN, formatCfgIconLabel } from './cfg-primitives';
 import type { TaskCategoryConfig } from './cfg-category-utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -97,10 +100,13 @@ export function CfgCategoryEditorDialog({
                     className={CFG_ICON_TRIGGER_CN}
                     onClick={() => onIconPickerOpenChange(true)}
                   >
-                    <AuraThemedIcon name={categoryForm.icon || null} className="size-4 shrink-0 opacity-80" />
-                    <span className="text-foreground/90 truncate text-sm">
-                      {categoryForm.icon || 'Выбрать иконку'}
+                    <span className="aura-inline-icon flex size-5 shrink-0 items-center justify-center text-current">
+                      <AuraThemedIcon name={categoryForm.icon || null} size={14} tint="currentColor" />
                     </span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                      {categoryForm.icon ? formatCfgIconLabel(categoryForm.icon) : 'Выбрать иконку'}
+                    </span>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                   </button>
                 </CfgModalGridRow>
 
@@ -114,13 +120,14 @@ export function CfgCategoryEditorDialog({
                         title={`Цвет ${idx + 1}`}
                         onClick={() => onCategoryFormChange((prev) => ({ ...prev, color: c }))}
                         className={cn(
-                          'h-8 rounded-md border aura-tx-transform hover:scale-[1.02]',
+                          'flex h-8 items-center justify-center rounded-lg border bg-control/55 aura-tx-transform hover:scale-[1.02] hover:bg-hover',
                           categoryForm.color === c
                             ? 'border-primary ring-primary/25 ring-2'
                             : 'border-border/70'
                         )}
-                        style={{ backgroundColor: c }}
-                      />
+                      >
+                        <span className="aura-operator-swatch size-4 rounded-full border border-soft shadow-xs" style={{ backgroundColor: c }} aria-hidden />
+                      </button>
                     ))}
                   </div>
                 </CfgModalGridRow>
@@ -135,10 +142,10 @@ export function CfgCategoryEditorDialog({
         <UniversalModalContent
           size="picker"
           scroll="content"
-          className="flex max-h-[min(92svh,48rem)] flex-col gap-0 p-0"
+          className={UNIVERSAL_MODAL_COMPACT_PICKER_CN}
           showCloseButton={false}
         >
-          <DialogHeader className="shrink-0 border-b border-border/80 px-4 py-3 sm:px-5">
+          <DialogHeader className="shrink-0 border-b border-border/80 px-3 py-2.5">
             <div className="flex items-center justify-between gap-2">
               <Button
                 type="button"
@@ -168,7 +175,7 @@ export function CfgCategoryEditorDialog({
               </DialogClose>
             </div>
           </DialogHeader>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-3 sm:px-5">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <IconPickerPanel
               current={categoryForm.icon || undefined}
               onPick={(name) => {

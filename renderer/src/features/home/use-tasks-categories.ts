@@ -77,7 +77,12 @@ export function useTasksCategories(dateString: string) {
   useEffect(() => {
     if (!db) return;
     const reload = () => {
-      setShowPercentBadges(getHomeTaskDisplaySettings(db.getAppSettings() as AuraRow | null).showPercentBadges);
+      try {
+        setShowPercentBadges(getHomeTaskDisplaySettings(db.getAppSettings() as AuraRow | null).showPercentBadges);
+      } catch (error) {
+        console.warn('[AURA] Failed to read task display settings, using defaults.', error);
+        setShowPercentBadges(getHomeTaskDisplaySettings(null).showPercentBadges);
+      }
     };
     reload();
     window.addEventListener('settings-saved', reload);
@@ -95,11 +100,23 @@ export function useTasksCategories(dateString: string) {
 
   const allCfgTasks = useMemo(() => {
     if (daySnapshot?.cfgTasks) return daySnapshot.cfgTasks;
-    return db ? db.getAll('cfg_tasks') : ([] as AuraRow[]);
+    if (!db) return [] as AuraRow[];
+    try {
+      return db.getAll('cfg_tasks') as AuraRow[];
+    } catch (error) {
+      console.warn('[AURA] Failed to read task config, using empty task list.', error);
+      return [] as AuraRow[];
+    }
   }, [daySnapshot?.cfgTasks, db]);
 
   const categoryUi = useMemo(() => {
-    const cfg = loadTaskCategoryConfig(db);
+    let cfg: ReturnType<typeof loadTaskCategoryConfig>;
+    try {
+      cfg = loadTaskCategoryConfig(db);
+    } catch (error) {
+      console.warn('[AURA] Failed to read task category config, using defaults.', error);
+      cfg = loadTaskCategoryConfig(null);
+    }
     return Object.fromEntries(
       TASK_CATEGORY_IDS.map((id) => [id, {
         label: cfg[id].title || DEFAULT_LABELS[id],

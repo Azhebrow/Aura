@@ -13,7 +13,7 @@ export const AMBIENT_REFERENCES: Record<string, SettingsReference> = {
   'ambient-music': {
     id: 'ambient-music',
     icon: Music,
-    title: 'Фоновая музыка',
+    title: 'Музыка',
     definition:
       'Коллекция треков и плейлистов для фоновой музыки во время работы, отдыха или других активностей.',
     usedOn: [

@@ -3,7 +3,7 @@
 // Тяжёлые компоненты вынесены в features/ranks/.
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Calendar, Sparkle } from 'lucide-react';
+import { AreaChart, Calendar, Sparkle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSelectedDate } from '@/features/selected-date/selected-date-context';
 import { useAuraDb } from '@/shared/hooks/use-aura-db';
@@ -26,13 +26,40 @@ import { buildPointsHistoryRange } from '@/features/ranks/rank-utils';
 import { CurrentRankHero }    from '@/features/ranks/CurrentRankHero';
 import { RankLadder }         from '@/features/ranks/RankLadder';
 import { PointsHistoryTable } from '@/features/ranks/PointsHistoryTable';
+import { PointsAccumulationChart } from '@/features/ranks/PointsAccumulationChart';
+import { STORAGE_KEYS } from '@/shared/config/storage-keys';
+
+type RanksMobilePanel = 'rank' | 'chart' | 'history';
+
+function readRanksMobilePanel(): RanksMobilePanel {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.RANKS_MOBILE_PANEL);
+    return raw === 'rank' || raw === 'chart' || raw === 'history' ? raw : 'rank';
+  } catch {
+    return 'rank';
+  }
+}
+
+function readStoredRankId(): number | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.RANKS_SELECTED_RANK_ID);
+    const id = Number(raw);
+    return Number.isFinite(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
 
 export function RanksPage() {
   const { dateString } = useSelectedDate();
   const { db }         = useAuraDb();
   const dataTick       = useAuraDataRefresh();
 
-  const [mobilePanel, setMobilePanel] = useState<'rank' | 'history'>('rank');
+  const [mobilePanel, setMobilePanel] = useState<RanksMobilePanel>(readRanksMobilePanel);
+  const setStoredMobilePanel = (next: RanksMobilePanel) => {
+    setMobilePanel(next);
+    try { localStorage.setItem(STORAGE_KEYS.RANKS_MOBILE_PANEL, next); } catch { /* ignore */ }
+  };
 
   // Флаги mini-app вычисляются один раз при монтировании:
   // dataset и innerWidth не меняются в mini-app-окне после запуска
@@ -61,12 +88,16 @@ export function RanksPage() {
   const current     = getCurrentRank(points);
   const reachedTiers = useMemo(() => RANK_TIERS.filter((tier) => points >= tier.threshold), [points]);
 
-  const [selectedRankId, setSelectedRankId] = useState<number>(current.id);
+  const [selectedRankId, setSelectedRankId] = useState<number>(() => readStoredRankId() ?? current.id);
+  const setStoredSelectedRankId = (next: number) => {
+    setSelectedRankId(next);
+    try { localStorage.setItem(STORAGE_KEYS.RANKS_SELECTED_RANK_ID, String(next)); } catch { /* ignore */ }
+  };
 
   // Сбрасываем выбранный ранг, если он перестал быть достигнутым
   useEffect(() => {
     const stillReached = reachedTiers.some((tier) => tier.id === selectedRankId);
-    if (!stillReached) setSelectedRankId(current.id);
+    if (!stillReached) setStoredSelectedRankId(current.id);
   }, [current.id, reachedTiers, selectedRankId]);
 
   const selectedRank = reachedTiers.find((tier) => tier.id === selectedRankId) ?? reachedTiers[reachedTiers.length - 1] ?? current;
@@ -110,7 +141,7 @@ export function RanksPage() {
             points={points}
             currentId={current.id}
             selectedId={selectedRank.id}
-            onSelect={setSelectedRankId}
+            onSelect={setStoredSelectedRankId}
             showHeader={both}
           />
         </div>
@@ -118,12 +149,25 @@ export function RanksPage() {
     </div>
   ) : null;
 
-  const historyColumn: ReactNode = showHistory ? (
+  const historyTableColumn: ReactNode = showHistory ? (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <MegaPanelHeader title="История очков" />
-      <div className="min-h-0 flex-1 overflow-auto overscroll-contain p-3 sm:p-4">
+      <div className="min-h-0 flex-1 overflow-auto overscroll-contain">
         <PointsHistoryTable db={db} history={history} />
       </div>
+    </div>
+  ) : null;
+
+  const historyColumn: ReactNode = showHistory ? (
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <PointsAccumulationChart history={history} rank={current} endDate={dateString} />
+      {historyTableColumn}
+    </div>
+  ) : null;
+
+  const chartColumn: ReactNode = showHistory ? (
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <PointsAccumulationChart history={history} rank={current} endDate={dateString} />
     </div>
   ) : null;
 
@@ -149,8 +193,9 @@ export function RanksPage() {
 
   const mobileSections = [
     showRank    ? { id: 'rank'    as const, label: 'Ранг',    Icon: Sparkle,  content: rankColumn    } : null,
-    showHistory ? { id: 'history' as const, label: 'История', Icon: Calendar, content: historyColumn } : null,
-  ].filter(Boolean) as Array<{ id: 'rank' | 'history'; label: string; Icon: typeof Sparkle; content: ReactNode }>;
+    showHistory ? { id: 'chart'   as const, label: 'График',  Icon: AreaChart, content: chartColumn   } : null,
+    showHistory ? { id: 'history' as const, label: 'История', Icon: Calendar, content: historyTableColumn } : null,
+  ].filter(Boolean) as Array<{ id: 'rank' | 'chart' | 'history'; label: string; Icon: typeof Sparkle; content: ReactNode }>;
 
   const activeMobileSection = mobileSections.find((s) => s.id === mobilePanel) ?? mobileSections[0];
 
@@ -162,7 +207,7 @@ export function RanksPage() {
             className="xl:hidden"
             sections={mobileSections}
             value={activeMobileSection?.id ?? mobilePanel}
-            onChange={(v) => setMobilePanel(v as 'rank' | 'history')}
+            onChange={(v) => setStoredMobilePanel(v as RanksMobilePanel)}
           />
           {both ? (
             <div className="hidden h-full min-h-0 flex-1 overflow-hidden xl:grid xl:grid-cols-[minmax(0,1.12fr)_minmax(0,1fr)] xl:divide-x xl:divide-soft">

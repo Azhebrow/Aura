@@ -154,9 +154,15 @@ export function OnboardingWizard({ db, onComplete }: Props) {
 
   const importAmbient = () => {
     if (!db || ambientMissing.length === 0) return;
-    for (const fileName of ambientMissing) {
-      db.create('cfg_ambient_music', { name: fileName, icon: 'music-2', file_name: fileName });
-    }
+    ambientMissing.forEach((fileName, index) => {
+      db.create('cfg_ambient_music', {
+        id: `ambient_${Date.now()}_${index}`,
+        name: fileName,
+        icon: 'music-2',
+        file_name: fileName,
+        level: ambientExisting.size + index,
+      });
+    });
     setAmbientImportDone(true);
     window.dispatchEvent(new Event('settings-saved'));
     refreshAmbient();

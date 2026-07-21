@@ -49,6 +49,8 @@ const defaultModel = (): TimerModel => ({
   selectedTask: null,
 });
 
+const TIMER_TICK_MS = 250;
+
 /**
  * Локальное управление таймером + синхронизация с main (трей), как legacy `TimerControl`.
  */
@@ -171,6 +173,7 @@ export function useTimerSession(db: AuraDatabase | null, dateString: string, day
         const cur = modelRef.current;
         if (!cur.isRunning || cur.startTime == null) return;
         let elapsed = Math.floor((Date.now() - cur.startTime) / 1000);
+        if (elapsed === cur.elapsedTime) return;
         if (cur.timerType === 'timer' && elapsed >= cur.targetDuration) {
           elapsed = cur.targetDuration;
           const finished: TimerModel = {
@@ -186,7 +189,7 @@ export function useTimerSession(db: AuraDatabase | null, dateString: string, day
         const ticked: TimerModel = { ...cur, elapsedTime: elapsed };
         setModel(ticked);
         pushToMain(ticked);
-      }, 100);
+      }, TIMER_TICK_MS);
     },
     [clearTick, completeSession, pushToMain]
   );

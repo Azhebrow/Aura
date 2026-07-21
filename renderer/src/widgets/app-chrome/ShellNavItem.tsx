@@ -19,7 +19,10 @@ type ShellNavItemProps = {
  */
 export function ShellNavItem({ icon: Icon, iconNode, accentColor, children, isActive, onClick, compact, className }: ShellNavItemProps) {
   const colorStyle = accentColor
-    ? ({ ['--shell-nav-accent' as string]: accentColor } as CSSProperties)
+    ? ({
+        ['--shell-nav-accent' as string]: accentColor,
+        ['--aura-list-icon-tint' as string]: accentColor,
+      } as CSSProperties)
     : undefined;
   const renderedIcon = iconNode ?? (Icon ? (
     <Icon
@@ -28,7 +31,6 @@ export function ShellNavItem({ icon: Icon, iconNode, accentColor, children, isAc
         accentColor ? (compact ? 'size-3.5' : 'size-4') : compact ? 'size-3.5' : 'size-[var(--nav-icon-size)]',
         !accentColor && (isActive ? 'opacity-100' : 'opacity-70')
       )}
-      strokeWidth={isActive ? 2.2 : 1.9}
       aria-hidden
     />
   ) : null);
@@ -38,7 +40,7 @@ export function ShellNavItem({ icon: Icon, iconNode, accentColor, children, isAc
       type="button"
       style={colorStyle}
       className={cn(
-        'flex w-full items-center rounded-lg text-left font-medium aura-tx-interactive outline-none',
+        'aura-shell-nav-item flex w-full items-center rounded-lg text-left font-medium aura-tx-interactive outline-none',
         'focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent',
         compact ? 'min-h-9 gap-2 px-2 py-2 text-xs' : 'min-h-[var(--nav-item-h)] gap-2.5 px-2.5 py-2.5 text-sm',
         accentColor
@@ -56,7 +58,7 @@ export function ShellNavItem({ icon: Icon, iconNode, accentColor, children, isAc
       {accentColor && renderedIcon ? (
         <span
           className={cn(
-            'flex shrink-0 items-center justify-center rounded-lg border',
+            'aura-icon-plate flex shrink-0 items-center justify-center rounded-lg border',
             compact ? 'size-7' : 'size-8',
             isActive
               ? 'border-[color-mix(in_oklab,var(--shell-nav-accent)_26%,transparent)] bg-[color-mix(in_oklab,var(--shell-nav-accent)_12%,transparent)] text-[var(--shell-nav-accent)]'

@@ -1,5 +1,6 @@
 import {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -54,7 +55,6 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   const [prevPageId, setPrevPageIdState] = useState<PageId>('home');
   const [navOrder, setNavOrder] = useState<readonly PageId[]>(DEFAULT_NAV_ORDER);
   const [navOrderReady, setNavOrderReady] = useState(false);
-  const [reloadPending, setReloadPending] = useState(false);
   const settingsDirtyRef = useRef(false);
   const activePageIdRef = useRef<PageId>('home');
 
@@ -73,37 +73,32 @@ export function ShellProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('settings-saved', handler);
   }, [activePageId]);
 
-  // Trigger reload immediately when pending
-  useEffect(() => {
-    if (!reloadPending) return;
-    window.location.reload();
-  }, [reloadPending]);
-
   const setActivePageId = useCallback(
     (id: PageId) => {
       const normalized = normalizeActivePageId(id, navOrder);
       const current = activePageIdRef.current;
-      // If leaving settings with unsaved changes — show overlay and reload instead of navigating
       if (current === 'settings' && normalized !== 'settings' && settingsDirtyRef.current) {
-        try { sessionStorage.setItem(RESTORE_PAGE_KEY, normalized); } catch { /* ignore */ }
-        setReloadPending(true);
-        return;
+        settingsDirtyRef.current = false;
       }
-      setActivePageIdState((prev) => {
-        if (prev !== normalized) setPrevPageIdState(prev);
-        return normalized;
+      startTransition(() => {
+        setActivePageIdState((prev) => {
+          if (prev !== normalized) setPrevPageIdState(prev);
+          return normalized;
+        });
       });
     },
     [navOrder]
   );
 
   const toggleCalendar = useCallback(() => {
-    setActivePageIdState((prev) => {
-      if (prev === 'calendar') {
-        return normalizeActivePageId(prevPageId, navOrder);
-      }
-      setPrevPageIdState(prev);
-      return 'calendar';
+    startTransition(() => {
+      setActivePageIdState((prev) => {
+        if (prev === 'calendar') {
+          return normalizeActivePageId(prevPageId, navOrder);
+        }
+        setPrevPageIdState(prev);
+        return 'calendar';
+      });
     });
   }, [navOrder, prevPageId]);
 
@@ -160,13 +155,6 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   return (
     <ShellContext.Provider value={value}>
       {children}
-      {reloadPending ? (
-        <div
-          className="fixed inset-0 z-[9999] bg-background"
-          style={{ animation: 'aura-reload-fade 180ms ease forwards' }}
-          aria-hidden
-        />
-      ) : null}
     </ShellContext.Provider>
   );
 }

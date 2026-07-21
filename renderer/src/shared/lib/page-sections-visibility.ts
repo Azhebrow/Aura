@@ -12,6 +12,7 @@ export type PageSectionsVisibility = {
   home: Record<string, boolean>;
   rituals: Record<string, boolean>;
   diary: DiaryVisibility;
+  stats: Record<string, boolean>;
   ranks: Record<string, boolean>;
 };
 
@@ -20,7 +21,6 @@ const PAGE_SECTION_DEFAULTS: PageSectionsVisibility = {
     tasksCategories: true,
     transactions: true,
     dailyPlans: true,
-    categoryProgressChart: true,
   },
   rituals: {
     rituals: true,
@@ -31,6 +31,10 @@ const PAGE_SECTION_DEFAULTS: PageSectionsVisibility = {
     entryPanel: true,
     contentEntries: true,
     contentNutrition: true,
+  },
+  stats: {
+    chart: true,
+    table: true,
   },
   ranks: {
     rank: true,
@@ -74,6 +78,7 @@ export function isPageVisible(vis: PageSectionsVisibility, pageId: string): bool
     case 'home':    return Object.values(vis.home).some(Boolean);
     case 'diary':   return Object.values(vis.diary).some(Boolean);
     case 'rituals': return Object.values(vis.rituals).some(Boolean);
+    case 'stats':   return Object.values(vis.stats).some(Boolean);
     case 'ranks':   return Object.values(vis.ranks).some(Boolean);
     default:        return true;
   }

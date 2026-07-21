@@ -87,7 +87,7 @@ function createWindow() {
     if (fs.existsSync(prefsPath)) {
       const prefs = JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
       if (prefs.theme === 'light') savedThemeBg = '#f0f0f8';
-      else if (prefs.theme === 'dim') savedThemeBg = '#212027';
+      else if (prefs.theme === 'tinted' || prefs.theme === 'dim') savedThemeBg = '#303036';
       else savedThemeBg = '#1e1e1e';
     }
   } catch { /* use dark default */ }

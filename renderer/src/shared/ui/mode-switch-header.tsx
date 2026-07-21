@@ -37,7 +37,7 @@ export function ModeSwitchHeader<T extends string>({
   );
 
   return (
-    <div className={cn(MEGA_PANEL_HEADER_CN, 'items-stretch gap-0 px-0 py-0 sm:px-0', className)}>
+    <div className={cn(MEGA_PANEL_HEADER_CN, 'aura-mode-switch-header items-stretch gap-0 px-0 py-0 sm:px-0', className)}>
       <UniversalRadioGroup
         value={value}
         onValueChange={onValueChange}

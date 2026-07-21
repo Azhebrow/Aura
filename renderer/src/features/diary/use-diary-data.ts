@@ -33,6 +33,13 @@ function diaryTextPreview(raw: unknown, max = 160, emptyLabel = 'Empty entry') {
   return s.length <= max ? s : `${s.slice(0, max).trimEnd()}…`;
 }
 
+function hasDiaryListContent(entry: AuraRow): boolean {
+  const plain = typeof entry.text === 'string'
+    ? entry.text.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+    : '';
+  return plain.length > 0 || Boolean(entry.category_id);
+}
+
 type Params = {
   db: AuraDatabase | null;
   dateString: string;
@@ -83,6 +90,7 @@ export function useDiaryData({
     if (!db) return [] as AuraRow[];
     return db.getAll('act_diary_entries')
       .filter((entry) => normalizeDiaryDate(entry.date))
+      .filter(hasDiaryListContent)
       .sort((a, b) => {
         const aDate = normalizeDiaryDate(a.date) ?? '';
         const bDate = normalizeDiaryDate(b.date) ?? '';

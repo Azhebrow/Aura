@@ -81,7 +81,7 @@ export function ListItem({
         onClick={handleMainClick}
         className={cn(
         'group overflow-hidden rounded-xl border border-soft bg-card shadow-xs aura-tx-surface',
-        'hover:bg-hover cursor-pointer',
+        'cursor-pointer',
           className
         )}
       >
@@ -130,7 +130,7 @@ export function ListItem({
       onClick={handleMainClick}
       className={cn(
         'group grid overflow-hidden rounded-xl border border-soft bg-card shadow-xs aura-tx-surface',
-        'hover:bg-hover cursor-pointer',
+        'cursor-pointer',
         gridClass,
         className
       )}
@@ -166,7 +166,7 @@ export function ListItem({
           </div>
           {/* ИСПРАВЛЕНИЕ #7: Amount для edit-delete */}
           {amount && mode === 'edit-delete' && (
-            <div className="text-dim mt-0.5 text-xs font-medium aura-tx-colors">
+            <div className="aura-operator-kpi text-dim mt-0.5 text-xs font-medium tabular-nums aura-tx-colors">
               {amount}
             </div>
           )}
@@ -209,7 +209,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  onMoveUp ? 'text-dim hover:text-foreground hover:bg-hover' : 'text-faint'
+                  onMoveUp ? 'text-dim hover:text-foreground' : 'text-faint'
                 )}
                 aria-label={t('aria.move_up')}
                 disabled={!onMoveUp}
@@ -227,7 +227,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  onMoveDown ? 'text-dim hover:text-foreground hover:bg-hover' : 'text-faint'
+                  onMoveDown ? 'text-dim hover:text-foreground' : 'text-faint'
                 )}
                 aria-label={t('aria.move_down')}
                 disabled={!onMoveDown}
@@ -245,7 +245,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex h-full shrink-0 items-center justify-center px-2 py-2 aura-tx-interactive',
-                  'text-dim hover:text-destructive hover:bg-destructive/10'
+                  'text-dim hover:text-destructive'
                 )}
                 aria-label={t('aria.delete_item')}
               >
@@ -279,7 +279,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-dim hover:text-foreground hover:bg-hover'
+                  'text-dim hover:text-foreground'
                 )}
                 aria-label={t('aria.move_up')}
               >
@@ -295,7 +295,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-dim hover:text-foreground hover:bg-hover'
+                  'text-dim hover:text-foreground'
                 )}
                 aria-label={t('aria.move_down')}
               >
@@ -311,7 +311,7 @@ export function ListItem({
                 }}
                 className={cn(
                   'flex items-center justify-center px-2 py-2 aura-tx-interactive h-full',
-                  'text-dim hover:text-destructive hover:bg-destructive/10'
+                  'text-dim hover:text-destructive'
                 )}
                 aria-label={t('aria.delete_item')}
               >

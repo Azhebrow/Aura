@@ -22,19 +22,25 @@ function loadTasksForTab(db: AuraDatabase, tab: TimerTaskTab, dateString: string
       .filter((t) => t.task_type === 'timer' && t.category_type === 'time');
   }
   rows.sort((a, b) => (Number(a.level) || 0) - (Number(b.level) || 0));
-  return rows.map((t) => ({
-    id: String(t.id),
-    title: String(t.title ?? t.name ?? t.id),
-    cfg_target_hours: t.cfg_target_hours != null ? Number(t.cfg_target_hours) : undefined,
-    color: coerceTaskColor(t.color) ?? undefined,
-    icon:
-      typeof t.icon === 'string'
-        ? t.icon
-        : t.icon != null && String(t.icon).trim()
-          ? String(t.icon)
-          : undefined,
-    currentSeconds: db.getTaskTimerTotal(dateString, String(t.id)),
-  }));
+  return rows.flatMap((t) => {
+    const rawId = t.id;
+    const id = rawId == null ? '' : String(rawId).trim();
+    if (!id || id === 'null' || id === 'undefined') return [];
+
+    return [{
+      id,
+      title: String(t.title ?? t.name ?? id),
+      cfg_target_hours: t.cfg_target_hours != null ? Number(t.cfg_target_hours) : undefined,
+      color: coerceTaskColor(t.color) ?? undefined,
+      icon:
+        typeof t.icon === 'string'
+          ? t.icon
+          : t.icon != null && String(t.icon).trim()
+            ? String(t.icon)
+            : undefined,
+      currentSeconds: db.getTaskTimerTotal(dateString, id),
+    }];
+  });
 }
 
 export type TimerTaskRow = TimerTaskSelection & { currentSeconds: number };

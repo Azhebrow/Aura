@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppGuidePanel } from '@/features/settings/AppGuidePanel';
 import { CfgSectionCard } from '@/features/settings/CfgSectionCard';
 import { InterfaceDataSettingsPanel } from '@/features/settings/InterfaceDataSettingsPanel';
-import { SidebarWidgetSettingsCard } from '@/features/settings/SidebarWidgetSettingsCard';
 import { TimerBgSettingsCard } from '@/features/app-settings/AppSettingsTechnicalCard';
 import { NutritionTargetsSettingsCard } from '@/features/settings/NutritionTargetsSettingsCard';
 import { FinanceSettingsCard } from '@/features/settings/FinanceSettingsCard';
@@ -22,7 +21,6 @@ import { useAuraDb } from '@/shared/hooks/use-aura-db';
 import {
   MEGA_PAGEFRAME_CN,
   MEGA_PAGEFRAME_CONTENT_CN,
-  MEGA_PANEL_BODY_CN,
   MEGA_SHELL_CARD_CN,
   MEGA_SHELL_CONTENT_CN,
 } from '@/shared/ui/mega-section-layout';
@@ -35,6 +33,13 @@ const FLAT = flattenSettingsNav();
 const VALID_IDS = new Set(FLAT.map((i) => i.id));
 type TaskSettingsId = 'tasks-rituals' | 'tasks-time' | 'tasks-body' | 'tasks-deps';
 type TaskNavMeta = { title?: string; icon?: string };
+
+const TASK_SETTINGS_META_KEYS: Partial<Record<string, TaskSettingsId>> = {
+  'tasks-rituals': 'tasks-rituals',
+  'tasks-time': 'tasks-time',
+  'tasks-body': 'tasks-body',
+  'tasks-deps': 'tasks-deps',
+};
 
 function settingsNavAccent(id: string): string {
   if (id === 'tasks-rituals') return 'var(--task-rituals)';
@@ -88,7 +93,7 @@ function referenceFieldAliases(field: CfgFieldDef): string[] {
   }
 }
 
-function getEditableReferenceFieldNames(spec: CfgSectionSpec | undefined, t: ReturnType<typeof useTranslation>['t']): string[] | undefined {
+function getEditableReferenceFieldNames(spec: CfgSectionSpec | undefined, t: Parameters<typeof translateCfgSectionSpec>[1]): string[] | undefined {
   if (!spec) return undefined;
   const hidden = new Set(spec.hideFormKeys ?? []);
   const translated = translateCfgSectionSpec(spec, t);
@@ -135,83 +140,66 @@ export function SettingsPage() {
     return () => window.removeEventListener('task-categories-config-changed', refresh);
   }, [ready, db]);
 
-  const displayTitle = (id: string, fallback: string) => {
-    if (id === 'tasks-rituals') return taskMeta['tasks-rituals']?.title ?? fallback;
-    if (id === 'tasks-time') return taskMeta['tasks-time']?.title ?? fallback;
-    if (id === 'tasks-body') return taskMeta['tasks-body']?.title ?? fallback;
-    if (id === 'tasks-deps') return taskMeta['tasks-deps']?.title ?? fallback;
-    return fallback;
-  };
-  const displayTaskIconName = (id: string): string | null => {
-    if (id === 'tasks-rituals') return taskMeta['tasks-rituals']?.icon ?? null;
-    if (id === 'tasks-time') return taskMeta['tasks-time']?.icon ?? null;
-    if (id === 'tasks-body') return taskMeta['tasks-body']?.icon ?? null;
-    if (id === 'tasks-deps') return taskMeta['tasks-deps']?.icon ?? null;
-    return null;
-  };
+  const displayTitle = useCallback((id: string, fallback: string) => {
+    const key = TASK_SETTINGS_META_KEYS[id];
+    return key ? taskMeta[key]?.title ?? fallback : fallback;
+  }, [taskMeta]);
+
+  const displayTaskIconName = useCallback((id: string): string | null => {
+    const key = TASK_SETTINGS_META_KEYS[id];
+    return key ? taskMeta[key]?.icon ?? null : null;
+  }, [taskMeta]);
 
   const activeItem = useMemo(() => FLAT.find((i) => i.id === active), [active]);
   const activeSelectItem = useMemo(() => FLAT.find((i) => i.id === active) ?? FLAT[0], [active]);
+  const activeSelectTaskIconName = activeSelectItem ? displayTaskIconName(activeSelectItem.id) : null;
   const reference = useMemo(() => (active === 'interface-data' ? null : getSettingsReference(active)), [active]);
   const activeSpec = useMemo(() => getCfgSectionSpec(active), [active]);
   const referenceVisibleFieldNames = useMemo(
-    () => getEditableReferenceFieldNames(activeSpec, t),
+    () => getEditableReferenceFieldNames(activeSpec, t as Parameters<typeof translateCfgSectionSpec>[1]),
     [activeSpec, t]
   );
 
-  const panel = (() => {
+  const panel = useMemo(() => {
     if (active === 'app-guide') {
       return <AppGuidePanel />;
     }
     if (active === 'interface-data') {
       return <InterfaceDataSettingsPanel />;
     }
-    if (active === 'sidebar-widget') {
-      return (
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
-          <SidebarWidgetSettingsCard />
-        </div>
-      );
-    }
     if (active === 'finance-accounts') {
-      const s = getCfgSectionSpec('finance-accounts');
       return (
         <div className="flex w-full min-w-0 flex-col gap-3">
           <FinanceSettingsCard />
-          {s ? <CfgSectionCard spec={s} /> : null}
+          {activeSpec ? <CfgSectionCard spec={activeSpec} /> : null}
         </div>
       );
     }
     if (active === 'diary-categories') {
-      const s = getCfgSectionSpec('diary-categories');
-      return s ? <CfgSectionCard spec={s} /> : null;
+      return activeSpec ? <CfgSectionCard spec={activeSpec} /> : null;
     }
     if (active === 'nutrition-products') {
-      const s = getCfgSectionSpec('nutrition-products');
       return (
         <div className="flex w-full min-w-0 flex-col gap-3">
           <NutritionTargetsSettingsCard />
-          {s ? <CfgSectionCard spec={s} /> : null}
+          {activeSpec ? <CfgSectionCard spec={activeSpec} /> : null}
         </div>
       );
     }
     if (active === 'nutrition-presets') {
-      const s = getCfgSectionSpec('nutrition-presets');
-      return s ? <CfgSectionCard spec={s} /> : null;
+      return activeSpec ? <CfgSectionCard spec={activeSpec} /> : null;
     }
     if (active === 'ambient-music') {
-      const s = getCfgSectionSpec('ambient-music');
       return (
         <div className="flex w-full min-w-0 flex-col gap-3">
-          {s ? <CfgSectionCard spec={s} /> : null}
+          {activeSpec ? <CfgSectionCard spec={activeSpec} /> : null}
           <TimerBgSettingsCard />
         </div>
       );
     }
-    const spec = getCfgSectionSpec(active);
-    if (spec) return <CfgSectionCard spec={spec} />;
+    if (activeSpec) return <CfgSectionCard spec={activeSpec} />;
     return null;
-  })();
+  }, [active, activeSpec]);
 
   return (
     <PageFrame className={MEGA_PAGEFRAME_CN} contentClassName={MEGA_PAGEFRAME_CONTENT_CN}>
@@ -273,7 +261,18 @@ export function SettingsPage() {
                             <SelectValue placeholder="Раздел настроек">
                               {activeSelectItem ? (
                                 <span className="flex min-w-0 items-center gap-2">
-                                  <activeSelectItem.icon className="size-4 shrink-0 text-muted-foreground" />
+                                  {activeSelectTaskIconName ? (
+                                    <AuraThemedIcon
+                                      name={activeSelectTaskIconName}
+                                      className="size-4 shrink-0"
+                                      tint={settingsNavAccent(activeSelectItem.id)}
+                                    />
+                                  ) : (
+                                    <activeSelectItem.icon
+                                      className="size-4 shrink-0"
+                                      style={{ color: settingsNavAccent(activeSelectItem.id) }}
+                                    />
+                                  )}
                                   <span className="truncate">{displayTitle(activeSelectItem.id, activeSelectItem.title)}</span>
                                 </span>
                               ) : null}
@@ -285,13 +284,18 @@ export function SettingsPage() {
                                 <SelectLabel>{group.label}</SelectLabel>
                                 {group.items.map((item) => {
                                   const taskIconName = displayTaskIconName(item.id);
+                                  const itemAccent = settingsNavAccent(item.id);
                                   return (
                                     <SelectItem key={item.id} value={item.id}>
                                       <span className="flex min-w-0 items-center gap-2">
                                         {taskIconName ? (
-                                          <AuraThemedIcon name={taskIconName} className="size-4 shrink-0" />
+                                          <AuraThemedIcon
+                                            name={taskIconName}
+                                            className="size-4 shrink-0"
+                                            tint={itemAccent}
+                                          />
                                         ) : (
-                                          <item.icon className="size-4 shrink-0 text-muted-foreground" />
+                                          <item.icon className="size-4 shrink-0" style={{ color: itemAccent }} />
                                         )}
                                         <span className="truncate">{displayTitle(item.id, item.title)}</span>
                                       </span>
@@ -307,24 +311,24 @@ export function SettingsPage() {
                         title={displayTitle(activeItem.id, activeItem.title)}
                         right={rightSlot ? <div className="flex shrink-0 items-center gap-2">{rightSlot}</div> : null}
                       />
-                      <div className={MEGA_PANEL_BODY_CN}>
-                        <ScrollArea className="w-full min-h-0 min-w-0 flex-1">
+                      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                        <ScrollArea className="h-full w-full min-h-0 min-w-0 flex-1">
                           <div
                             key={active}
-                            className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-[0.99] motion-safe:duration-200 motion-safe:ease-out motion-reduce:animate-none flex w-full min-w-0 flex-col gap-3 pr-1 sm:gap-6 sm:pr-2"
+                            className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200 motion-safe:ease-out motion-reduce:animate-none flex w-full min-w-0 flex-col gap-3 p-4 pr-5 pb-5 sm:gap-6 sm:pr-6 sm:pb-6"
                           >
                             <div className="w-full min-w-0">{panel}</div>
-                            {reference ? (
-                              <div className="min-w-0">
-                                <SettingsReferenceBlock
-                                  reference={reference}
-                                  onNavigate={setActive}
-                                  visibleFieldNames={referenceVisibleFieldNames}
-                                />
-                              </div>
-                            ) : null}
                           </div>
                         </ScrollArea>
+                        {reference ? (
+                          <div className="min-w-0 shrink-0 border-t border-soft bg-panel p-4 pt-3">
+                            <SettingsReferenceBlock
+                              reference={reference}
+                              onNavigate={setActive}
+                              visibleFieldNames={referenceVisibleFieldNames}
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     </>
                   )}

@@ -2,12 +2,43 @@ import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import type { AuraDatabase } from '@/types/aura';
 import { aggregateData } from '@/features/stats/stats-data-aggregator';
 import type { StatsAggregatedRow, StatsControlsState, StatsDayRow, StatsMeta } from '@/features/stats/types';
+import type { StatsCellValue, StatsMode } from '@/features/stats/types';
 import type { StatsFormattedTable } from '@/features/stats/stats-table-format';
 import { formatForTable } from '@/features/stats/stats-table-format';
 import { buildStatsMeta } from './build-stats-meta';
 import { buildTimePeriodSummary, getRankDailyPointsData, getStatsData } from './stats-data-service';
 import { AURA_DATA_CHANGED } from '@/shared/lib/aura-data-events';
 import type { StatsTimeSummary } from '@/features/stats/types';
+
+function numericStatsValue(mode: StatsMode, value: StatsCellValue | undefined): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (mode === 'nutrition' && typeof value === 'object' && !Array.isArray(value)) {
+    return Number(value.calories ?? 0) || 0;
+  }
+  return Number(value) || 0;
+}
+
+function hasVisibleSeriesValue(mode: StatsMode, value: StatsCellValue | undefined): boolean {
+  return Math.abs(numericStatsValue(mode, value)) > 0.000001;
+}
+
+function pruneEmptySeries(rows: StatsAggregatedRow[], mode: StatsMode): StatsAggregatedRow[] {
+  const activeKeys = new Set<string>();
+  for (const row of rows) {
+    for (const [key, value] of Object.entries(row.values || {})) {
+      if (hasVisibleSeriesValue(mode, value)) activeKeys.add(key);
+    }
+  }
+
+  return rows.map((row) => {
+    const values: StatsAggregatedRow['values'] = {};
+    for (const [key, value] of Object.entries(row.values || {})) {
+      if (activeKeys.has(key)) values[key] = value;
+    }
+    return { ...row, values };
+  });
+}
 
 export type StatsPipelineResult = {
   dayRows: StatsDayRow[];
@@ -64,7 +95,8 @@ export function useStatsData(db: AuraDatabase | null, ready: boolean, controls: 
       if (cancelled) return;
       const dayRows = getStatsData(db, controls.mode, controls.startDate, controls.endDate, controls.groupBy);
 
-      const aggregated = aggregateData(dayRows, controls.aggregation, controls.startDate, controls.endDate, controls.mode);
+      const aggregatedRaw = aggregateData(dayRows, controls.aggregation, controls.startDate, controls.endDate, controls.mode);
+      const aggregated = pruneEmptySeries(aggregatedRaw, controls.mode);
 
       let rankDailyAggregated: StatsAggregatedRow[] | null = null;
       if (controls.mode === 'rank') {

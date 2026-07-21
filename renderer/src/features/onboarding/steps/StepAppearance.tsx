@@ -1,7 +1,7 @@
 // ─── StepAppearance ───────────────────────────────────────────────────────────
 // Шаг 1: тема, шрифт, масштаб и акцентный цвет.
 
-import { Check, Moon, Sun, SunDim } from 'lucide-react';
+import { Check, Moon, Sun, Sunset } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Caption } from '@/shared/ui/caption';
 import { Slider } from '@/components/ui/slider';
@@ -23,9 +23,9 @@ import { ACCENT_PRESETS, type WizardState } from '../onboarding-config';
 import { StepTitle } from '../ui/StepTitle';
 
 const THEMES: { value: AuraThemeMode; label: string; icon: typeof Sun }[] = [
-  { value: 'light', label: 'Светлая', icon: Sun    },
-  { value: 'dim',   label: 'Тихая',   icon: SunDim },
-  { value: 'dark',  label: 'Тёмная',  icon: Moon   },
+  { value: 'light',  label: 'Светлое',      icon: Sun },
+  { value: 'tinted', label: 'Тонированное', icon: Sunset },
+  { value: 'dark',   label: 'Тёмное',       icon: Moon },
 ];
 
 type Props = {

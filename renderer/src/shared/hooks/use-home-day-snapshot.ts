@@ -34,7 +34,12 @@ export function useHomeDaySnapshot(dateString: string): {
   // which produced a one-frame flash of stale/zero values.
   const snapshot = useMemo(() => {
     if (!db) return null;
-    return buildHomeDaySnapshot(db, dateString, bootstrap);
+    try {
+      return buildHomeDaySnapshot(db, dateString, bootstrap);
+    } catch (error) {
+      console.warn('[AURA] Failed to build home day snapshot, using empty state.', error);
+      return null;
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bootstrap, db, dateString]);
 

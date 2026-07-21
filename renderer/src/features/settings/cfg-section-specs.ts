@@ -228,6 +228,7 @@ const AMBIENT_FIELDS: CfgFieldDef[] = [
   { key: 'icon', label: 'settings_cfg:fields.icon.label', kind: 'text', hint: 'settings_cfg:fields.icon.hint' },
   { key: 'file_name', label: 'settings_cfg:fields.file_name.label', kind: 'text', hint: 'settings_cfg:fields.file_name.hint' },
   { key: 'cover_image', label: 'Обложка', kind: 'text', hint: 'Обложка трека — вставьте через Ctrl+V, перетащите или выберите файл.' },
+  { key: 'level', label: 'settings_cfg:fields.level.label', kind: 'number', min: 0 },
 ];
 
 const DIARY_CAT_FIELDS: CfgFieldDef[] = [
@@ -487,8 +488,9 @@ export const CFG_SECTION_SPECS: Record<string, CfgSectionSpec> = {
     description: '',
     fields: AMBIENT_FIELDS,
     rowTitleKeys: ['name', 'id'],
-    sortBy: 'none',
-    createExtra: {},
+    sortBy: 'level',
+    hideFormKeys: ['level'],
+    createExtra: { level: 0 },
   },
   'diary-categories': {
     sectionId: 'diary-categories',

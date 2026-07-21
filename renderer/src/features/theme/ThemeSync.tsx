@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { waitForAuraDatabase } from '@/shared/bridge/wait-for-database';
-import { isAuraAccentPreset, isAuraThemeMode } from '@/features/theme/theme-constants';
+import { isAuraAccentPreset, isAuraThemeMode, normalizeAuraAccentPreset, normalizeAuraThemeMode } from '@/features/theme/theme-constants';
 import { useAuraTheme } from '@/features/theme/ThemeContext';
 
 /**
@@ -21,12 +21,12 @@ export function ThemeSync() {
         if (!db) return;
         const settings = db.getAppSettings();
         const themeMode = settings && typeof settings.theme_mode === 'string' ? settings.theme_mode : null;
-        if (themeMode && isAuraThemeMode(themeMode)) {
-          setTheme(themeMode);
+        if (themeMode && (isAuraThemeMode(themeMode) || themeMode === 'dim')) {
+          setTheme(normalizeAuraThemeMode(themeMode));
         }
         const ap = settings && typeof settings.accent_preset === 'string' ? settings.accent_preset : null;
         if (ap && isAuraAccentPreset(ap)) {
-          setAccentPreset(ap);
+          setAccentPreset(normalizeAuraAccentPreset(ap));
         }
       } catch {
         /* ignore */

@@ -60,16 +60,6 @@ function getTaskLabel(task: TimeMetricTask): string {
   return String(task.title ?? task.name ?? task.id ?? '');
 }
 
-function readNumericSetting(db: AuraDatabase, key: string): number {
-  try {
-    const settings = db.getAppSettings();
-    const raw = settings && typeof settings === 'object' ? Number((settings as Record<string, unknown>)[key]) : 0;
-    return Number.isFinite(raw) ? raw : 0;
-  } catch {
-    return 0;
-  }
-}
-
 function collectTimeMetricContext(db: AuraDatabase, startDate: string, endDate: string): TimeMetricContext {
   const dates = generateDateRange(startDate, endDate);
   const focusTasks = (db.getTasksByCategory('time') || []).filter(isTimerTask) as TimeMetricTask[];
@@ -211,18 +201,42 @@ export function getFinanceData(db: AuraDatabase, startDate: string, endDate: str
 
   const incomeCategories = db.getAll('cfg_income_categories');
   const expenseCategories = db.getAll('cfg_expense_categories');
+  const incomeById = new Map(incomeCategories.map((category) => [String(category.id ?? ''), category]));
+  const expenseById = new Map(expenseCategories.map((category) => [String(category.id ?? ''), category]));
+  const incomeKeys = new Set(
+    filteredTransactions
+      .filter((t) => t.type === 'income' && t.category_id != null && incomeById.has(String(t.category_id)))
+      .map((t) => String(t.category_id))
+  );
+  const expenseKeys = new Set(
+    filteredTransactions
+      .filter((t) => t.type === 'expense' && t.category_id != null && expenseById.has(String(t.category_id)))
+      .map((t) => String(t.category_id))
+  );
+  const hasUncategorizedIncome = filteredTransactions.some((t) => t.type === 'income' && (!t.category_id || !incomeById.has(String(t.category_id))));
+  const hasUncategorizedExpense = filteredTransactions.some((t) => t.type === 'expense' && (!t.category_id || !expenseById.has(String(t.category_id))));
 
   return dates.map((date) => {
     const values: Record<string, number> = {};
-    for (const category of incomeCategories) {
+    for (const category of incomeCategories.filter((category) => incomeKeys.has(String(category.id ?? '')))) {
       const cid = String(category.id ?? '');
       const sum = filteredTransactions.filter((t) => t.date === date && t.type === 'income' && String(t.category_id ?? '') === cid).reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
       values[`+ ${String(category.title ?? cid)}`] = sum;
     }
-    for (const category of expenseCategories) {
+    if (hasUncategorizedIncome) {
+      values['+ Без категории'] = filteredTransactions
+        .filter((t) => t.date === date && t.type === 'income' && (!t.category_id || !incomeById.has(String(t.category_id))))
+        .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+    }
+    for (const category of expenseCategories.filter((category) => expenseKeys.has(String(category.id ?? '')))) {
       const cid = String(category.id ?? '');
       const sum = filteredTransactions.filter((t) => t.date === date && t.type === 'expense' && String(t.category_id ?? '') === cid).reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
       values[`- ${String(category.title ?? cid)}`] = -sum;
+    }
+    if (hasUncategorizedExpense) {
+      values['- Без категории'] = -filteredTransactions
+        .filter((t) => t.date === date && t.type === 'expense' && (!t.category_id || !expenseById.has(String(t.category_id))))
+        .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
     }
     return { date, values };
   });

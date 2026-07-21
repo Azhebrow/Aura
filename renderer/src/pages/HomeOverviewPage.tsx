@@ -1,7 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
-import { ChartColumn, ListTodo, PiggyBank, ReceiptText } from 'lucide-react';
+import { ListTodo, PiggyBank, ReceiptText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { CategoryProgressCard } from '@/features/home/CategoryProgressCard';
 import { DailyPlansCard } from '@/features/home/DailyPlansCard';
 import { TasksCategoriesCard } from '@/features/home/TasksCategoriesCard';
 import { TransactionsCard } from '@/features/transactions/TransactionsCard';
@@ -25,9 +24,10 @@ export function HomeOverviewPage() {
   const { dateString } = useSelectedDate();
   const { db } = useAuraDb();
   const dataTick = useAuraDataRefresh({ types: ['task-progress', 'timer', 'ritual', 'nutrition', 'diary', 'mood', 'transaction'] });
+  const homeBootstrapParams = useMemo(() => ({ date: dateString }), [dateString]);
   const { loading: homeBootLoading } = useBootstrapData(
     'home',
-    { date: dateString },
+    homeBootstrapParams,
     [dateString, dataTick],
     {
       mode: 'initial-blocking',
@@ -39,19 +39,23 @@ export function HomeOverviewPage() {
   );
   const vis = useMemo(() => {
     if (!db) return getPageSectionsFromSettings(null);
-    return getPageSectionsFromSettings(db.getAppSettings());
+    try {
+      return getPageSectionsFromSettings(db.getAppSettings());
+    } catch (error) {
+      console.warn('[AURA] Failed to read home section settings, using defaults.', error);
+      return getPageSectionsFromSettings(null);
+    }
   }, [db]);
 
   const showTasks = vis.home.tasksCategories !== false;
   const showTx = vis.home.transactions !== false;
   const showPlans = vis.home.dailyPlans !== false;
-  const showChart = vis.home.categoryProgressChart !== false;
-  const visibleBottomPanels = [showTx, showPlans, showChart].filter(Boolean).length;
+  const visibleBottomPanels = [showTx, showPlans].filter(Boolean).length;
   const showAnySection = showTasks || visibleBottomPanels > 0;
   const [probeRootEl, setProbeRootEl] = useState<HTMLDivElement | null>(null);
   const [desktopRowCount, setDesktopRowCount] = useState(0);
   const [layoutWidth, setLayoutWidth] = useState(0);
-  const [mobileTab, setMobileTab] = useState<'tasks' | 'tx' | 'plans' | 'chart'>('tasks');
+  const [mobileTab, setMobileTab] = useState<'tasks' | 'tx' | 'plans'>('tasks');
   const measureDesktopRows = useCallback(() => {
     const root = probeRootEl;
     if (!root) return;
@@ -75,26 +79,25 @@ export function HomeOverviewPage() {
       return;
     }
 
-    let raf = requestAnimationFrame(() => {
-      measureDesktopRows();
-    });
+    let raf = 0;
+    const scheduleMeasure = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measureDesktopRows);
+    };
 
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
-      measureDesktopRows();
-    });
+    scheduleMeasure();
+
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scheduleMeasure);
 
     const observed = Array.from(probeRootEl.querySelectorAll<HTMLElement>('[data-home-row-sample="1"]'));
     observed.forEach((el) => ro?.observe(el));
 
     const mo = new MutationObserver(() => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        measureDesktopRows();
-      });
+      scheduleMeasure();
     });
-    mo.observe(probeRootEl, { childList: true, subtree: true, characterData: true, attributes: true });
+    mo.observe(probeRootEl, { childList: true, subtree: true });
 
-    const onResize = () => measureDesktopRows();
+    const onResize = scheduleMeasure;
     window.addEventListener('resize', onResize);
 
     return () => {
@@ -103,7 +106,7 @@ export function HomeOverviewPage() {
       mo.disconnect();
       window.removeEventListener('resize', onResize);
     };
-  }, [homeBootLoading, measureDesktopRows, probeRootEl, showAnySection, visibleBottomPanels, showTasks, showTx, showPlans, showChart]);
+  }, [homeBootLoading, measureDesktopRows, probeRootEl, showAnySection, visibleBottomPanels, showTasks, showTx, showPlans]);
 
   const tasksWouldUseTwoByTwo = showTasks && visibleBottomPanels > 0 && layoutWidth > 0 && layoutWidth < 720;
   const shouldUseCompactLayout = desktopRowCount > 2 || tasksWouldUseTwoByTwo;
@@ -157,22 +160,7 @@ export function HomeOverviewPage() {
           ),
         }
       : null,
-    showChart
-      ? {
-          id: 'chart' as const,
-          label: 'Прогресс',
-          Icon: ChartColumn,
-          content: (
-            <section className="aura-col h-full">
-              <MegaPanelHeader title="Прогресс" />
-              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4">
-                <CategoryProgressCard contentClassName="min-h-0 flex-1 rounded-lg border border-soft bg-panel p-2 shadow-sm" />
-              </div>
-            </section>
-          ),
-        }
-      : null,
-  ].filter(Boolean) as Array<{ id: 'tasks' | 'tx' | 'plans' | 'chart'; label: string; Icon: typeof ListTodo; content: ReactNode }>, [showTasks, showTx, showPlans, showChart]);
+  ].filter(Boolean) as Array<{ id: 'tasks' | 'tx' | 'plans'; label: string; Icon: typeof ListTodo; content: ReactNode }>, [showTasks, showTx, showPlans]);
 
   const desktopGrid = (sampleRows = false) => (
     <div className="flex min-h-0 flex-1 flex-col divide-y divide-soft h-full">
@@ -216,17 +204,6 @@ export function HomeOverviewPage() {
                 <DailyPlansCard contentClassName="min-h-0 flex-1 gap-2 p-3" />
               </div>
             ) : null}
-            {showChart ? (
-              <div
-                className="aura-col h-full"
-                data-home-row-sample={sampleRows ? '1' : undefined}
-              >
-                <MegaPanelHeader title="Прогресс" />
-                <div className="flex min-h-0 flex-1 flex-col p-3">
-                  <CategoryProgressCard contentClassName="min-h-0 flex-1 p-0" />
-                </div>
-              </div>
-            ) : null}
           </div>
         </section>
       ) : null}
@@ -254,7 +231,6 @@ export function HomeOverviewPage() {
         >
           {showTx ? <div className="h-8" data-home-row-sample="1" /> : null}
           {showPlans ? <div className="h-8" data-home-row-sample="1" /> : null}
-          {showChart ? <div className="h-8" data-home-row-sample="1" /> : null}
         </div>
       ) : null}
     </div>

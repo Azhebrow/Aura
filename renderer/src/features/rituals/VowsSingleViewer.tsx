@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Circle, Maximize2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { MegaPanelHeader } from '@/shared/ui/mega-panel-header';
 import { MEGA_PANEL_INSET_CN } from '@/shared/ui/mega-section-layout';
@@ -7,116 +7,125 @@ import { cn } from '@/lib/utils';
 import type { AuraRow } from '@/types/aura';
 import { RAW_BUTTON_FOCUS_CN } from './rituals-utils';
 
-function VowsCreditsModal({ vows, onClose }: { vows: AuraRow[]; onClose: () => void }) {
+function VowsReaderOverlay({ vows, initialIdx, onClose }: { vows: AuraRow[]; initialIdx: number; onClose: () => void }) {
   const [idx, setIdx] = useState(0);
-  const [visible, setVisible] = useState(true);
-  const [done, setDone] = useState(false);
-  const [confirmVisible, setConfirmVisible] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const idxRef = useRef(0);
-  const doneRef = useRef(false);
 
-  const clearTimer = () => {
-    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-  };
-
-  const goNext = useCallback(() => {
-    if (doneRef.current) return;
-    clearTimer();
-    setVisible(false);
-    timerRef.current = setTimeout(() => {
-      const next = idxRef.current + 1;
-      if (next >= vows.length) {
-        doneRef.current = true;
-        setDone(true);
-        setConfirmVisible(true);
-      } else {
-        idxRef.current = next;
-        setIdx(next);
-        setVisible(true);
-      }
-    }, 250);
-  }, [vows.length]);
+  useEffect(() => {
+    setIdx(Math.min(Math.max(initialIdx, 0), Math.max(vows.length - 1, 0)));
+  }, [initialIdx, vows.length]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
-      if (e.key === 'Enter' && confirmVisible) onClose();
-      if ((e.key === ' ' || e.key === 'ArrowRight') && !doneRef.current) goNext();
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        setIdx((prev) => Math.min(prev + 1, vows.length - 1));
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setIdx((prev) => Math.max(prev - 1, 0));
+      }
+      if (e.key === 'Enter' && idx >= vows.length - 1) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, goNext, confirmVisible]);
+  }, [idx, onClose, vows.length]);
 
   const vow = vows[idx];
+  const isFirst = idx <= 0;
+  const isLast = idx >= vows.length - 1;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[999] flex flex-col items-center justify-center overflow-y-auto bg-black/95 px-4 py-16 backdrop-blur-sm"
-      onClick={() => { if (!done) goNext(); }}
+      className="fixed inset-0 z-[999] grid grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background/98 text-foreground backdrop-blur-md animate-in slide-in-from-top-4 duration-300"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Обеты"
     >
-      {/* Progress dots */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {vows.map((_, i) => (
-          <span
-            key={i}
-            className={cn(
-              'block rounded-full transition-all duration-500',
-              i < idx ? 'size-1.5 bg-white/50' :
-              i === idx ? 'h-1.5 w-5 bg-white' :
-              'size-1.5 bg-white/20'
-            )}
-          />
-        ))}
+      <div className="flex h-14 shrink-0 items-center justify-between px-4 sm:px-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className={cn('flex size-9 items-center justify-center rounded-md text-dim hover:bg-hover hover:text-foreground aura-tx-colors', RAW_BUTTON_FOCUS_CN)}
+          aria-label="Закрыть"
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 px-5">
+          {vows.map((v, i) => (
+            <button
+              key={String(v.id)}
+              type="button"
+              onClick={() => setIdx(i)}
+              className={cn('h-4 min-w-0 flex-1 max-w-14 rounded-full py-[5px]', RAW_BUTTON_FOCUS_CN)}
+              aria-label={`Перейти к обету ${i + 1}`}
+              aria-current={i === idx}
+            >
+              <span className={cn('block h-1 rounded-full bg-border aura-tx-colors', i <= idx && 'bg-foreground')} />
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className={cn('flex size-9 items-center justify-center rounded-md text-dim hover:bg-hover hover:text-foreground aura-tx-colors', RAW_BUTTON_FOCUS_CN)}
+          aria-label="Готово"
+        >
+          <Check className="size-4" aria-hidden />
+        </button>
       </div>
 
-      {/* Vow content */}
-      {!done && vow && (
-        <div
-          className={cn(
-            'relative mx-auto max-h-[calc(100svh-9rem)] max-w-xl px-4 text-center sm:px-8',
-            visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-          )}
-          onClick={(e) => e.stopPropagation()}
-          style={{ transitionProperty: 'opacity, transform', transitionDuration: '220ms', transitionTimingFunction: 'ease' }}
-        >
-          <div className="overflow-y-auto [scrollbar-width:thin] max-h-[calc(100svh-9rem)] py-4">
-            <h2 className="mb-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+      <div className="grid min-h-0 place-items-center px-5 py-6">
+        {vow ? (
+          <article key={String(vow.id)} className="mx-auto flex max-h-full w-full max-w-2xl animate-in slide-in-from-bottom-2 duration-300 flex-col items-center overflow-hidden text-center">
+            <h2 className="font-heading max-w-full text-balance text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
               {String(vow.title ?? vow.id)}
             </h2>
             {vow.description ? (
-              <p className="whitespace-pre-wrap text-base leading-relaxed text-white/70 sm:text-lg sm:leading-[1.85]">
+              <p className="mt-5 max-h-[min(48svh,28rem)] overflow-y-auto whitespace-pre-wrap text-balance break-words text-base leading-[1.85] text-dim [scrollbar-width:thin] sm:text-lg sm:leading-[1.95]">
                 {String(vow.description)}
               </p>
             ) : null}
-          </div>
-        </div>
-      )}
+          </article>
+        ) : null}
+      </div>
 
-      {/* Confirm button */}
-      {confirmVisible && (
-        <div
-          className="flex flex-col items-center gap-3 animate-in fade-in duration-700"
-          onClick={(e) => e.stopPropagation()}
+      <div className="flex h-20 shrink-0 items-center justify-center gap-3 px-4 sm:px-6">
+        <button
+          type="button"
+          onClick={() => setIdx((prev) => Math.max(prev - 1, 0))}
+          disabled={isFirst}
+          className={cn(
+            'flex size-10 items-center justify-center rounded-md text-dim aura-tx-colors hover:bg-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-25',
+            RAW_BUTTON_FOCUS_CN
+          )}
+          aria-label="Предыдущий обет"
         >
-          <p className="text-sm text-white/40 tracking-widest uppercase">Все обеты прочитаны</p>
-          <button
-            type="button"
-            autoFocus
-            onClick={onClose}
-            className="rounded-xl bg-white px-8 py-3 text-sm font-semibold text-black transition-all hover:bg-white/90 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/60"
-          >
-            Принять обеты
-          </button>
-        </div>
-      )}
-
-      {/* Skip hint */}
-      {!done && (
-        <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-white/25 select-none">
-          нажмите, чтобы пропустить · {idx + 1} из {vows.length}
-        </p>
-      )}
+          <ChevronLeft className="size-5" aria-hidden />
+        </button>
+        <button
+          type="button"
+          onClick={isLast ? onClose : () => setIdx((prev) => Math.min(prev + 1, vows.length - 1))}
+          className={cn(
+            'h-10 min-w-28 rounded-md bg-foreground px-5 text-sm font-semibold text-background aura-tx-interactive hover:opacity-90',
+            RAW_BUTTON_FOCUS_CN
+          )}
+        >
+          {isLast ? 'Готово' : 'Дальше'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setIdx((prev) => Math.min(prev + 1, vows.length - 1))}
+          disabled={isLast}
+          className={cn(
+            'flex size-10 items-center justify-center rounded-md text-dim aura-tx-colors hover:bg-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-25',
+            RAW_BUTTON_FOCUS_CN
+          )}
+          aria-label="Следующий обет"
+        >
+          <ChevronRight className="size-5" aria-hidden />
+        </button>
+      </div>
     </div>,
     document.body
   );
@@ -125,7 +134,7 @@ function VowsCreditsModal({ vows, onClose }: { vows: AuraRow[]; onClose: () => v
 export function VowsSingleViewer({ vows }: { vows: AuraRow[] }) {
   const [idx, setIdx] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
+  const [isReaderOpen, setIsReaderOpen] = useState(false);
 
   useEffect(() => {
     if (!vows.length) {
@@ -160,24 +169,19 @@ export function VowsSingleViewer({ vows }: { vows: AuraRow[] }) {
 
   return (
     <div className="aura-col">
-      {isCreditsOpen && vows.length > 0 && (
-        <VowsCreditsModal vows={vows} onClose={() => setIsCreditsOpen(false)} />
+      {isReaderOpen && vows.length > 0 && (
+        <VowsReaderOverlay vows={vows} initialIdx={idx} onClose={() => setIsReaderOpen(false)} />
       )}
       <MegaPanelHeader
         title="Обеты"
         right={
           <div className="flex items-center gap-2">
-            {vows.length > 1 && (
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {idx + 1}/{vows.length}
-              </span>
-            )}
             {vows.length > 0 && (
               <button
                 type="button"
-                aria-label="Читать как титры"
-                title="Читать как титры"
-                onClick={() => setIsCreditsOpen(true)}
+                aria-label="Открыть режим чтения"
+                title="Открыть режим чтения"
+                onClick={() => setIsReaderOpen(true)}
                 className={cn(
                   'flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground aura-tx-colors',
                   RAW_BUTTON_FOCUS_CN
@@ -207,35 +211,31 @@ export function VowsSingleViewer({ vows }: { vows: AuraRow[] }) {
                 }
               }}
               className={cn(
-                'flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden text-left aura-tx-opacity',
+                'flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden rounded-lg bg-transparent px-3 py-3 text-left aura-tx-opacity',
                 vows.length > 1 ? 'cursor-pointer active:opacity-85' : 'cursor-default',
                 RAW_BUTTON_FOCUS_CN
               )}
             >
               <div className={cn('aura-tx-opacity-fast', isTransitioning && 'opacity-60')}>
-                <h3 className="font-heading mb-2 text-lg font-semibold leading-tight tracking-tight text-foreground sm:text-xl">
+                <h3 className="font-heading mb-2 text-base font-semibold leading-tight tracking-tight text-foreground sm:text-lg">
                   {String(current.title ?? current.id)}
                 </h3>
               </div>
               <div className={cn('relative min-h-0 flex-1 overflow-hidden aura-tx-opacity-fast', isTransitioning && 'opacity-60')}>
-                {/* Top fade */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-6 bg-gradient-to-b from-[var(--card)] to-transparent" />
-                {/* Bottom fade */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-6 bg-gradient-to-t from-[var(--card)] to-transparent" />
-                <div className="min-h-0 h-full overflow-y-auto whitespace-pre-wrap break-words text-sm leading-[1.8] text-foreground/85 [scrollbar-width:thin] sm:text-[15px] sm:leading-[1.95] py-1">
+                <div className="min-h-0 h-full overflow-y-auto whitespace-pre-wrap break-words text-sm leading-[1.75] text-dim [scrollbar-width:thin] sm:text-[15px] sm:leading-[1.9]">
                   {current.description ? String(current.description) : 'Описание не задано.'}
                 </div>
               </div>
             </div>
 
             {vows.length > 1 ? (
-              <div className="mt-3 flex shrink-0 items-center justify-center gap-1.5 pt-1">
+              <div className="mt-2 flex shrink-0 items-center justify-center gap-1.5">
                 <button
                   type="button"
                   aria-label="Предыдущий обет"
                   onClick={handlePrevVow}
                   className={cn(
-                    'text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted/50 aura-tx-colors',
+                    'text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-md hover:bg-hover aura-tx-colors',
                     RAW_BUTTON_FOCUS_CN
                   )}
                 >
@@ -247,19 +247,13 @@ export function VowsSingleViewer({ vows }: { vows: AuraRow[] }) {
                       key={String(v.id)}
                       type="button"
                       aria-label={`Перейти к обету ${i + 1}`}
-                      className={cn('flex h-7 items-center justify-center px-1 cursor-pointer', RAW_BUTTON_FOCUS_CN)}
+                      className={cn('flex h-7 flex-1 max-w-10 items-center justify-center px-1 cursor-pointer', RAW_BUTTON_FOCUS_CN)}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleVowChange(i);
                       }}
                     >
-                      <Circle
-                        className={cn(
-                          'size-2',
-                          i === idx ? 'fill-foreground text-foreground' : 'fill-muted-foreground/35 text-muted-foreground/35'
-                        )}
-                        aria-hidden
-                      />
+                      <span className={cn('block h-1 w-full rounded-full bg-border aura-tx-colors', i === idx && 'bg-foreground')} aria-hidden />
                     </button>
                   ))}
                 </div>
@@ -268,7 +262,7 @@ export function VowsSingleViewer({ vows }: { vows: AuraRow[] }) {
                   aria-label="Следующий обет"
                   onClick={handleNextVow}
                   className={cn(
-                    'text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted/50 aura-tx-colors',
+                    'text-muted-foreground hover:text-foreground flex h-8 w-8 items-center justify-center rounded-md hover:bg-hover aura-tx-colors',
                     RAW_BUTTON_FOCUS_CN
                   )}
                 >

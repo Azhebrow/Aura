@@ -57,7 +57,7 @@ function CategorySection({
   return (
     <section
       className={cn(
-        'flex min-h-max flex-col overflow-hidden rounded-xl border border-soft bg-panel shadow-sm [@container(min-width:720px)]:min-h-0 [@container(min-width:720px)]:rounded-none [@container(min-width:720px)]:border-0 [@container(min-width:720px)]:bg-transparent [@container(min-width:720px)]:shadow-none',
+        'aura-operator-panel flex min-h-max flex-col overflow-hidden rounded-xl border border-soft bg-panel shadow-sm [@container(min-width:720px)]:min-h-0 [@container(min-width:720px)]:rounded-none [@container(min-width:720px)]:border-0 [@container(min-width:720px)]:bg-transparent [@container(min-width:720px)]:shadow-none',
         idx !== 3 && '[@container(min-width:720px)]:border-r [@container(min-width:720px)]:border-soft/60',
         dayLocked && 'pointer-events-none opacity-50'
       )}
@@ -65,18 +65,21 @@ function CategorySection({
       {/* Category header */}
       <div style={{ '--acc': accent } as React.CSSProperties}>
         <div
-          className="flex h-16 items-center gap-2.5 px-2.5 sm:gap-3 sm:px-3.5"
+          className="aura-operator-header aura-task-category-header flex h-16 items-center gap-2.5 px-2.5 sm:gap-3 sm:px-3.5"
           style={{ background: `color-mix(in oklab, ${accent} 8%, transparent)` }}
           aria-label={`${label}: ${displayN}%`}
         >
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg sm:size-9 sm:rounded-xl"
-            style={{ background: `color-mix(in oklab, ${accent} 16%, transparent)` }} aria-hidden>
+          <div
+            className="aura-icon-plate flex size-8 shrink-0 items-center justify-center rounded-lg border sm:size-9 sm:rounded-xl"
+            style={{ '--aura-list-icon-tint': accent } as React.CSSProperties}
+            aria-hidden
+          >
             {dayLocked
               ? <Lock size={12} className="text-dim" />
               : <ColoredAuraIcon name={headerIcon} size={14} tint={accent} />}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="min-w-0 truncate text-sm font-black leading-none sm:text-base" style={{ color: accent }}>
+            <h3 className="aura-operator-kpi min-w-0 truncate text-sm font-black leading-none sm:text-base" style={{ color: accent }}>
               {label}
             </h3>
             <p className="mt-1 text-[0.65rem] font-semibold leading-none text-dim sm:text-caption">
@@ -84,13 +87,13 @@ function CategorySection({
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end">
-            <span className="text-[1.45rem] font-black tabular-nums leading-none sm:text-[1.7rem]" style={{ color: accent }}>
+            <span className="aura-operator-kpi text-[1.45rem] font-black tabular-nums leading-none sm:text-[1.7rem]" style={{ color: accent }}>
               {displayN}<span className="text-[0.6rem] font-bold opacity-70 sm:text-sm">%</span>
             </span>
           </div>
         </div>
-        <div className="h-[3px] w-full" style={{ background: `color-mix(in oklab, ${accent} 12%, transparent)` }}>
-          <div className="h-full" style={{ width: `${animatedN}%`, backgroundColor: accent }} />
+        <div className="aura-task-category-meter h-[3px] w-full overflow-hidden" style={{ background: `color-mix(in oklab, ${accent} 14%, transparent)` }}>
+          <div className="h-full aura-data-fill" style={{ width: `${animatedN}%`, background: `color-mix(in oklab, ${accent} 88%, var(--foreground) 12%)` }} />
         </div>
       </div>
 

@@ -12,7 +12,7 @@ function DockPageButton({ pageId, active, onSelect }: { pageId: PageId; active: 
     <button
       type="button"
       className={cn(
-        'relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 py-2 aura-tx-interactive',
+        'aura-mobile-dock-item relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 py-2 aura-tx-interactive',
         'focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none',
         active
           ? 'bg-primary/10 text-primary'
@@ -23,7 +23,6 @@ function DockPageButton({ pageId, active, onSelect }: { pageId: PageId; active: 
     >
       <Icon
         className="size-[var(--nav-icon-size)] shrink-0"
-        strokeWidth={active ? 2.2 : 1.9}
         aria-hidden
       />
       <span className="sr-only">{t(pageId)}</span>
